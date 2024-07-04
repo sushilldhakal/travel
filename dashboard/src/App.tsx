@@ -1,11 +1,10 @@
 
+
 function App() {
 
   return (
     <>
-      <div>
-this is a test
-        </div>
+     <div><h1>this is a home page</h1></div>
     </>
   )
 }
