@@ -1,5 +1,4 @@
 import {Link} from "react-router-dom"
-
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -10,8 +9,18 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useRef } from "react"
 
 const RegisterPage = () => {
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  const handleRegisterSubmit = () =>{
+    const email = emailRef.current?.value;
+    const password = passwordRef.current?.value;
+    console.log(email, password)
+  }
+
   return (
     <div className="flex justify-center items-center h-screen">
     <Card className="mx-full max-w-sm">
@@ -33,15 +42,16 @@ const RegisterPage = () => {
             <Input
               id="email"
               type="email"
+              ref={emailRef}
               placeholder="m@example.com"
               required
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" />
+            <Input ref={passwordRef} id="password" type="password" />
           </div>
-          <Button type="submit" className="w-full">
+          <Button onClick={handleRegisterSubmit} className="w-full">
             Create an account
           </Button>
           {/* <Button variant="outline" className="w-full">
@@ -50,7 +60,7 @@ const RegisterPage = () => {
         </div>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link to="/login" className="underline">
+          <Link to="/auth/login" className="underline">
             Sign in
           </Link>
         </div>
