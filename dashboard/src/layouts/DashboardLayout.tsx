@@ -11,27 +11,8 @@ import {
   ShoppingCart,
   Users,
 } from "lucide-react"
-
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,9 +24,26 @@ import {
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Breadcrumbs from './Breadcrumb';
+import { ModeToggle } from '@/userDefinedComponents/ModeToggle';
+import useTokenStore from '@/store';
+import Navigation from './Navigation';
 
 
 const DashboardLayout = () => {
+
+  const { token, setToken } = useTokenStore((state) => state);
+  if (token === '') {
+      return <Navigate to={'/auth/login'} replace />;
+  }
+  const logout = () => {
+      console.log('Logging out!');
+      setToken('');
+  };
+
+  const signOut = () => {
+      logout();
+  };
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
     <div className="hidden border-r bg-muted/40 md:block">
@@ -60,64 +58,9 @@ const DashboardLayout = () => {
             <span className="sr-only">Toggle notifications</span>
           </Button>
         </div>
-        <div className="flex-1">
-          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-
-          <NavLink
-                                to="/dashboard/home"
-                                className={({ isActive }) => {
-                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
-                                        isActive && 'bg-muted'
-                                    }`;
-                                }}>
-                                <Home className="h-4 w-4" />
-                                Dashboard
-                            </NavLink>
-
-            <Link
-              to="/dashboard/orders"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              Orders
-              <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                6
-              </Badge>
-            </Link>
-
-
-            <NavLink
-                                to="/dashboard/tours"
-                                className={({ isActive }) => {
-                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
-                                        isActive && 'bg-muted'
-                                    }`;
-                                }}>
-                                <Home className="h-4 w-4" />
-                                Tours
-                            </NavLink>
-
-
-                            <NavLink
-                                to="/dashboard/users"
-                                className={({ isActive }) => {
-                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
-                                        isActive && 'bg-muted'
-                                    }`;
-                                }}>
-                                <Home className="h-4 w-4" />
-                                Users
-                            </NavLink>
-           
-            <Link
-              to="/dashboard/analytics"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <LineChart className="h-4 w-4" />
-              Analytics
-            </Link>
-          </nav>
-        </div>
+        
+        <Navigation />
+       
       </div>
     </div>
     <div className="flex flex-col">
@@ -196,6 +139,7 @@ const DashboardLayout = () => {
             </div>
           </form>
         </div>
+        <ModeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
@@ -209,7 +153,7 @@ const DashboardLayout = () => {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut()}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
