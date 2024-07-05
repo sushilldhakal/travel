@@ -1,4 +1,4 @@
-import {Link, Outlet} from "react-router-dom"
+import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import {
   Bell,
   CircleUser,
@@ -11,6 +11,16 @@ import {
   ShoppingCart,
   Users,
 } from "lucide-react"
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import Breadcrumbs from './Breadcrumb';
 
 
 const DashboardLayout = () => {
@@ -51,13 +62,18 @@ const DashboardLayout = () => {
         </div>
         <div className="flex-1">
           <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-            <Link
-              to="/dashboard/home"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Home className="h-4 w-4" />
-              Dashboard
-            </Link>
+
+          <NavLink
+                                to="/dashboard/home"
+                                className={({ isActive }) => {
+                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+                                        isActive && 'bg-muted'
+                                    }`;
+                                }}>
+                                <Home className="h-4 w-4" />
+                                Dashboard
+                            </NavLink>
+
             <Link
               to="/dashboard/orders"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -68,20 +84,31 @@ const DashboardLayout = () => {
                 6
               </Badge>
             </Link>
-            <Link
-              to="/dashboard/tours"
-              className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-            >
-              <Package className="h-4 w-4" />
-              Tours{" "}
-            </Link>
-            <Link
-              to="/dashboard/users"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Users className="h-4 w-4" />
-              Users
-            </Link>
+
+
+            <NavLink
+                                to="/dashboard/tours"
+                                className={({ isActive }) => {
+                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+                                        isActive && 'bg-muted'
+                                    }`;
+                                }}>
+                                <Home className="h-4 w-4" />
+                                Tours
+                            </NavLink>
+
+
+                            <NavLink
+                                to="/dashboard/users"
+                                className={({ isActive }) => {
+                                    return `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+                                        isActive && 'bg-muted'
+                                    }`;
+                                }}>
+                                <Home className="h-4 w-4" />
+                                Users
+                            </NavLink>
+           
             <Link
               to="/dashboard/analytics"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -189,7 +216,7 @@ const DashboardLayout = () => {
    
 
       <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-
+      <Breadcrumbs />
 
 <Outlet></Outlet>
 
