@@ -24,13 +24,7 @@
                 icon: "Product",
                 url: "/dashboard/tours",
               },
-          {
-            id: "singletour",
-            title: "Tour",
-            type: "item",
-            icon: "Product",
-            url: "/dashboard/tours/:id/singletour",
-          },
+          
           {
             id: "createtour",
             title: "Add Tour",
@@ -41,6 +35,30 @@
 
             ],
           },
+          {
+            id: "user",
+            title: "Users",
+            type: "item",
+            url: "/dashboard/users",
+            children: [
+                {
+                    id: "userlist",
+                    title: "All User",
+                    type: "item",
+                    icon: "Product",
+                    url: "/dashboard/users",
+                  },
+              
+              {
+                id: "createuser",
+                title: "Add User",
+                type: "item",
+                icon: "Product",
+                url: "/dashboard/users/adduser",
+              },
+    
+                ],
+              },
         ],
       }
 

@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TourPage = () => {
 
@@ -28,7 +29,7 @@ const TourPage = () => {
 
 // const alltours = data?.data.tours.map(object => ({ ...data }))
 // const check = Array.isArray(alltours)
-
+//@ts-ignore
 const tableData = data?.data.tours
 
 const columns: ColumnDef<Tour>[] = [
@@ -105,15 +106,13 @@ const columns: ColumnDef<Tour>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(payment.id)}
             >
-              Copy payment ID
+              Delete
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
+            <DropdownMenuItem>Edit</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -122,22 +121,24 @@ const columns: ColumnDef<Tour>[] = [
 ]
 
 
-let list;
-if(data){
-   list = <DataTable data={tableData} columns={columns} place="Filter Tours..." colum="tour_name"/>
-}else{
-  list = "Please add tours to your database"
-}
+let content;
 
+  if (isLoading) {
+    content = <Skeleton />;
+  } else if (isError) {
+    content = <div>Error fetching tours. Please try again later.</div>;
+  } else if (data && data?.data.tours.length > 0) {
+    content = <DataTable data={tableData} columns={columns} place="Filter Tours..." colum="tour_name" />;
+  } else {
+    content = "Please add tours to your database";
+  }
 
   return (
 
-    <>
      <div>
-{list}
+{content}
 </div>
     
-    </>
    
   )
 }

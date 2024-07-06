@@ -1,0 +1,13 @@
+.menu-item {
+    position: relative;
+}
+.menu-item .toggle-button {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+}
+/* div[class=menu-item] {
+
+    border-bottom: 1px solid hsl(var(--foreground))
+
+} */

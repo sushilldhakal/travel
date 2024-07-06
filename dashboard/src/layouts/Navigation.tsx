@@ -1,6 +1,8 @@
 import menuItems from "./MenuItems";
 import MenuItem from "@/userDefinedComponents/MenuItem";
 
+import "../dashboard-style.css";
+
 const Navigation = () => {
   return (
      <div className="flex-1">
