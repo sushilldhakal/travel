@@ -30,9 +30,25 @@
             title: "Add Tour",
             type: "item",
             icon: "Product",
-            url: "/dashboard/tours/addtour",
+            url: "/dashboard/tours/add_tour",
           },
-
+          {
+            id: "category",
+            title: "Category",
+            type: "item",
+            icon: "Product",
+            url: "/dashboard/tours/category",
+          },
+          //category will have a multiple area to create pricing Category,Trip Types category, Destination Category, Activities Category, Keyword Category
+          {
+            id: "tripsetting",
+            title: "Setting",
+            type: "item",
+            icon: "Product",
+            url: "/dashboard/tours/setting",
+          },
+          //Setting will have a multiple area to create Bookings, coupons, view enquires, view reports, Currency setting, 
+          // add Map Api, create global facts area, create global FAQs area, enable expired trip, disable rating, email template, 
             ],
           },
           {
@@ -54,7 +70,7 @@
                 title: "Add User",
                 type: "item",
                 icon: "Product",
-                url: "/dashboard/users/adduser",
+                url: "/dashboard/users/add_user",
               },
     
                 ],

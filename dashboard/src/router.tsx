@@ -12,66 +12,90 @@ import TourPage from "./pages/Tours/TourPage";
 import AuthLayout from "./layouts/AuthLayout";
 import AddTour from "./pages/Tours/AddTour";
 import AddUser from "./pages/Users/AddUser";
+import ErrorPage from "./pages/Error/ErrorPage";
 
+
+const routePaths = {
+  home: "/",
+  login: "/login",
+  dashboard: {
+    base: "/dashboard",
+    home: "/dashboard/home",
+    tours: "/dashboard/tours",
+    addTour: "/dashboard/tours/add_tour",
+    users: "/dashboard/users",
+    addUser: "/dashboard/users/add_user",
+  },
+  auth: {
+    base: "/auth",
+    login: "/auth/login",
+    register: "/auth/register",
+  },
+  error: "*",
+};
 
 const router = createBrowserRouter([
   {
-    path: "dashboard",
-    element: <DashboardLayout/>,
+    path: routePaths.dashboard.base,
+    element: <DashboardLayout />,
     children: [
       {
-        path: "tours",
-        element: <TourPage/>,
+        path: routePaths.dashboard.tours,
+        element: <TourPage />,
       },
       {
-        path: "tours/addtour",
-        element: <AddTour/>,
+        path: routePaths.dashboard.addTour,
+        element: <AddTour />,
       },
-      
+
       {
-        path: "home",
-        element: <HomePage/>,
+        path: routePaths.dashboard.home,
+        element: <HomePage />,
       },
-     
-     
+
+
       {
-        path: "users",
-        element: <UserPage/>,
+        path: routePaths.dashboard.users,
+        element: <UserPage />,
       },
       {
-        path: "users/adduser",
-        element: <AddUser/>,
+        path: routePaths.dashboard.addUser,
+        element: <AddUser />,
+      },
+      {
+        path: routePaths.error,
+        element: <ErrorPage />,
       },
     ]
   },
   {
-    path: "dashboard",
-    element: <HomePage/>,
+    path: routePaths.home,
+    element: <HomePage />,
   },
   {
-    path: "/",
-    element:<LoginPage/>,
+    path: routePaths.login,
+    element: <LoginPage />,
   },
   {
-    path: "login",
-    element:<LoginPage/>,
-  },
-  {
-    path: 'auth',
-    element: <AuthLayout/>,
+    path: routePaths.auth.base,
+    element: <AuthLayout />,
     children: [
       {
-        path: "login",
-        element: <LoginPage/>,
+        path: routePaths.auth.login,
+        element: <LoginPage />,
       },
       {
-        path: "register",
-        element: <RegisterPage/>,
+        path: routePaths.auth.register,
+        element: <RegisterPage />,
       },
     ]
 
   },
- 
+  {
+    path: routePaths.error,
+    element: <ErrorPage />,
+  },
+
 ]);
 
-export default router;
+export { router, routePaths };
