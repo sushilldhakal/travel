@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button"
+import routePaths from "@/routePath";
+import { Link } from "react-router-dom";
 
 const HomePage = () => {
   return (
@@ -13,7 +15,9 @@ const HomePage = () => {
           <p className="text-sm text-muted-foreground">
             You can start selling as soon as you add a Tours.
           </p>
-          <Button className="mt-4">Add Tour</Button>
+          <Button className="mt-4">
+            <Link to={routePaths.dashboard.addTour}>Add Tour</Link>
+          </Button>
         </div>
       </div>
 

@@ -3,27 +3,18 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Navigation from "@/layouts/Navigation"
 import {
-    Bell,
-    CircleUser,
-    Home,
-    LineChart,
-    Menu,
-    Package,
-    Package2,
-    Search,
-    ShoppingCart,
-    Users,
-  } from "lucide-react"
+  CircleUser,
+  Menu,
+  Search,
+} from "lucide-react"
 import { ModeToggle } from "./ModeToggle"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import Breadcrumbs from "@/layouts/Breadcrumb"
-import { Outlet } from "react-router-dom"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-const DashboardHeader = ({signoutButtons}) => {
+const DashboardHeader = ({ handleLogout }) => {
 
-    const handleClick = () => {
-        signoutButtons();
-    }
+  const handleClick = () => {
+    handleLogout();
+  }
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
       <Sheet>
@@ -38,7 +29,7 @@ const DashboardHeader = ({signoutButtons}) => {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col">
-          <Navigation />   
+          <Navigation />
         </SheetContent>
       </Sheet>
       <div className="w-full flex-1">
@@ -70,9 +61,9 @@ const DashboardHeader = ({signoutButtons}) => {
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
- 
 
-   
+
+
   )
 }
 

@@ -12,13 +12,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
-import GetTitle from '@/userDefinedComponents/GetTitle';
 import { routePaths } from '@/router';
 
 const TourPage = () => {
@@ -126,13 +124,14 @@ const TourPage = () => {
 
   let content;
 
-  const createTour = <Link to={routePaths.dashboard.addTour}>
-    <Button>
-      <CirclePlus size={20} />
-      <span className="ml-2">Add Tour</span>
-    </Button>
-  </Link>
-
+  const createTour = <div className="hidden items-center gap-2 md:ml-auto md:flex">
+    <Link to={routePaths.dashboard.addTour}>
+      <Button>
+        <CirclePlus size={20} />
+        <span className="ml-2">Add Tour</span>
+      </Button>
+    </Link>
+  </div>
   if (isLoading) {
     content = <div>{createTour}<Skeleton /></div>;
   } else if (isError) {

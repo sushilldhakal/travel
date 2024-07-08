@@ -6,6 +6,20 @@
     right: 10px;
     top: 8px;
 }
+main.flex {
+    position: relative;
+}
+
+main .hidden.items-center {
+    position: absolute;
+    top: 65px;
+    right: 25px;
+}
+.menu-item svg {
+    width: 16px;
+}
+
+
 /* div[class=menu-item] {
 
     border-bottom: 1px solid hsl(var(--foreground))

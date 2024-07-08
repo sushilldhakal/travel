@@ -1,6 +1,6 @@
-import { CircleArrowDown, CircleArrowUp, PanelBottomOpen, PanelTopOpen } from 'lucide-react';
-import React, { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import Icon from './Icon';
 
 const MenuItem = ({ item }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,35 +12,36 @@ const MenuItem = ({ item }) => {
 
   return (
     <div className={`menu-item${isOpen ? ' bg-muted' : ''}`}>
-
-
-{item.children ? (
-        <div onClick={toggleChildren} 
-        className={
-          `flex items-center gap-3  cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
-        
-          variant="destructive"
-          >
-          {item.icon && <span className={`menu-icon ${item.icon}`}></span>}
+      {item.children ? (
+        <div onClick={toggleChildren}
+          className={
+            `flex items-center gap-3  cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
+        >
+          {< item.icon />}
           <span className="menu-title">{item.title}</span>
-          {item.children && isOpen ?(
-           <CircleArrowUp />
-          ) : (
-            <CircleArrowDown />
+          {item.children && isOpen ? (
+            <span className="ml-auto">
+              <Icon name="CircleArrowUp" />
 
-          ) }
+            </span>
+          ) : (
+            <span className="ml-auto">
+              <Icon name="CircleArrowDown" />
+            </span>
+          )}
         </div>
       ) : (
-       
-<NavLink
-    to={item.url}
-    className={({ isActive }) => {
-        return `flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
-            isActive && 'bg-muted'
-        }`;
-    }}>
-    {item.title}
-</NavLink>
+        <NavLink
+          to={item.url}
+          className={({ isActive }) => {
+            return `flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && 'bg-muted'
+              }`;
+          }}>
+          {/* <Icon name={item.icon} /> */}
+          {< item.icon />}
+          {item.title}
+        </NavLink>
+
       )}
       {item.children && isOpen && (
         <div className="menu-children shadow-inherit">
