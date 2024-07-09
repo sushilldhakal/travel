@@ -42,7 +42,7 @@ const AddTour = () => {
         <Button variant="outline" size="sm">
           Discard
         </Button>
-        <Button size="sm">Save Tour</Button>
+        <Button size="sm">Create Tour</Button>
       </div>
       <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
         <nav className="grid gap-5 text-md text-muted-foreground lg:col-span-1">

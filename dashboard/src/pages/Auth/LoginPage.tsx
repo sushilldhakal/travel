@@ -24,24 +24,39 @@ const LoginPage = () => {
   const passwordRef = useRef<HTMLInputElement>(null);
 
 
-  // Mutations
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (response) => {
-      setToken(response.data.accessToken);
-      navigate('/dashboard/home');
+      const { accessToken, roles } = response.data;
+      setToken(accessToken);
+
+      // Redirect based on user roles
+      if (roles === 'user') {
+        window.location.href = 'https://example.com/user-dashboard';
+      } else if (roles === 'admin' || roles === 'seller') {
+        navigate('/dashboard/home');
+      } else {
+        console.error('Unknown role:', roles);
+        // Handle unexpected role scenario
+        // You may want to show an error message or redirect to a default dashboard
+      }
     },
-  })
+    onError: (error) => {
+      console.error('Login error:', error);
+      // Handle login error
+      alert('Login failed. Please try again.');
+    },
+  });
 
   const handleLoginSubmit = () => {
     const email = emailRef.current?.value;
     const password = passwordRef.current?.value;
-    console.log("data", { email, password })
 
     if (!email || !password) {
       //change to toaster
       return alert("Login failed")
     }
+
     mutation.mutate({ email, password })
   }
 

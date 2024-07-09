@@ -1,6 +1,6 @@
-import { getTours } from '@/http/api';
+import { getTours, deleteTours } from '@/http/api';
 import { Tour } from '@/Provider/types';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
 import {
   ColumnDef
@@ -18,9 +18,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { routePaths } from '@/router';
+import { useState } from 'react';
 
 const TourPage = () => {
-
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tours'],
@@ -31,12 +31,57 @@ const TourPage = () => {
   // const alltours = data?.data.tours.map(object => ({ ...data }))
   // const check = Array.isArray(alltours)
   //@ts-ignore
-  const tableData = data?.data.tours
+
+  const mutation = useMutation({
+    mutationFn: deleteTours,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries(['tours']);
+    },
+    onError: (error) => {
+      console.error("Error deleting tour:", error);
+    }
+  });
+
+  const handleDeleteTour = async (tourId) => {
+    try {
+      await mutation.mutateAsync(tourId);
+      console.log("success", "Tour deleted successfully");
+    } catch (error) {
+      console.log("error", error.message);
+    }
+  };
+
+
+  const tableData = data?.data.tours;
+
+  console.log(tableData);
+
+
+  // data?.data.tours.map(getDetails)
+
+  // function getDetails(tour) {
+  //   console.log(tour);
+  // }
+
 
   const columns: ColumnDef<Tour>[] = [
 
     {
-      accessorKey: "tour_name",
+      accessorKey: "coverImage",
+      header: ({ column }) => {
+        return (
+          <span>Image</span>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="capitalize image-area">
+          <img className="w-10 h-auto" src={row.getValue("coverImage")} alt={row.getValue("coverImage")} />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "name",
       header: ({ column }) => {
         return (
           <Button
@@ -49,23 +94,20 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("tour_name")}</div>
+        <div className="capitalize">{row.getValue("name")}</div>
       ),
     },
     {
-      accessorKey: "duration_days",
-      header: ({ column }) => {
+      header: "Author",
+      cell: ({ row }) => {
         return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Durations
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => <div className="text-left font-medium">{row.getValue("duration_days")}</div>,
+          <div>
+            {row.original.author.map((autho, i) => (
+              <div className="capitalize" key={i}>{autho.name}</div>
+            ))}
+          </div>
+        );
+      }
     },
     {
       accessorKey: "price_usd",
@@ -93,29 +135,53 @@ const TourPage = () => {
       },
     },
     {
+      accessorKey: "status",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="capitalize">{row.getValue("status")}</div>
+      ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Created
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("createdAt"))
+        return <div className="text-left font-medium">{date.toLocaleDateString("en-US")}</div>
+      },
+
+
+    },
+    {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const payment = row.original
+        const tour = row.original
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(payment.id)}
-              >
-                Delete
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Edit</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div>
+            <Button className="mr-2 py-1 px-2" variant="outline">Edit</Button>
+            <Button className="py-1 px-2" variant="destructive" onClick={() => handleDeleteTour(tour._id)}> Delete</Button>
+          </div>
         )
       },
     },
@@ -137,7 +203,7 @@ const TourPage = () => {
   } else if (isError) {
     content = <div>{createTour}Error fetching tours. Please try again later.</div>;
   } else if (data && data?.data.tours.length > 0) {
-    content = <div>{createTour}<DataTable data={tableData} columns={columns} place="Filter Tours..." colum="tour_name" /></div>;
+    content = <div>{createTour}<DataTable data={tableData} columns={columns} place="Filter Tours..." colum="name" /></div>;
   } else {
     content = <div>{createTour}"Please add tours to your database";</div>
   }
@@ -146,3 +212,4 @@ const TourPage = () => {
 }
 
 export default TourPage
+

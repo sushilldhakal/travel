@@ -18,6 +18,14 @@ main .hidden.items-center {
 .menu-item svg {
     width: 16px;
 }
+input[type=file]{
+    text-align: left;
+    line-height: 1.5;
+    direction: rtl;
+    width: fit-content;
+  }
+  
+
 
 
 /* div[class=menu-item] {

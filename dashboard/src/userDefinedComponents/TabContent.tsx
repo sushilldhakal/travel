@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,33 @@ import {
     FormItem,
     FormLabel,
 } from "@/components/ui/form"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+
+
+function makeid(length) {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        counter += 1;
+    }
+    return result;
+}
 const TabContent = ({ activeTab, formData, handleInputChange, tabs }) => {
+
+    const [disabled, setDisabled] = useState(true);
+
     const tab = tabs.find(t => t.id === activeTab);
 
     if (!tab) return <div>Select a tab to see its content</div>;
+
+    function handleTripCode(event) {
+        event.preventDefault();
+        setDisabled(!disabled);
+    }
 
     switch (tab.id) {
         case 'overview':
@@ -38,10 +60,20 @@ const TabContent = ({ activeTab, formData, handleInputChange, tabs }) => {
                                             type="text"
                                             name="title"
                                             value={formData.title}
-                                            onChange={handleInputChange}
                                             className="w-full"
                                             placeholder="Enter tour title"
                                         />
+                                    </div>
+                                    <div className="grid grid-flow-col gap-3">
+                                        <div className='col-span-4'>
+                                            Trip Code:
+                                        </div>
+                                        <div className='col-span-5'>
+                                            <Input id="tourCode" type="text" name="tourCode" defaultValue={makeid(6).toUpperCase()} onChange={handleInputChange} disabled={disabled} className="w-full" placeholder={makeid(6).toUpperCase()} />
+                                        </div>
+                                        <div className='col-span-4'>
+                                            <Button onClick={handleTripCode} variant="outline">Edit</Button>
+                                        </div>
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="description">Tour Description</Label>
@@ -53,6 +85,52 @@ const TabContent = ({ activeTab, formData, handleInputChange, tabs }) => {
                                             placeholder="Enter tour description"
                                             className="min-h-32"
                                         />
+                                    </div>
+                                    <div className="grid gap-3 auto-rows-max grid-cols-2">
+                                        <Label htmlFor="status">Tour Status</Label>
+                                        <Select id="status">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="draft">Draft</SelectItem>
+                                                <SelectItem value="published">Published</SelectItem>
+                                                <SelectItem value="expired">Expired</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid grid-flow-col gap-3">
+                                        <div className="col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                                            <div className="flex flex-col space-y-1.5 p-6">
+                                                <h3 className="text-2xl font-semibold leading-none tracking-tight">
+                                                    Cover Image</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Please upload a cover image</p>
+                                            </div>
+                                            <div className="p-6 pt-0">
+                                                <div className="grid gap-2">
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <Input id="picture" type="file" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className='col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
+                                            <div className="flex flex-col space-y-1.5 p-6">
+                                                <h3 className="text-2xl font-semibold leading-none tracking-tight">
+                                                    Tour file</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Please upload a tour description file pdf</p>
+                                            </div>
+                                            <div className="p-6 pt-0">
+                                                <div className="grid gap-2">
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <Input id="picture" type="file" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </CardContent>
