@@ -19,7 +19,7 @@ export interface User {
     name: string;
     email: string;
     password: string;
-    roles: string[];
+    roles: string;
     wishlists: string[];
     bookings: string[];
     reviews: string[];

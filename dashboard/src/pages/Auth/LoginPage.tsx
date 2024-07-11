@@ -10,53 +10,65 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { login } from "@/http/api"
 import { useMutation } from "@tanstack/react-query"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import useTokenStore from '@/store';
 import { routePaths } from "@/router"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
+import { jwtDecode } from "jwt-decode"
+import { getAuthUserRoles } from "@/layouts/AuthLayout"
 const LoginPage = () => {
 
   const navigate = useNavigate();
   const setToken = useTokenStore((state) => state.setToken);
-
-
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
 
+
+  useEffect(() => {
+    const roles = getAuthUserRoles();
+    if (roles) {
+      if (roles === 'user') {
+        window.location.href = routePaths.webHome;
+      } else {
+        navigate('/dashboard/home');
+      }
+    }
+  }, [navigate]);
+
+  // Mutations
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (response) => {
-      const { accessToken, roles } = response.data;
-      setToken(accessToken);
+      setToken(response.data.accessToken);
+      const accessToken = localStorage.getItem("token-store");
+      if (!accessToken) return false;
+      const decoded = jwtDecode(accessToken);
+      console.log(decoded)
+      navigate('/dashboard/home');
+    },
+  })
 
-      // Redirect based on user roles
-      if (roles === 'user') {
-        window.location.href = 'https://example.com/user-dashboard';
-      } else if (roles === 'admin' || roles === 'seller') {
-        navigate('/dashboard/home');
-      } else {
-        console.error('Unknown role:', roles);
-        // Handle unexpected role scenario
-        // You may want to show an error message or redirect to a default dashboard
-      }
-    },
-    onError: (error) => {
-      console.error('Login error:', error);
-      // Handle login error
-      alert('Login failed. Please try again.');
-    },
-  });
+
+
 
   const handleLoginSubmit = () => {
     const email = emailRef.current?.value;
     const password = passwordRef.current?.value;
-
     if (!email || !password) {
       //change to toaster
-      return alert("Login failed")
+      return (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Login Failed. Please provide Email and Password
+          </AlertDescription>
+        </Alert>
+      )
     }
-
     mutation.mutate({ email, password })
   }
 

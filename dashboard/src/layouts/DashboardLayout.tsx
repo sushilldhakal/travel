@@ -1,4 +1,4 @@
-import { Link, Navigate, Outlet } from 'react-router-dom';
+import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Package2
@@ -12,14 +12,18 @@ import GetTitle from '@/userDefinedComponents/GetTitle';
 import { routePaths } from '@/router';
 const DashboardLayout = () => {
   const { token, setToken } = useTokenStore((state) => state);
-
+  const navigate = useNavigate();
   const handleLogout = () => {
     setToken('');
+    localStorage.removeItem("token-store");
+    navigate('/auth/login');
   };
 
   if (!token) {
     return <Navigate to="/auth/login" replace />;
   }
+
+
 
   return (
     <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -40,7 +44,7 @@ const DashboardLayout = () => {
       </div>
       <div className="flex flex-col">
         <DashboardHeader handleLogout={...handleLogout} />
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 relative">
           <Breadcrumbs />
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl"> <GetTitle /></h1>

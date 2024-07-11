@@ -28,12 +28,25 @@ export const register = async (data: { name: string; email: string; password: st
 export const getTours = async () => api.get('/api/tours');
 
 
+export const createTour = async (data: FormData) =>
+    api.post('/api/tours', data, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
 export const deleteTours = async (tourId: string) => {
     try {
+        console.log(`Deleting tour with ID: ${tourId}`);
         const response = await api.delete(`/api/tours/${tourId}`);
+        console.log('Tour deleted:', response.data);
         return response.data; // Return whatever response data you expect from your backend
     } catch (error) {
-        console.error('Error deleting tour:', error.response ? error.response.data : error.message);
+        if (error.response) {
+            console.error('Error deleting tour:', error.response.data);
+        } else {
+            console.error('Error deleting tour:', error.message);
+        }
         throw new Error(`Error deleting tour: ${error.message}`);
     }
 };

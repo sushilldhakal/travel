@@ -10,11 +10,11 @@ main.flex {
     position: relative;
 }
 
-main .hidden.items-center {
+/* main .hidden.items-center {
     position: absolute;
     top: 65px;
     right: 25px;
-}
+} */
 .menu-item svg {
     width: 16px;
 }

@@ -1,7 +1,6 @@
 
 const routePaths = {
-  login: "/login",
-  loginIfNon: "/",
+  webHome: "/",
   dashboard: {
     base: "/dashboard",
     home: "/dashboard/home",

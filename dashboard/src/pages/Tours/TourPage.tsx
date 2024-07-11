@@ -1,7 +1,8 @@
 import { getTours, deleteTours } from '@/http/api';
 import { Tour } from '@/Provider/types';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, QueryClient } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
+import Moment from 'react-moment';
 import {
   ColumnDef
 } from "@tanstack/react-table"
@@ -19,13 +20,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { routePaths } from '@/router';
 import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import moment from 'moment';
 
 const TourPage = () => {
-
+  const { toast } = useToast()
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tours'],
     queryFn: getTours,
-    staleTime: 10000, // in Milli-seconds
   });
 
   // const alltours = data?.data.tours.map(object => ({ ...data }))
@@ -36,7 +38,7 @@ const TourPage = () => {
     mutationFn: deleteTours,
     onSuccess: () => {
       // Invalidate and refetch
-      queryClient.invalidateQueries(['tours']);
+      QueryClient.invalidateQueries(['tours']);
     },
     onError: (error) => {
       console.error("Error deleting tour:", error);
@@ -46,7 +48,6 @@ const TourPage = () => {
   const handleDeleteTour = async (tourId) => {
     try {
       await mutation.mutateAsync(tourId);
-      console.log("success", "Tour deleted successfully");
     } catch (error) {
       console.log("error", error.message);
     }
@@ -54,9 +55,6 @@ const TourPage = () => {
 
 
   const tableData = data?.data.tours;
-
-  console.log(tableData);
-
 
   // data?.data.tours.map(getDetails)
 
@@ -81,7 +79,7 @@ const TourPage = () => {
       ),
     },
     {
-      accessorKey: "name",
+      accessorKey: "title",
       header: ({ column }) => {
         return (
           <Button
@@ -94,7 +92,7 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("name")}</div>
+        <div className="capitalize">{row.getValue("title")}</div>
       ),
     },
     {
@@ -164,12 +162,9 @@ const TourPage = () => {
           </Button>
         )
       },
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("createdAt"))
-        return <div className="text-left font-medium">{date.toLocaleDateString("en-US")}</div>
-      },
-
-
+      cell: (row) => (
+        moment(row.getValue("createdAt"), "").format("LL")
+      )
     },
     {
       id: "actions",
@@ -191,7 +186,7 @@ const TourPage = () => {
   let content;
 
   const createTour = <div className="hidden items-center gap-2 md:ml-auto md:flex">
-    <Link to={routePaths.dashboard.addTour}>
+    <Link to={routePaths.dashboard.addTour} className='top-12 right-5 absolute'>
       <Button>
         <CirclePlus size={20} />
         <span className="ml-2">Add Tour</span>
@@ -203,7 +198,7 @@ const TourPage = () => {
   } else if (isError) {
     content = <div>{createTour}Error fetching tours. Please try again later.</div>;
   } else if (data && data?.data.tours.length > 0) {
-    content = <div>{createTour}<DataTable data={tableData} columns={columns} place="Filter Tours..." colum="name" /></div>;
+    content = <div>{createTour}<DataTable data={tableData} columns={columns} place="Filter Tours..." colum="title" /></div>;
   } else {
     content = <div>{createTour}"Please add tours to your database";</div>
   }
