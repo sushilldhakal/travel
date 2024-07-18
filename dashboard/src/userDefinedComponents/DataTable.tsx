@@ -137,7 +137,8 @@ export function DataTable({ data, columns, place, colum }) {
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
-                      )}
+                      )
+                      }
                     </TableCell>
                   ))}
                 </TableRow>

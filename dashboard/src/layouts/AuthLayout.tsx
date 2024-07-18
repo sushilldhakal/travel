@@ -1,20 +1,22 @@
-import useTokenStore from '@/store';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect } from 'react';
 import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 
 export const AuthLayout = () => {
     const navigate = useNavigate();
+
     useEffect(() => {
         const roles = getAuthUserRoles();
         if (!roles) {
             navigate('/auth/login');
         } else if (roles === 'user') {
-            window.location.href = 'http://localhost:5173/';
-        } else {
+            navigate('/');
+        } else if (roles === 'admin' || roles === 'seller') {
             navigate('/dashboard/home');
+        } else {
+            navigate('/auth/login');
         }
-    }, [navigate]); // Ensure the dependency array is properly set
+    }, [navigate]);
 
     return <Outlet />;
 };
@@ -23,39 +25,49 @@ type AccessTokenType = {
     email: string;
     isLoggedIn: boolean;
     id: string;
+    roles: string;
 };
+
 export const useAuth = (): boolean => {
-    const accessToken = localStorage.getItem("token-store");
-
+    const accessToken = getAccessToken();
     if (!accessToken) return false;
-    if (accessToken) {
-        const decoded = jwtDecode(accessToken) as AccessTokenType;
-        if (decoded.isLoggedIn) return true;
-    }
 
-    return false;
+    try {
+        const decoded = jwtDecode<AccessTokenType>(accessToken);
+        return decoded.isLoggedIn;
+    } catch (e) {
+        console.error('Failed to decode token:', e);
+        return false;
+    }
 };
 
 export const getAuthUser = (): AccessTokenType | null => {
-    const accessToken = localStorage.getItem("token-store");
-
+    const accessToken = getAccessToken();
     if (!accessToken) return null;
-    if (accessToken) {
-        const decoded = jwtDecode(accessToken) as AccessTokenType;
-        if (decoded.isLoggedIn) return decoded;
+
+    try {
+        const decoded = jwtDecode<AccessTokenType>(accessToken);
+        return decoded.isLoggedIn ? decoded : null;
+    } catch (e) {
+        console.error('Failed to decode token:', e);
+        return null;
     }
-    return null;
 };
 
-
 export const getAuthUserRoles = (): string | null => {
-    const accessToken = localStorage.getItem('token-store');
+    const accessToken = getAccessToken();
     if (!accessToken) return null;
+
     try {
-        const decoded: { roles: string } = jwtDecode(accessToken);
+        const decoded = jwtDecode<AccessTokenType>(accessToken);
         return decoded.roles;
     } catch (e) {
         console.error('Failed to decode token:', e);
         return null;
     }
+};
+
+// Utility function for getting access token
+const getAccessToken = (): string | null => {
+    return localStorage.getItem('token-store');
 };

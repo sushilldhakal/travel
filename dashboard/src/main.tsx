@@ -17,7 +17,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <RouterProvider router={router} />
-
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,

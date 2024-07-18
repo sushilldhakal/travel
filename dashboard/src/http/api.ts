@@ -27,26 +27,41 @@ export const register = async (data: { name: string; email: string; password: st
 
 export const getTours = async () => api.get('/api/tours');
 
+export const getSingleTour = async (tourId: string) => {
+    try {
+        const response = await api.get(`/api/tours/${tourId}`);
+        const tourData = response.data;
+
+        // Assuming your backend sends breadcrumbs as part of the tour data
+        const breadcrumbs = tourData.breadcrumbs || []; // Adjust as per actual API response structure
+
+        return {
+            ...tourData,
+            breadcrumbs: breadcrumbs,
+        };
+    } catch (error) {
+        throw new Error(`Error fetching tour: ${error.message}`);
+    }
+};
 
 export const createTour = async (data: FormData) =>
-    api.post('/api/tours', data, {
+    api.post(`/api/tours`, data, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
     });
+export const updateTour = async (data: FormData) =>
+api.patch('/api/tours/:tour_id', data, {
+    headers: {
+        'Content-Type': 'multipart/form-data',
+    },
+});
 
-export const deleteTours = async (tourId: string) => {
+export const deleteTour = async (tourId: string) => {
     try {
-        console.log(`Deleting tour with ID: ${tourId}`);
         const response = await api.delete(`/api/tours/${tourId}`);
-        console.log('Tour deleted:', response.data);
         return response.data; // Return whatever response data you expect from your backend
     } catch (error) {
-        if (error.response) {
-            console.error('Error deleting tour:', error.response.data);
-        } else {
-            console.error('Error deleting tour:', error.message);
-        }
         throw new Error(`Error deleting tour: ${error.message}`);
     }
 };

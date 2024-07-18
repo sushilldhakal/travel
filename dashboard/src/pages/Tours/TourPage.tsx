@@ -1,25 +1,16 @@
-import { getTours, deleteTours } from '@/http/api';
+import { getTours, deleteTour } from '@/http/api';
 import { Tour } from '@/Provider/types';
 import { useMutation, useQuery, QueryClient } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
-import Moment from 'react-moment';
 import {
   ColumnDef
 } from "@tanstack/react-table"
-import { ArrowUpDown, CirclePlus, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, CirclePlus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { routePaths } from '@/router';
-import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
 
@@ -35,7 +26,7 @@ const TourPage = () => {
   //@ts-ignore
 
   const mutation = useMutation({
-    mutationFn: deleteTours,
+    mutationFn: deleteTour,
     onSuccess: () => {
       // Invalidate and refetch
       QueryClient.invalidateQueries(['tours']);
@@ -92,7 +83,7 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("title")}</div>
+        <div className="capitalize"><Link to={`/dashboard/tours/${row.original._id}`}>{row.getValue("title")}</Link></div>
       ),
     },
     {
@@ -174,7 +165,12 @@ const TourPage = () => {
 
         return (
           <div>
-            <Button className="mr-2 py-1 px-2" variant="outline">Edit</Button>
+            <Button className="py-1 px-2 mr-2" variant="outline">
+              <Link to={`/dashboard/tours/${tour._id}`} className="py-1 px-2">
+                Edit
+              </Link>
+            </Button>
+
             <Button className="py-1 px-2" variant="destructive" onClick={() => handleDeleteTour(tour._id)}> Delete</Button>
           </div>
         )

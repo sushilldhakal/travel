@@ -10,14 +10,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { login } from "@/http/api"
 import { useMutation } from "@tanstack/react-query"
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import useTokenStore from '@/store';
 import { routePaths } from "@/router"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, LoaderCircle } from "lucide-react"
 import { jwtDecode } from "jwt-decode"
-import { getAuthUserRoles } from "@/layouts/AuthLayout"
 const LoginPage = () => {
 
   const navigate = useNavigate();
@@ -25,18 +24,6 @@ const LoginPage = () => {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
-
-
-  useEffect(() => {
-    const roles = getAuthUserRoles();
-    if (roles) {
-      if (roles === 'user') {
-        window.location.href = routePaths.webHome;
-      } else {
-        navigate('/dashboard/home');
-      }
-    }
-  }, [navigate]);
 
   // Mutations
   const mutation = useMutation({
@@ -46,13 +33,13 @@ const LoginPage = () => {
       const accessToken = localStorage.getItem("token-store");
       if (!accessToken) return false;
       const decoded = jwtDecode(accessToken);
-      console.log(decoded)
-      navigate('/dashboard/home');
+      if (decoded.roles === 'admin' || decoded.roles === 'seller') {
+        navigate('/dashboard/home');
+      } else {
+        navigate('/');
+      }
     },
   })
-
-
-
 
   const handleLoginSubmit = () => {
     const email = emailRef.current?.value;
@@ -102,8 +89,13 @@ const LoginPage = () => {
               </div>
               <Input ref={passwordRef} id="password" type="password" required />
             </div>
-            <Button onClick={handleLoginSubmit} className="w-full">
-              Login
+            <Button
+              onClick={handleLoginSubmit}
+              className="w-full"
+              disabled={mutation.isPending}>
+              {mutation.isPending && <LoaderCircle className="animate-spin" />}
+
+              <span className="ml-2">Sign in</span>
             </Button>
             {/* <Button variant="outline" className="w-full">
             Login with Google

@@ -1,8 +1,43 @@
 import routePaths from "../routePath";
 import { FilePlus, Footprints, Layers3, LayoutDashboard, ListCollapse, MapPin, Settings, Users } from "lucide-react";
   
+
+export const UserMenuItems = {
+  items:[
+    {
+      id: "home",
+      title: "Home",
+      type: "item",
+      icon: LayoutDashboard,
+      url: routePaths.home.base,
+    },
+    {
+      id: "tours",
+      title: "Tours",
+      type: "item",
+      icon: LayoutDashboard,
+      url: routePaths.home.tours,
+    },
+    {
+      id: "about",
+      title: "About Us",
+      type: "item",
+      icon: LayoutDashboard,
+      url: routePaths.home.about,
+    },
+    {
+      id: "contact",
+      title: "Contact Us",
+      type: "item",
+      icon: LayoutDashboard,
+      url: routePaths.home.contact,
+    }
+
+  ]
+}
+
   
-  const menuItems = {
+ export const menuItems = {
     items: [
       {
         id: "dashboard",
@@ -74,5 +109,9 @@ import { FilePlus, Footprints, Layers3, LayoutDashboard, ListCollapse, MapPin, S
     ],
       }
 
+
+
+
+
+
   
-  export default menuItems;

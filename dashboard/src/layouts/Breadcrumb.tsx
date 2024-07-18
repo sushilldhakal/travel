@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Breadcrumb,
@@ -6,7 +6,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
+import { useBreadcrumbs } from '@/Provider/BreadcrumbsProvider';
 
 interface BreadcrumbItemProps {
   title: string;
@@ -20,13 +21,11 @@ const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
 
   pathSegments.forEach((segment, index) => {
     const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
-    //const title = segment.charAt(0).toUpperCase() + segment.slice(1);
-
-    let formatted = segment.replace(/_/g, ' ');
-    formatted = formatted.replace(/\b\w/g, char => char.toUpperCase());
+    let title = segment.replace(/_/g, ' ');
+    title = title.replace(/\b\w/g, char => char.toUpperCase());
 
     breadcrumbItems.push({
-      formatted,
+      title,
       href,
       type: index < pathSegments.length - 1 ? 'link' : 'page',
     });
@@ -37,35 +36,34 @@ const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
 
 const Breadcrumbs = () => {
   const location = useLocation();
-  const breadcrumbItems = generateBreadcrumbItems(location.pathname);
+  const { breadcrumbs, updateBreadcrumbs } = useBreadcrumbs();
 
-
-
+  useEffect(() => {
+    const newBreadcrumbs = generateBreadcrumbItems(location.pathname);
+    updateBreadcrumbs(newBreadcrumbs);
+  }, [location.pathname, updateBreadcrumbs]);
 
   return (
     <div>
-
       <Breadcrumb>
         <BreadcrumbList>
-          {breadcrumbItems.map((item, index) => (
+          {breadcrumbs.map((item, index) => (
             <React.Fragment key={index}>
               <BreadcrumbItem>
                 {item.type === 'link' && item.href && (
-                  <Link to={item.href}>{item.formatted}</Link>
+                  <Link to={item.href}>{item.title}</Link>
                 )}
                 {item.type === 'page' && (
-                  <BreadcrumbPage>{item.formatted}</BreadcrumbPage>
+                  <BreadcrumbPage>{item.title}</BreadcrumbPage>
                 )}
               </BreadcrumbItem>
-              {index < breadcrumbItems.length - 1 && <BreadcrumbSeparator />}
+              {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
             </React.Fragment>
           ))}
         </BreadcrumbList>
       </Breadcrumb>
-
     </div>
-
   );
-}
+};
 
 export default Breadcrumbs;

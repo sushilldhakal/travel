@@ -1,31 +1,25 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@radix-ui/react-label';
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CalendarIcon, LoaderCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-
+import { Link } from 'react-router-dom';
 
 interface DivType {
     id: number;
     date: Date | undefined;
     content: string;
-
 }
+
+
 
 function makeid(length) {
     let result = '';
@@ -38,12 +32,14 @@ function makeid(length) {
     }
     return result;
 }
-
-const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutation, coverImageRef, fileRef }) => {
+const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, fileRef, singleTour }) => {
     const [divs, setDivs] = useState<DivType[]>([]);
     const [tripCode, setTripCode] = useState(makeid(6).toUpperCase());
     const tab = tabs.find(t => t.id === activeTab);
+
     if (!tab) return <div>Select a tab to see its content</div>;
+
+    // Function to handle adding itinerary items
     const handleAddDiv = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setDivs([...divs, {
@@ -72,16 +68,32 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
         }]);
     };
 
+    // Function to delete itinerary items
     const deleteDivs = (id: number) => {
         setDivs(divs.filter(div => div.id !== id));
     };
 
+    // Function to handle date change in itinerary items
     const handleDateChange = (id: number, newDate: Date | undefined) => {
         setDivs(divs.map(div => (div.id === id ? { ...div, date: newDate } : div)));
     };
 
+
+    // // Function to handle file selection for cover image
+    // const handleCoverImageChange = () => {
+    //     const file = coverImageRef.current?.files?.[0];
+    //     console.log('Selected cover image file:', file);
+    // };
+
+    // // Function to handle file selection for tour PDF file
+    // const handleTourFileChange = () => {
+    //     const file = fileRef.current?.files?.[0];
+    //     console.log('Selected tour PDF file:', file);
+    // };
+
+    // Render content based on active tab
     switch (tab.id) {
-        case tabs[0].id:
+        case tabs[0].id: // Overview tab
             return (
                 <Card>
                     <CardHeader>
@@ -91,7 +103,6 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                     <CardContent>
                         <div className="grid gap-6">
                             <div className="grid grid-cols-2 gap-3">
-
                                 <FormField
                                     control={form.control}
                                     name="title"
@@ -99,39 +110,55 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                         <FormItem>
                                             <FormLabel>Tour Title</FormLabel>
                                             <FormControl>
-                                                <Input
-                                                    type="text"
-                                                    className="w-full"
-                                                    {...field}
-                                                    placeholder="Enter tour title"
-                                                />
+
+                                                {
+                                                    singleTour ? <Input
+                                                        type="text"
+                                                        className="w-full"
+                                                        {...field}
+                                                        value={formData?.tour?.title}
+                                                    // value={formData?.tour?.title ?? ''}
+                                                    /> : <Input
+                                                        type="text"
+                                                        className="w-full"
+                                                        {...field}
+                                                        placeholder='Tour Title'
+                                                    // value={formData?.tour?.title ?? ''}
+                                                    />
+                                                }
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-flow-col gap-3 relative">
-                                    <FormField
-                                        control={form.control}
-                                        name="tripCode"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel> Trip Code:</FormLabel>
-                                                <FormControl className="relative">
-                                                    <Input
+                                <FormField
+                                    control={form.control}
+                                    name="tripCode"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel> Trip Code:</FormLabel>
+                                            <FormControl className="relative">
+                                                {
+                                                    singleTour ? <Input
                                                         type="text"
                                                         className="w-full"
                                                         {...field}
-
+                                                        value={formData?.tour?.tripCode}
+                                                        disabled
+                                                    /> : <Input
+                                                        type="text"
+                                                        className="w-full"
+                                                        {...field}
                                                         placeholder={tripCode}
+                                                        value={tripCode}
+                                                        disabled
                                                     />
-
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
+                                                }
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                             <div className="grid gap-3">
                                 <FormField
@@ -141,7 +168,17 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                         <FormItem>
                                             <FormLabel>Description</FormLabel>
                                             <FormControl>
-                                                <Textarea className="min-h-32" {...field} />
+                                                {
+                                                    singleTour ? <Textarea
+                                                        className="min-h-32"
+                                                        {...field}
+                                                        value={formData?.tour?.description}
+                                                    /> : <Textarea
+                                                        className="min-h-32"
+                                                        {...field}
+                                                        placeholder='Description'
+                                                    />
+                                                }
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -171,11 +208,18 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                                 <FormItem>
                                                     <FormLabel>Cover Image</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            type="file"
-                                                            className="w-full"
-                                                            {...coverImageRef}
-                                                        />
+                                                        {
+                                                            singleTour && formData?.tour?.coverImage ? (
+                                                                <span className="">
+                                                                    <img src={formData.tour.coverImage} alt={formData.tour.title} />
+                                                                </span>
+                                                            ) : (<Input
+                                                                type="file"
+                                                                className="w-full"
+                                                                {...coverImageRef}
+                                                            />)
+                                                        }
+
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -192,11 +236,19 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                                 <FormItem>
                                                     <FormLabel>Tour PDF File</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            type="file"
-                                                            className="w-full"
-                                                            {...fileRef}
-                                                        />
+
+                                                        {
+                                                            singleTour && formData?.tour?.file ?
+                                                                <div className='mt-3'>
+                                                                    <Link target='_blank' to={formData.tour.file} download>Download File</Link>
+                                                                </div>
+                                                                : <Input
+                                                                    type="file"
+                                                                    className="w-full"
+                                                                    {...fileRef}
+                                                                />
+                                                        }
+
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -204,22 +256,21 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                         />
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </CardContent>
                     <CardFooter className="border-t px-6 py-4">
                         <Button type="submit" size="sm" disabled={mutation.isPending}>
                             {mutation.isPending && <LoaderCircle className="animate-spin" />}
-                            <span className="ml-2">Submit</span>
+                            <span className="ml-2">Save</span>
                         </Button>
                     </CardFooter>
                 </Card>
             );
-        case tabs[1].id:
+        case tabs[1].id: // Itinerary tab
             return (
                 <Card>
-                    <CardHeader>
+                    {/* <CardHeader>
                         <CardTitle>Itinerary Details</CardTitle>
                         <CardDescription>Enter Itinerary step by step format</CardDescription>
                     </CardHeader>
@@ -229,7 +280,7 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                 <Label htmlFor="description">Tour Outline</Label>
                                 <Textarea
                                     id="Idescription"
-                                    defaultValue="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl nec ultricies ultricies, nunc nisl ultricies nunc, nec ultricies nunc nisl nec nunc."
+                                    defaultValue={formData?.itinerary ?? ""}
                                     className="min-h-32"
                                 />
                             </div>
@@ -281,65 +332,63 @@ const TabContent = ({ form, activeTab, formData, handleInputChange, tabs, mutati
                                 Save Changes
                             </Button>
                         </div>
-                    </CardContent>
+                    </CardContent> */}
                 </Card>
             );
-        case tabs[2].id:
+        case tabs[2].id: // Price & Dates tab
             return (
                 <Card>
                     Price & Dates
                 </Card>
             );
-
-        case tabs[3].id:
+        case tabs[3].id: // Includes/Excludes tab
             return (
                 <Card>
                     Inc+/Exc-
                 </Card>
             );
-        case tabs[4].id:
+        case tabs[4].id: // Facts tab
             return (
                 <Card>
                     Facts
                 </Card>
             );
-        case tabs[5].id:
+        case tabs[5].id: // Gallery tab
             return (
                 <Card>
                     Gallery
                 </Card>
             );
-        case tabs[6].id:
+        case tabs[6].id: // Locations tab
             return (
                 <Card>
                     Locations
                 </Card>
             );
-        case tabs[7].id:
+        case tabs[7].id: // FAQ's tab
             return (
                 <Card>
                     FAQ's
                 </Card>
             );
-        case tabs[8].id:
+        case tabs[8].id: // Downloads tab
             return (
                 <Card>
                     Downloads
                 </Card>
             );
-        case tabs[9].id:
+        case tabs[9].id: // Tabs in Display tab
             return (
                 <Card>
                     Tabs in Display
                 </Card>
             );
-        case tabs[10].id:
+        case tabs[10].id: // Enquiry tab
             return (
                 <Card>
                     Enquiry
                 </Card>
             );
-        // Add more cases for other tabs as needed
         default:
             return <div>{tab.content}</div>;
     }
