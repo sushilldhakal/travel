@@ -18,6 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, LoaderCircle } from "lucide-react"
 import { jwtDecode } from "jwt-decode"
 const LoginPage = () => {
+  console.log("login")
 
   const navigate = useNavigate();
   const setToken = useTokenStore((state) => state.setToken);
@@ -40,6 +41,7 @@ const LoginPage = () => {
       }
     },
   })
+
 
   const handleLoginSubmit = () => {
     const email = emailRef.current?.value;

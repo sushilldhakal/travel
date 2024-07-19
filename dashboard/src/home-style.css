@@ -1,0 +1,29 @@
+
+
+.main-slider .slick-dots {
+    top: 0;
+    bottom: 0;
+    right: 15px;
+    z-index: 11;
+    text-align: right;
+    width: auto;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.main-slider .slick-dots li {
+    margin: 0 0 10px;
+}
+
+.main-slider .slick-dots li button {
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
+
+.main-slider .slick-dots li.slick-active button:before {
+    opacity: .75;
+    color: black;
+    opacity: 1;
+    transform: scale(1.4);
+}

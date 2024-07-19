@@ -15,6 +15,7 @@ import Home from '@/pages/Home/Home';
 import UserHeader from '@/userDefinedComponents/User/UserHeader';
 import UserNav from '@/userDefinedComponents/User/UserNav';
 import UserFooter from '@/userDefinedComponents/User/UserFooter';
+import "../home-style.css"
 const HomeLayout = () => {
     const { token, setToken } = useTokenStore((state) => state);
     const navigate = useNavigate();
@@ -24,9 +25,9 @@ const HomeLayout = () => {
         navigate('/auth/login');
     };
 
-    if (!token) {
-        return <Navigate to="/auth/login" replace />;
-    }
+    // if (!token) {
+    //     return <Navigate to="/auth/login" replace />;
+    // }
 
 
 

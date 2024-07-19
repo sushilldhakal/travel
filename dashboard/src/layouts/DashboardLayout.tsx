@@ -17,11 +17,11 @@ const DashboardLayout = () => {
   const handleLogout = () => {
     setToken('');
     localStorage.removeItem("token-store");
-    navigate('/auth/login');
+    navigate('/');
   };
 
   if (!token) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/" state={{ path: location.pathname }} />;
   }
 
 
