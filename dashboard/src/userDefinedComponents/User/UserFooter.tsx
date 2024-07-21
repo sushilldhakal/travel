@@ -1,5 +1,41 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+import { subscribe } from "@/http/api";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 
 const UserFooter = () => {
+
+    const [email, setEmail] = useState('');
+    const { toast } = useToast();
+
+    const mutation = useMutation({
+        mutationFn: (email) => subscribe({ email }),
+        onSuccess: () => {
+            toast({
+                title: 'Success',
+                description: 'Subscribed successfully!',
+            });
+            setEmail(''); // Optionally clear the input field
+        },
+        onError: (error) => {
+            toast({
+                variant: "destructive",
+                title: 'Error',
+                description: `Subscription failed: ${error.message}`,
+                action: <ToastAction altText="Try again">Try again</ToastAction>,
+            });
+        }
+    });
+
+    const handleSubscribe = (event) => {
+        event.preventDefault();
+        if (email.trim() === '') return; // Prevent empty submissions
+        mutation.mutate(email);
+    };
+
     return (
         <footer
             className="relative z-10 bg-white pb-5 pt-20 lg:pb-5 lg:pt-[120px]"
@@ -212,21 +248,29 @@ const UserFooter = () => {
                                 >
                                     Subscribe Now
                                 </h4>
-                                <form className="flex flex-wrap pb-1 relative">
-                                    <input
+                                <form className="flex flex-wrap pb-1 relative" onSubmit={handleSubscribe}>
+                                    <Input
                                         type="email"
                                         className="mb-3 mr-3 h-[50px] w-full max-w-[220px] rounded-md border border-stroke bg-white px-5 text-sm text-body-color outline-none focus:border-primary md:max-w-[315px] lg:max-w-[250px] xl:max-w-[315px] dark:border-dark-3 dark:bg-dark dark:text-dark-6"
-                                        placeholder="Your work mail"
+                                        placeholder="Email Address"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
-                                    <button
+                                    <Button
+                                        type="submit"
+                                        disabled={mutation.isPending}
                                         className="absolute right-0 mb-3 h-[50px] rounded-md border border-transparent bg-primary px-7 text-base font-medium text-white transition hover:bg-opacity-90"
                                     >
-                                        Submit
-                                    </button>
+                                        {mutation.isPending ? 'Subscribing...' : 'Subscribe'}
+                                    </Button>
                                 </form>
-                                <p className="text-xs">
-                                    You will receive every new deals.
-                                </p>
+                                {mutation.onSucess && (
+                                    <div className="mt-3 text-sm text-success">
+                                        {mutation.data}
+                                    </div>
+                                )}
+                                You will receive every new deals.
                             </div>
                         </div>
                     </div>
@@ -297,7 +341,7 @@ const UserFooter = () => {
                         <div className="travel-copyright">
                             <p>© All Rights Reserved. </p>
                             <p>Proudly powered by <a href="https://reactjs.com/">React Js</a>
-                                <span className="sep"> | </span>eTravel by <a href="https://sushill.com.np" rel="designer">Sus Hill</a>.
+                                <span className="sep"> | </span>{new Date().getFullYear()} eTravel by <a href="https://sushill.com.np" rel="designer">Sus Hill</a>.
                             </p>
                         </div>
                     </div></div></div>

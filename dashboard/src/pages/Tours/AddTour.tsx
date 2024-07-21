@@ -63,9 +63,6 @@ const AddTour = () => {
     enabled: !!tourId, // Fetch only if tourId is available (update mode)
   });
 
-  console.log('initialTourData:', initialTourData, formData);
-
-
   const mutation = useMutation({
     mutationFn: tourId ? (values) => updateTour(tourId, values) : createTour,
     onSuccess: (data, variables) => {
@@ -193,7 +190,6 @@ const AddTour = () => {
             <div className="grid gap-3 lg:col-span-1">
               <TabContent
                 formData={form.getValues()}
-                initialTourData={initialTourData}
                 mutation={mutation}
                 form={form}
                 activeTab={activeTab}

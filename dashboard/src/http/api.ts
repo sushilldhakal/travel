@@ -60,9 +60,37 @@ api.patch('/api/tours/:tour_id', data, {
 export const deleteTour = async (tourId: string) => {
     try {
         const response = await api.delete(`/api/tours/${tourId}`);
-        return response.data; // Return whatever response data you expect from your backend
+        return response.data; 
     } catch (error) {
         throw new Error(`Error deleting tour: ${error.message}`);
     }
 };
 
+
+
+export const subscribe = async (data: { email: string }) => {
+    try {
+        const response = await api.post('/api/subscribers/add', data);
+        return response.data; 
+    } catch (error) {
+        throw new Error(`Error subscribing: ${error.message}`);
+    }
+}
+
+export const unsubscribe = async (data: { email: string }) => {
+    try {
+        const response = await api.post('/api/subscriber/remove', data);
+        return response.data;
+    } catch (error) {
+        throw new Error(`Error unsubscribing: ${error.message}`);
+    }
+}
+
+export const getAllSubscribers = async () => {
+    try {
+        const response = await api.get('/api/subscriber');
+        return response.data;
+    } catch (error) {
+        throw new Error(`Error getting all subscribers: ${error.message}`);
+    }
+}
