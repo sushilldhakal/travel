@@ -39,36 +39,33 @@ const AddTour = () => {
   const queryClient = useQueryClient();
   const { updateBreadcrumbs } = useBreadcrumbs();
   const [activeTab, setActiveTab] = useState('overview');
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    tripcode: '',
-  });
-  const [singleTour, setSingleTour] = useState<any>(false);
-
+  const [singleTour, setSingleTour] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: formData
+    defaultValues: {
+      title: '',
+      description: '',
+      tripCode: '',
+      coverImage: '',
+      file: '',
+    }
   });
-
 
   const coverImageRef = form.register('coverImage');
   const fileRef = form.register('file');
 
-
-  // Fetch initial tour data if tourId is provided (for update mode)
   const { data: initialTourData, isLoading: initialLoading } = useQuery({
     queryKey: ['tours', tourId],
-    queryFn: () => getSingleTour(tourId),
-    enabled: !!tourId, // Fetch only if tourId is available (update mode)
+    queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
+    enabled: !!tourId,
   });
 
   const mutation = useMutation({
-    mutationFn: tourId ? (values) => updateTour(tourId, values) : createTour,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries(['singleTour', tourId]); // Invalidate single tour query
-      const route = tourId ? `/dashboard/tours/${tourId}` : '/dashboard/tours'; // Determine route based on create or update
-      navigate(route); // Navigate to view or list page after mutation
+    mutationFn: (values: FormData) => tourId ? updateTour(tourId, values) : createTour(values),
+    onSuccess: (_data, _variables) => {
+      queryClient.invalidateQueries({ queryKey: ['singleTour', tourId] });
+      const route = tourId ? `/dashboard/tours/${tourId}` : '/dashboard/tours';
+      navigate(route);
       console.log('Tour saved successfully');
     },
     onError: (error) => {
@@ -77,10 +74,14 @@ const AddTour = () => {
   });
 
   const handleDeleteTour = async () => {
+    if (!tourId) {
+      console.error('Tour ID is undefined');
+      return;
+    }
     try {
-      await deleteTour(tourId); // Assuming deleteTour is your API function for deleting a tour
-      queryClient.invalidateQueries(['singleTour', tourId]); // Invalidate single tour query
-      navigate('/dashboard/tours'); // Navigate to tours list after deletion
+      await deleteTour(tourId);
+      queryClient.invalidateQueries({ queryKey: ['singleTour', tourId] });
+      navigate('/dashboard/tours');
       console.log('Tour deleted successfully');
     } catch (error) {
       console.error('Error deleting tour:', error);
@@ -89,7 +90,7 @@ const AddTour = () => {
 
   useEffect(() => {
     if (initialTourData && initialTourData.breadcrumbs && initialTourData.breadcrumbs.length > 0) {
-      const breadcrumbLabel = initialTourData.breadcrumbs[0].label; // Use the first breadcrumb label
+      const breadcrumbLabel = initialTourData.breadcrumbs[0].label;
       updateBreadcrumbs([
         { title: 'Dashboard', href: '/dashboard', type: 'link' },
         { title: 'Tours', href: '/dashboard/tours', type: 'link' },
@@ -97,7 +98,6 @@ const AddTour = () => {
       ]);
       setSingleTour(true);
     } else if (tourId) {
-      // If no breadcrumbs found but tourId is present, use a fallback breadcrumb
       updateBreadcrumbs([
         { title: 'Dashboard', href: '/dashboard', type: 'link' },
         { title: 'Tours', href: '/dashboard/tours', type: 'link' },
@@ -105,7 +105,6 @@ const AddTour = () => {
       ]);
       setSingleTour(true);
     } else {
-      // Default breadcrumb for add tour page
       updateBreadcrumbs([
         { title: 'Dashboard', href: '/dashboard', type: 'link' },
         { title: 'Tours', href: '/dashboard/tours', type: 'link' },
@@ -115,8 +114,7 @@ const AddTour = () => {
     }
   }, [initialTourData, tourId, updateBreadcrumbs]);
 
-
-  const onSubmit = async (values) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!values) {
       return;
     }
@@ -124,29 +122,22 @@ const AddTour = () => {
     formdata.append('title', values.title);
     formdata.append('tripCode', values.tripCode);
     formdata.append('description', values.description);
-    formdata.append('coverImage', values.coverImage[0]);
-    formdata.append('file', values.file[0]);
+    formdata.append('coverImage', values.coverImage);
+    formdata.append('file', values.file);
 
     try {
       await mutation.mutateAsync(formdata);
-      // Optionally reset form after successful submission
       form.reset();
     } catch (error) {
       console.error('Error creating tour:', error);
     }
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    onSubmit(form.getValues());
-  };
-
   useEffect(() => {
-    // Set form values when initialTourData changes (after fetch)
     if (initialTourData) {
-      form.reset(initialTourData); // Reset form with fetched data
+      form.reset(initialTourData);
     }
-  }, [initialTourData]);
+  }, [initialTourData, form]);
 
   if (initialLoading) {
     return <LoaderCircle className="animate-spin" />;
@@ -154,12 +145,13 @@ const AddTour = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="flex min-h-screen w-full flex-col">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-screen w-full flex-col">
         <div className="flex min-h-screen w-full flex-col">
           <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-            {tourId ? (<Link to="/dashboard/tours">
-              <Button className="py-1 px-2" variant="destructive" onClick={handleDeleteTour}> Delete</Button>
-            </Link>
+            {tourId ? (
+              <Link to="/dashboard/tours">
+                <Button className="py-1 px-2" variant="destructive" onClick={handleDeleteTour}> Delete</Button>
+              </Link>
             ) : (
               <Link to="/dashboard/tours">
                 <Button size="sm" variant={'outline'}>
@@ -169,7 +161,7 @@ const AddTour = () => {
                 </Button>
               </Link>
             )}
-            <Button type="submit" onClick={handleSubmit} size="sm">
+            <Button type="submit" size="sm">
               {mutation.isPending && <LoaderCircle className="animate-spin" />}
               <span className="ml-2">{tourId ? 'Update Tour' : 'Create Tour'}</span>
             </Button>
@@ -193,9 +185,13 @@ const AddTour = () => {
                 mutation={mutation}
                 form={form}
                 activeTab={activeTab}
+                //@ts-ignore
                 tabs={tabs}
+                //@ts-ignore
                 coverImageRef={coverImageRef}
+                //@ts-ignore
                 fileRef={fileRef}
+                //@ts-ignore
                 singleTour={singleTour}
               />
             </div>

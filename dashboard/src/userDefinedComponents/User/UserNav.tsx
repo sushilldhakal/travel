@@ -7,26 +7,46 @@ import { Link, useNavigate } from "react-router-dom";
 import { isValidToken } from "@/layouts/AuthLayout";
 import { useEffect, useState } from "react";
 import useTokenStore from "@/store";
-
-function classNames(...classes) {
-    return classes.filter(Boolean).join(' ')
-}
-
-
+import { jwtDecode } from "jwt-decode";
 
 const UserNav = () => {
-    const { token, setToken } = useTokenStore((state) => state);
+    const { setToken } = useTokenStore((state) => state);
     const navigate = useNavigate();
     const [valid, setValid] = useState(false);
+    const [dashRight, setDashRight] = useState(false);
+
 
     useEffect(() => {
         const accessToken = localStorage.getItem("token-store");
-        if (isValidToken(accessToken)) {
+        window.addEventListener('scroll', isSticky);
+
+        if (accessToken && isValidToken(accessToken)) {
             setValid(true);
+            const decoded = jwtDecode(accessToken) as { roles?: string };
+
+            if (decoded.roles === 'admin' || decoded.roles === 'seller') {
+                setDashRight(true);
+            }
         } else {
             setValid(false);
         }
+
+        return () => {
+            window.removeEventListener('scroll', isSticky);
+        };
     }, []);
+
+    const isSticky = () => {
+        const header = document.getElementById('main-header');
+        const scrollTop = window.scrollY;
+        if (header) {
+            if (scrollTop >= 40) {
+                header.classList.add('sticky');
+            } else {
+                header.classList.remove('sticky');
+            }
+        }
+    };
 
     const handleLogout = () => {
         setToken('');
@@ -37,7 +57,7 @@ const UserNav = () => {
 
 
     return (
-        <Disclosure as="nav" className="bg-foreground">
+        <Disclosure as="nav" className="bg-foreground main-header z-10 top-0" id="main-header">
             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
                 <div className="relative flex h-16 items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -60,11 +80,7 @@ const UserNav = () => {
                                     <a
                                         key={item.id}
                                         href={item.url}
-                                        aria-current={item.current ? 'page' : undefined}
-                                        className={classNames(
-                                            item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                                            'rounded-md px-3 py-2 text-sm font-medium',
-                                        )}
+                                        className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"
                                     >
                                         {item.title}
                                     </a>
@@ -103,7 +119,14 @@ const UserNav = () => {
                                         <MenuItems
                                             transition
                                             className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-                                        >
+                                        >{dashRight
+                                            ?
+                                            <MenuItem>
+                                                <Link to={'/dashboard/home'} className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+                                                    Dashboard
+                                                </Link>
+                                            </MenuItem> : ''
+                                            }
                                             <MenuItem>
                                                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
                                                     Your Profile
@@ -135,12 +158,8 @@ const UserNav = () => {
                         <DisclosureButton
                             key={item.id}
                             as="a"
-                            href={item.href}
-                            aria-current={item.current ? 'page' : undefined}
-                            className={classNames(
-                                item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                                'block rounded-md px-3 py-2 text-base font-medium',
-                            )}
+                            href={item.url}
+                            className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium"
                         >
                             {item.title}
                         </DisclosureButton>

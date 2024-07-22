@@ -12,7 +12,7 @@ const UserFooter = () => {
     const { toast } = useToast();
 
     const mutation = useMutation({
-        mutationFn: (email) => subscribe({ email }),
+        mutationFn: (email: string) => subscribe({ email }),
         onSuccess: () => {
             toast({
                 title: 'Success',
@@ -30,7 +30,7 @@ const UserFooter = () => {
         }
     });
 
-    const handleSubscribe = (event) => {
+    const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (email.trim() === '') return; // Prevent empty submissions
         mutation.mutate(email);
@@ -38,7 +38,7 @@ const UserFooter = () => {
 
     return (
         <footer
-            className="relative z-10 bg-white pb-5 pt-20 lg:pb-5 lg:pt-[120px]"
+            className="relative z-1 bg-white pb-5 pt-20 lg:pb-5 lg:pt-[120px]"
         >
             <div className="container mx-auto">
                 <div className="-mx-4 flex flex-wrap">
@@ -265,11 +265,6 @@ const UserFooter = () => {
                                         {mutation.isPending ? 'Subscribing...' : 'Subscribe'}
                                     </Button>
                                 </form>
-                                {mutation.onSucess && (
-                                    <div className="mt-3 text-sm text-success">
-                                        {mutation.data}
-                                    </div>
-                                )}
                                 You will receive every new deals.
                             </div>
                         </div>

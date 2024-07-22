@@ -35,10 +35,10 @@ const RegisterPage = () => {
   });
 
   const handleRegisterSubmit = () => {
-    const email = emailRef.current?.value;
-    const password = passwordRef.current?.value;
-    const name = nameRef.current?.value;
-    console.log("data", { email, password, name })
+    const email = emailRef.current?.value ?? '';
+    const password = passwordRef.current?.value ?? '';
+    const name = nameRef.current?.value ?? '';
+    console.log("data", { email, password, name });
 
     mutation.mutate({ name, email, password });
   };
@@ -64,7 +64,6 @@ const RegisterPage = () => {
               <Input
                 id="email"
                 type="email"
-                ref={emailRef}
                 placeholder="m@example.com"
                 required
                 ref={emailRef}

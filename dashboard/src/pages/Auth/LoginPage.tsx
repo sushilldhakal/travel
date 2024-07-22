@@ -31,7 +31,7 @@ const LoginPage = () => {
       setToken(response.data.accessToken);
       const accessToken = localStorage.getItem("token-store");
       if (!accessToken) return false;
-      const decoded = jwtDecode(accessToken);
+      const decoded = jwtDecode(accessToken) as { roles?: string };
       if (decoded.roles === 'admin' || decoded.roles === 'seller') {
         navigate('/dashboard/home');
       } else {

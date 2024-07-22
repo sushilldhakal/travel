@@ -6,15 +6,19 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from '@/components/ui/breadcrumb';
 import { useBreadcrumbs } from '@/Provider/BreadcrumbsProvider';
 
+// Define the interface for breadcrumb items
 interface BreadcrumbItemProps {
   title: string;
   href?: string;
   type?: 'link' | 'page';
+  link?: string;
 }
 
+
+// Function to generate breadcrumb items from pathname
 const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
   const pathSegments = pathname.split('/').filter(Boolean);
   const breadcrumbItems: BreadcrumbItemProps[] = [];
@@ -28,13 +32,15 @@ const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
       title,
       href,
       type: index < pathSegments.length - 1 ? 'link' : 'page',
+      link: href,
     });
   });
 
   return breadcrumbItems;
 };
 
-const Breadcrumbs = () => {
+// Breadcrumbs component
+const Breadcrumbs: React.FC = () => {
   const location = useLocation();
   const { breadcrumbs, updateBreadcrumbs } = useBreadcrumbs();
 

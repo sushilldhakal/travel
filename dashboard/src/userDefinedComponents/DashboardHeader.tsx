@@ -10,7 +10,7 @@ import {
 import { ModeToggle } from "./ModeToggle"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-const DashboardHeader = ({ handleLogout }) => {
+const DashboardHeader = ({ handleLogout }: { handleLogout: () => void }) => {
 
   const handleClick = () => {
     handleLogout();
@@ -61,9 +61,6 @@ const DashboardHeader = ({ handleLogout }) => {
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
-
-
-
   )
 }
 

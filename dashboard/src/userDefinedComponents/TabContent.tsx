@@ -1,27 +1,23 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@radix-ui/react-label';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CalendarIcon, LoaderCircle } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { LoaderCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-interface DivType {
-    id: number;
-    date: Date | undefined;
-    content: string;
-}
+// interface DivType {
+//     id: number;
+//     date: Date | undefined;
+//     content: string;
+// }
 
 
 
-function makeid(length) {
+function makeid(length: number) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     const charactersLength = characters.length;
@@ -32,66 +28,27 @@ function makeid(length) {
     }
     return result;
 }
-const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, fileRef, singleTour }) => {
-    const [divs, setDivs] = useState<DivType[]>([]);
-    const [tripCode, setTripCode] = useState(makeid(6).toUpperCase());
+const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, fileRef, singleTour }: {
+    //@ts-ignore
+    form: any;
+    activeTab: string;
+    //@ts-ignore
+    formData: any; Data
+    //@ts-ignore
+    tabs: { id: string; content: React.ReactNode }[];
+    mutation: { isPending: boolean };
+    coverImageRef: React.RefObject<HTMLInputElement>;
+    fileRef: React.RefObject<HTMLInputElement>;
+    //@ts-ignore
+    singleTour: string;
+}) => {
+    const [tripCode] = useState(makeid(6).toUpperCase());
     const tab = tabs.find(t => t.id === activeTab);
 
     if (!tab) return <div>Select a tab to see its content</div>;
 
-    // Function to handle adding itinerary items
-    const handleAddDiv = (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-        setDivs([...divs, {
-            id: divs.length,
-            date: undefined,
-            content: `<AccordionItem value="item-${divs.length}">
-                    <AccordionTrigger>
-                        <div className="flex items-center justify-between">
-                            <span><Input type="text" defaultValue="Day ${divs.length + 1} - Arrival" /></span>
-                            <PlusIcon className="w-4 h-4" />
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <div className="grid gap-3">
-                            <Input type="text" placeholder="Event or activity" />
-                            <Textarea placeholder="Description" className="min-h-32" />
-                            <div className="flex items-center gap-2">
-                                <Input type="time" />
-                                <span>to</span>
-                                <Input type="time" />
-                            </div>
-                            <Button onClick={() => deleteDivs(divs.length)}>Delete</Button>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>`
-        }]);
-    };
+    console.log(form)
 
-    // Function to delete itinerary items
-    const deleteDivs = (id: number) => {
-        setDivs(divs.filter(div => div.id !== id));
-    };
-
-    // Function to handle date change in itinerary items
-    const handleDateChange = (id: number, newDate: Date | undefined) => {
-        setDivs(divs.map(div => (div.id === id ? { ...div, date: newDate } : div)));
-    };
-
-
-    // // Function to handle file selection for cover image
-    // const handleCoverImageChange = () => {
-    //     const file = coverImageRef.current?.files?.[0];
-    //     console.log('Selected cover image file:', file);
-    // };
-
-    // // Function to handle file selection for tour PDF file
-    // const handleTourFileChange = () => {
-    //     const file = fileRef.current?.files?.[0];
-    //     console.log('Selected tour PDF file:', file);
-    // };
-
-    // Render content based on active tab
     switch (tab.id) {
         case tabs[0].id: // Overview tab
             return (
@@ -110,20 +67,17 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
                                         <FormItem>
                                             <FormLabel>Tour Title</FormLabel>
                                             <FormControl>
-
                                                 {
                                                     singleTour ? <Input
                                                         type="text"
                                                         className="w-full"
                                                         {...field}
                                                         value={formData?.tour?.title}
-                                                    // value={formData?.tour?.title ?? ''}
                                                     /> : <Input
                                                         type="text"
                                                         className="w-full"
                                                         {...field}
                                                         placeholder='Tour Title'
-                                                    // value={formData?.tour?.title ?? ''}
                                                     />
                                                 }
                                             </FormControl>
@@ -187,7 +141,7 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
                             </div>
                             <div className="grid gap-3 auto-rows-max grid-cols-2">
                                 <Label htmlFor="status">Tour Status</Label>
-                                <Select id="status">
+                                <Select>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
@@ -216,10 +170,9 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
                                                             ) : (<Input
                                                                 type="file"
                                                                 className="w-full"
-                                                                {...coverImageRef}
+                                                                ref={coverImageRef}
                                                             />)
                                                         }
-
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -236,7 +189,6 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
                                                 <FormItem>
                                                     <FormLabel>Tour PDF File</FormLabel>
                                                     <FormControl>
-
                                                         {
                                                             singleTour && formData?.tour?.file ?
                                                                 <div className='mt-3'>
@@ -245,10 +197,9 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
                                                                 : <Input
                                                                     type="file"
                                                                     className="w-full"
-                                                                    {...fileRef}
+                                                                    ref={fileRef}
                                                                 />
                                                         }
-
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -270,69 +221,7 @@ const TabContent = ({ form, activeTab, formData, tabs, mutation, coverImageRef, 
         case tabs[1].id: // Itinerary tab
             return (
                 <Card>
-                    {/* <CardHeader>
-                        <CardTitle>Itinerary Details</CardTitle>
-                        <CardDescription>Enter Itinerary step by step format</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-6">
-                            <div className="grid gap-3">
-                                <Label htmlFor="description">Tour Outline</Label>
-                                <Textarea
-                                    id="Idescription"
-                                    defaultValue={formData?.itinerary ?? ""}
-                                    className="min-h-32"
-                                />
-                            </div>
-                            <div className="grid gap-3">
-                                <Button type="button" className="w-32 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium" onClick={handleAddDiv}>Add Itinerary</Button>
-                                <Accordion type="single" collapsible>
-                                    {divs.map(({ id, date, content }) => (
-                                        <AccordionItem key={id} value={`item-${id}`}>
-                                            <AccordionTrigger>
-                                                <div className="flex items-center justify-between">
-                                                    <span><Input type="text" defaultValue={`Day ${id + 1} - Arrival`} /></span>
-                                                    <Button className="text-xs ml-5 px-1 py-1 leading-4" variant="destructive" onClick={() => deleteDivs(id)}>Delete</Button>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                <div className="grid gap-3">
-                                                    <Input type="text" placeholder="Itinerary Title" />
-                                                    <Textarea placeholder="Description" className="min-h-32" />
-                                                    <div className="flex items-center gap-2">
-                                                        <Label htmlFor="date">Itinerary Date and Time</Label>
-                                                        <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <Button
-                                                                    variant={"outline"}
-                                                                    className={`w-[280px] justify-start text-left font-normal ${!date ? "text-muted-foreground" : ""}`}
-                                                                >
-                                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0">
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={date}
-                                                                    onSelect={(newDate) => handleDateChange(id, newDate)}
-                                                                    initialFocus
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                        <Input type="time" />
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
-                            </div>
-                            <Button type="submit" className="ml-auto">
-                                Save Changes
-                            </Button>
-                        </div>
-                    </CardContent> */}
+                    {/* Itinerary content */}
                 </Card>
             );
         case tabs[2].id: // Price & Dates tab

@@ -1,24 +1,13 @@
-import { getTours, deleteTours, getUsers } from '@/http/api';
+import { getUsers } from '@/http/api';
 import { Tour } from '@/Provider/types';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
 import {
   ColumnDef
 } from "@tanstack/react-table"
-import { ArrowUpDown, CirclePlus, MoreHorizontal } from "lucide-react"
-
+import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Skeleton } from '@/components/ui/skeleton';
-import { Link } from 'react-router-dom';
-import { routePaths } from '@/router';
-import { useState } from 'react';
 
 const UserPage = () => {
 
@@ -28,26 +17,8 @@ const UserPage = () => {
     staleTime: 10000, // in Milli-seconds
   });
 
-  // const alltours = data?.data.tours.map(object => ({ ...data }))
-  // const check = Array.isArray(alltours)
-  //@ts-ignore
-
-
   const tableData = data?.data;
-
-  console.log(tableData);
-
-
-  // data?.data.tours.map(getDetails)
-
-  // function getDetails(tour) {
-  //   console.log(tour);
-  // }
-
-
   const columns: ColumnDef<Tour>[] = [
-
-
     {
       accessorKey: "name",
       header: ({ column }) => {

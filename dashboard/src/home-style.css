@@ -22,8 +22,43 @@
 }
 
 .main-slider .slick-dots li.slick-active button:before {
-    opacity: .75;
-    color: black;
+    opacity: 1;
+    color: rgb(255, 255, 255);
     opacity: 1;
     transform: scale(1.4);
 }
+
+.main-slider .slick-dots li button:before{
+    color: rgb(255, 255, 255);
+}
+
+.pattern-2 .showPattern::before{
+   
+    content: '';
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: #000;
+    left: 0;
+    top: 0;
+    opacity: 0.2; 
+    z-index: 1;
+}
+
+.pattern-2 .showPattern::after {
+
+    content:'';
+    background: url('https://raw.githubusercontent.com/sushilldhakal/lordbuddha/master/assets/img/pattern-2.png');
+    background-repeat: repeat;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      opacity: 0.4;
+        z-index: 2;
+    }
+
+    .data-\[disabled\]\:pointer-events-none[data-disabled] {
+        pointer-events: auto;
+    }

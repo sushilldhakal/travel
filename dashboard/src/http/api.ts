@@ -1,5 +1,5 @@
 import useTokenStore from '@/store';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL,
@@ -31,16 +31,17 @@ export const getSingleTour = async (tourId: string) => {
     try {
         const response = await api.get(`/api/tours/${tourId}`);
         const tourData = response.data;
-
-        // Assuming your backend sends breadcrumbs as part of the tour data
-        const breadcrumbs = tourData.breadcrumbs || []; // Adjust as per actual API response structure
-
+        const breadcrumbs = tourData.breadcrumbs || [];
         return {
             ...tourData,
             breadcrumbs: breadcrumbs,
         };
-    } catch (error) {
-        throw new Error(`Error fetching tour: ${error.message}`);
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
     }
 };
 
@@ -50,19 +51,22 @@ export const createTour = async (data: FormData) =>
             'Content-Type': 'multipart/form-data',
         },
     });
-export const updateTour = async (data: FormData) =>
-api.patch('/api/tours/:tour_id', data, {
-    headers: {
-        'Content-Type': 'multipart/form-data',
-    },
-});
-
+export const updateTour = async (tourId: string, data: FormData) =>
+    api.patch(`/api/tours/${tourId}`, data, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
 export const deleteTour = async (tourId: string) => {
     try {
         const response = await api.delete(`/api/tours/${tourId}`);
         return response.data; 
     } catch (error) {
-        throw new Error(`Error deleting tour: ${error.message}`);
+        if (isAxiosError(error)) {
+            throw new Error(`Error deleting tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error deleting tour: ${String(error)}`);
+        }
     }
 };
 
@@ -73,7 +77,11 @@ export const subscribe = async (data: { email: string }) => {
         const response = await api.post('/api/subscribers/add', data);
         return response.data; 
     } catch (error) {
-        throw new Error(`Error subscribing: ${error.message}`);
+        if (isAxiosError(error)) {
+            throw new Error(`Error Subscribing: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error Subscribing: ${String(error)}`);
+        }
     }
 }
 
@@ -82,7 +90,11 @@ export const unsubscribe = async (data: { email: string }) => {
         const response = await api.post('/api/subscriber/remove', data);
         return response.data;
     } catch (error) {
-        throw new Error(`Error unsubscribing: ${error.message}`);
+        if (isAxiosError(error)) {
+            throw new Error(`Error unsubscribing: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error unsubscribing: ${String(error)}`);
+        }
     }
 }
 
@@ -91,6 +103,10 @@ export const getAllSubscribers = async () => {
         const response = await api.get('/api/subscriber');
         return response.data;
     } catch (error) {
-        throw new Error(`Error getting all subscribers: ${error.message}`);
+        if (isAxiosError(error)) {
+            throw new Error(`Error getting all subscribers: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error getting all subscribers: ${String(error)}`);
+        }
     }
 }

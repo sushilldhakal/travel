@@ -2,21 +2,21 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import Icon from './Icon';
 
-const MenuItem = ({ item }) => {
+const MenuItem = ({ item }: { item: MenuItemType }) => {
   const location = useLocation(); // Hook to get current location
   const [isOpen, setIsOpen] = useState(localStorage.getItem(`menu-${item.id}`) === 'true');
-
 
   useEffect(() => {
     localStorage.setItem(`menu-${item.id}`, isOpen.toString()); // Store isOpen state in localStorage
   }, [isOpen, item.id]);
-  const toggleChildren = (e) => {
+
+  const toggleChildren = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent the link from navigating when the toggle button is clicked
     setIsOpen(!isOpen);
   };
 
   // Function to determine if NavLink is active
-  const isActive = (url) => location.pathname === url;
+  const isActive = (url: string) => location.pathname === url;
 
   return (
     <div className={`menu-item`}>
@@ -39,8 +39,8 @@ const MenuItem = ({ item }) => {
         </div>
       ) : (
         <NavLink
-          to={item.url}
-          className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url) ? 'bg-muted' : ''}`}
+          to={item.url || ''}
+          className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted' : ''}`}
         >
           {<item.icon />}
           {item.title}
@@ -57,4 +57,11 @@ const MenuItem = ({ item }) => {
   );
 };
 
+interface MenuItemType {
+  id: string;
+  title: string;
+  url?: string;
+  icon: React.ComponentType;
+  children?: MenuItemType[];
+}
 export default MenuItem;

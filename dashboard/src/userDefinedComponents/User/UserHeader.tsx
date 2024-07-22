@@ -1,24 +1,12 @@
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-// import { faHouse } from '@awesome.me/kit-KIT_CODE/icons/classic/solid'
-// import { faCat } from '@awesome.me/kit-KIT_CODE/icons/sharp/solid'
-// import { faDog } from '@awesome.me/kit-KIT_CODE/icons/sharp-duotone/solid'
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFacebookF, faYoutube, faInstagram, faTwitter, faLinkedin, faAirbnb } from '@fortawesome/free-brands-svg-icons'
 import { faClock, faPhone } from '@fortawesome/free-solid-svg-icons'
 import { UserMenuItems } from "@/layouts/MenuItems";
-// import MenuItem from "../MenuItem";
-import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link } from "react-router-dom";
 
-function classNames(...classes) {
-    return classes.filter(Boolean).join(' ')
-}
-
-
 const UserHeader = () => {
-
     return (
         <Disclosure as="nav" className="h-10 bg-foreground">
             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -94,13 +82,8 @@ const UserHeader = () => {
                         <DisclosureButton
                             key={item.id}
                             as="a"
-                            href={item.href}
-                            aria-current={item.current ? 'page' : undefined}
-                            className={classNames(
-                                item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                                'block rounded-md px-3 py-2 text-base font-medium',
-                            )}
-                        >
+                            href={item.url}
+                            className='text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium'>
                             {item.title}
                         </DisclosureButton>
                     ))}

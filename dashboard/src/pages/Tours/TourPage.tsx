@@ -1,6 +1,6 @@
 import { getTours, deleteTour } from '@/http/api';
 import { Tour } from '@/Provider/types';
-import { useMutation, useQuery, QueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
 import {
   ColumnDef
@@ -21,44 +21,36 @@ const TourPage = () => {
     queryFn: getTours,
   });
 
-  // const alltours = data?.data.tours.map(object => ({ ...data }))
-  // const check = Array.isArray(alltours)
-  //@ts-ignore
+  const queryClient = useQueryClient();
+
 
   const mutation = useMutation({
     mutationFn: deleteTour,
     onSuccess: () => {
       // Invalidate and refetch
-      QueryClient.invalidateQueries(['tours']);
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Tour deleted successfully",
+        description: "The tour has been deleted successfully.",
+      });
     },
     onError: (error) => {
       console.error("Error deleting tour:", error);
     }
   });
 
-  const handleDeleteTour = async (tourId) => {
+  const handleDeleteTour = async (tourId: string) => {
     try {
       await mutation.mutateAsync(tourId);
     } catch (error) {
-      console.log("error", error.message);
+      console.log("error", (error as Error).message);
     }
   };
-
-
   const tableData = data?.data.tours;
-
-  // data?.data.tours.map(getDetails)
-
-  // function getDetails(tour) {
-  //   console.log(tour);
-  // }
-
-
   const columns: ColumnDef<Tour>[] = [
-
     {
       accessorKey: "coverImage",
-      header: ({ column }) => {
+      header: () => {
         return (
           <span>Image</span>
         )
@@ -91,9 +83,13 @@ const TourPage = () => {
       cell: ({ row }) => {
         return (
           <div>
-            {row.original.author.map((autho, i) => (
-              <div className="capitalize" key={i}>{autho.name}</div>
-            ))}
+            {Array.isArray(row.original.author) ? (
+              row.original.author.map((autho, i) => (
+                <div className="capitalize" key={i}>{autho.name}</div>
+              ))
+            ) : (
+              <div className="capitalize">{row.original.author.name}</div>
+            )}
           </div>
         );
       }
@@ -153,9 +149,10 @@ const TourPage = () => {
           </Button>
         )
       },
-      cell: (row) => (
-        moment(row.getValue("createdAt"), "").format("LL")
-      )
+      cell: ({ row }) => {
+        const createdAt = row.getValue("createdAt")
+        return createdAt ? moment(createdAt.toString()).format("LL") : ""
+      }
     },
     {
       id: "actions",
