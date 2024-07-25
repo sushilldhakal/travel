@@ -10,8 +10,10 @@ const routePaths = {
     editTour: "/dashboard/tours/edit_tour/:tourId",
     users: "/dashboard/users",
     addUser: "/dashboard/users/add_user",
+    editUser: "/dashboard/users/:userId",
     tourSetting: "/dashboard/tours/tour_setting",
     tourCategory: "/dashboard/tours/tour_category",
+    subscribers: "/dashboard/subscribers",
   },
   home: {
     base: "/",

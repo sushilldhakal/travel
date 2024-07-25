@@ -8,16 +8,35 @@ import {
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router-dom';
+import useTokenStore from '@/store';
+import { jwtDecode } from 'jwt-decode';
+import { useEffect, useState } from 'react';
 
 const UserPage = () => {
+  const { token } = useTokenStore(state => state);
+  const decodedToken = jwtDecode(token!);
+  const userId = decodedToken.sub; // Assuming JWT has 'sub' field for user ID
+  const userRole = decodedToken.roles; // Assuming JWT has 'roles' field
+
+  const [tableData, setTableData] = useState([]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['users'],
     queryFn: getUsers,
-    staleTime: 10000, // in Milli-seconds
+    staleTime: 10000, // in Milliseconds
   });
 
-  const tableData = data?.data;
+  useEffect(() => {
+    if (data && !tableData.length) {
+      if (userRole !== 'admin') {
+        setTableData(data.data.filter(user => user._id === userId));
+      } else {
+        setTableData(data.data);
+      }
+    }
+  }, [data, tableData.length, userId, userRole]);
+
   const columns: ColumnDef<Tour>[] = [
     {
       accessorKey: "name",
@@ -33,7 +52,7 @@ const UserPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("name")}</div>
+        <div className="capitalize"><Link to={`/dashboard/users/${row.original._id}`}>{row.getValue("name")}</Link></div>
       ),
     },
     {

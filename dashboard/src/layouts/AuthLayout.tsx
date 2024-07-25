@@ -32,6 +32,29 @@ export const getAuthUserRoles = (): string | null => {
     }
 };
 
+
+interface AdminRouteProps {
+    children?: ReactNode;
+}
+
+export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+    const accessToken = getAccessToken();
+
+    if (!accessToken) {
+        return <Navigate to="/login" />; // Redirect to login if not authenticated
+    }
+
+    const userWithRoles = jwtDecode<AccessTokenType>(accessToken);
+    const userRole = userWithRoles.roles;
+
+    if (userRole !== 'admin') {
+        return <Navigate to="/dashboard/users" />;
+    }
+
+    return children ? <>{children}</> : <Outlet />;
+};
+
+
 const AuthLayout: React.FC = () => {
     const accessToken = getAccessToken();
     if (!isValidToken(accessToken)) {

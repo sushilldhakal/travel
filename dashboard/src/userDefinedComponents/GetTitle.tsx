@@ -18,7 +18,7 @@ const GetTitle: React.FC = () => {
     const lastSegment = pathSegments[pathSegments.length - 1];
     const matchingBreadcrumb = breadcrumbs.find(breadcrumb => breadcrumb.href?.endsWith(lastSegment));
     if (matchingBreadcrumb) {
-      setPageTitle(matchingBreadcrumb.title);
+      setPageTitle(matchingBreadcrumb.label);
     } else {
       setPageTitle(formatTitle(lastSegment));
     }

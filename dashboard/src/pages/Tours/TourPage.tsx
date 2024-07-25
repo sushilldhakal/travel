@@ -13,15 +13,38 @@ import { Link } from 'react-router-dom';
 import { routePaths } from '@/router';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
+import useTokenStore from '@/store';
+import { jwtDecode } from 'jwt-decode';
+import { useEffect, useState } from 'react';
 
 const TourPage = () => {
   const { toast } = useToast()
+  const { token } = useTokenStore(state => state);
+  const decodedToken = jwtDecode(token);
+  const currentUserRole = decodedToken.roles || "";
+  const currentUserId = decodedToken.sub;
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tours'],
     queryFn: getTours,
   });
 
   const queryClient = useQueryClient();
+
+  const [filteredTours, setFilteredTours] = useState([]);
+
+  useEffect(() => {
+    if (data) {
+      if (currentUserRole === "admin") {
+        setFilteredTours(data.data.tours);
+      } else {
+        const userTours = data.data.tours.filter(tour => tour.author.some(author => author._id === currentUserId));
+        setFilteredTours(userTours);
+      }
+    }
+  }, [data, currentUserRole, currentUserId]);
+
+
 
 
   const mutation = useMutation({
@@ -46,7 +69,7 @@ const TourPage = () => {
       console.log("error", (error as Error).message);
     }
   };
-  const tableData = data?.data.tours;
+  const tableData = filteredTours;
   const columns: ColumnDef<Tour>[] = [
     {
       accessorKey: "coverImage",
@@ -75,7 +98,7 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize"><Link to={`/dashboard/tours/${row.original._id}`}>{row.getValue("title")}</Link></div>
+        <div className="capitalize"><Link to={`/dashboard/tours/edit_tour/${row.original._id}`}>{row.getValue("title")}</Link></div>
       ),
     },
     {
@@ -163,7 +186,7 @@ const TourPage = () => {
         return (
           <div>
             <Button className="py-1 px-2 mr-2" variant="outline">
-              <Link to={`/dashboard/tours/${tour._id}`} className="py-1 px-2">
+              <Link to={`/dashboard/tours/edit_tour/${tour._id}`} className="py-1 px-2">
                 Edit
               </Link>
             </Button>

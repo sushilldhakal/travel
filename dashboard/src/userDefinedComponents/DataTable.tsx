@@ -30,9 +30,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useEffect } from "react"
 
 
-//@ts-ignore
+//@ts-expect-error
 export function DataTable({ data, columns, place, colum }: { data: Array<any>, columns: Array<any>, place: string, colum: string }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -60,6 +61,19 @@ export function DataTable({ data, columns, place, colum }: { data: Array<any>, c
       rowSelection,
     },
   })
+
+
+  useEffect(() => {
+    table.setSorting((sortingState) => {
+      return [
+        ...sortingState,
+        {
+          id: "createdAt",
+          desc: true,
+        },
+      ];
+    });
+  }, [table]);
 
 
   return (

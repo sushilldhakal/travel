@@ -1,12 +1,15 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import './index.css';
-import AuthLayout from './layouts/AuthLayout';
+import AuthLayout, { AdminRoute } from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import HomeLayout from './layouts/HomeLayout';
 import routePaths from './routePath';
 import PrivateRoutes from './util/PrivateRoutes';
 
+const EditUser = lazy(() => import('./pages/Users/EditUser'));
+const EditTour = lazy(() => import('./pages/Tours/EditTour'));
+const Subscriber = lazy(() => import('./pages/Subscriber/Subscriber'));
 const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
 const HomePage = lazy(() => import('./pages/Dashboard/HomePage'));
 const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'));
@@ -98,6 +101,14 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: routePaths.dashboard.editTour,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <EditTour />
+              </Suspense>
+            ),
+          },
+          {
             path: routePaths.dashboard.tourSetting,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
@@ -132,8 +143,27 @@ const router = createBrowserRouter([
           {
             path: routePaths.dashboard.addUser,
             element: (
+              <AdminRoute>
+                <Suspense fallback={<div>Loading...</div>}>
+                  <AddUser />
+                </Suspense>
+              </AdminRoute>
+            ),
+          },
+          {
+            path: routePaths.dashboard.subscribers,
+            element: (
+              <AdminRoute>
+                <Suspense fallback={<div>Loading...</div>}>
+                  <Subscriber />
+                </Suspense>
+              </AdminRoute>
+            ),
+          }, {
+            path: routePaths.dashboard.editUser,
+            element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <AddUser />
+                <EditUser />
               </Suspense>
             ),
           },

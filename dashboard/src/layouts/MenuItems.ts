@@ -1,5 +1,5 @@
 import routePaths from "../routePath";
-import { FilePlus, Footprints, Layers3, LayoutDashboard, ListCollapse, Settings, Users } from "lucide-react";
+import { FilePlus, Footprints, Layers3, LayoutDashboard, ListCollapse, MailCheck, Settings, Users } from "lucide-react";
   
 
 export const UserMenuItems = {
@@ -106,9 +106,15 @@ export const UserMenuItems = {
           },
         ],
       },
+      {
+        id: "subscribers",
+        title: "Subscribers",
+        type: "item",
+        icon: MailCheck,
+        url: routePaths.dashboard.subscribers,
+      },
     ],
       }
-
 
 
 

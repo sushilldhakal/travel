@@ -1,6 +1,6 @@
 import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import {
-  Bell,
+  ArrowLeftToLine,
   Package2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,10 @@ import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
 import { routePaths } from '@/router';
 import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
+import { useState } from 'react';
 const DashboardLayout = () => {
   const { token, setToken } = useTokenStore((state) => state);
+  const [navCollapse, setNavCollapse] = useState<boolean>(false);
   const navigate = useNavigate();
   const handleLogout = () => {
     setToken('');
@@ -25,26 +27,37 @@ const DashboardLayout = () => {
   }
 
 
+  const handleNavigate = () => {
+    setNavCollapse(!navCollapse);
+  };
+
 
   return (
     <BreadcrumbsProvider>
-      <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-        <div className="hidden border-r bg-muted/40 md:block">
-          <div className="flex flex-col h-full gap-2">
+      <div className={`${navCollapse ? 'flex min-h-screen w-full flex-col bg-muted/40' : 'grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'}  `}>
+        <div className={`${navCollapse ? 'fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex' : 'hidden border-r bg-muted/40 md:block'}`}>
+          <div className="flex flex-col h-full gap-2 overflow-hidden">
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
               <Link to={routePaths.dashboard.home} className="flex items-center gap-2 font-semibold">
                 <Package2 className="h-6 w-6" />
-                <span>eTravel</span>
+                {
+                  !navCollapse ? <span>eTravel</span> : ''
+                }
+
               </Link>
-              <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-                <Bell className="h-4 w-4" />
-                <span className="sr-only">Toggle notifications</span>
-              </Button>
+              {
+                !navCollapse ? <Button onClick={handleNavigate} variant="outline" size="icon" className="ml-auto h-8 w-8">
+                  <ArrowLeftToLine />
+                </Button> : ""
+              }
+
             </div>
-            <Navigation />
+            <Navigation
+              navCollapse={navCollapse}
+              setNavCollapse={setNavCollapse} />
           </div>
         </div>
-        <div className="flex flex-col">
+        <div className={`${navCollapse ? 'flex flex-col sm:gap-4 sm:py-4 sm:pl-14' : 'flex flex-col'}`}>
           <DashboardHeader handleLogout={handleLogout} />
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 relative">
             <Breadcrumbs />

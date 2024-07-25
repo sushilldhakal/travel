@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface Breadcrumb {
-    title: string;
+    label: string;
     href?: string;
     type?: 'link' | 'page';
-    link?: string; // Adjust if your Breadcrumb type expects this
+    link?: string;
 }
 
 interface BreadcrumbsContextType {
@@ -16,9 +16,11 @@ const BreadcrumbsContext = createContext<BreadcrumbsContextType>({
     breadcrumbs: [],
     updateBreadcrumbs: () => { },
 });
+
 interface BreadcrumbsProviderProps {
     children: ReactNode;
 }
+
 export const BreadcrumbsProvider: React.FC<BreadcrumbsProviderProps> = ({ children }) => {
     const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
 
@@ -33,4 +35,5 @@ export const BreadcrumbsProvider: React.FC<BreadcrumbsProviderProps> = ({ childr
     );
 };
 
+// Create the custom hook for using the BreadcrumbsContext
 export const useBreadcrumbs = () => useContext(BreadcrumbsContext);

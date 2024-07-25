@@ -26,3 +26,26 @@ export interface User {
     payment_methods: string[];
     createdAt: string;
 }
+
+export interface Breadcrumb {
+    label: string;
+    href?: string;
+    type?: 'link' | 'page';
+    link?: string;
+  }
+
+
+  
+  export interface TourData {
+    title: string;
+    description: string;
+    // Add other fields as needed
+    breadcrumbs?: Breadcrumb[];
+  }
+  
+  export interface TabContentProps {
+    initialTourData?: TourData;
+    onSubmit: (data: TourData) => void;
+    onDelete: () => void;
+    singleTour: boolean;
+  }

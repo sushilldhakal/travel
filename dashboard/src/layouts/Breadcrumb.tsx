@@ -6,19 +6,15 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from "@/components/ui/breadcrumb";
 import { useBreadcrumbs } from '@/Provider/BreadcrumbsProvider';
 
-// Define the interface for breadcrumb items
 interface BreadcrumbItemProps {
   title: string;
   href?: string;
   type?: 'link' | 'page';
-  link?: string;
 }
 
-
-// Function to generate breadcrumb items from pathname
 const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
   const pathSegments = pathname.split('/').filter(Boolean);
   const breadcrumbItems: BreadcrumbItemProps[] = [];
@@ -32,20 +28,21 @@ const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
       title,
       href,
       type: index < pathSegments.length - 1 ? 'link' : 'page',
-      link: href,
     });
   });
 
   return breadcrumbItems;
 };
 
-// Breadcrumbs component
-const Breadcrumbs: React.FC = () => {
+const Breadcrumbs = () => {
   const location = useLocation();
   const { breadcrumbs, updateBreadcrumbs } = useBreadcrumbs();
 
   useEffect(() => {
-    const newBreadcrumbs = generateBreadcrumbItems(location.pathname);
+    const newBreadcrumbs = generateBreadcrumbItems(location.pathname).map(item => ({
+      ...item,
+      label: item.title
+    }));
     updateBreadcrumbs(newBreadcrumbs);
   }, [location.pathname, updateBreadcrumbs]);
 
@@ -57,10 +54,10 @@ const Breadcrumbs: React.FC = () => {
             <React.Fragment key={index}>
               <BreadcrumbItem>
                 {item.type === 'link' && item.href && (
-                  <Link to={item.href}>{item.title}</Link>
+                  <Link to={item.href}>{item.label}</Link>
                 )}
                 {item.type === 'page' && (
-                  <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
                 )}
               </BreadcrumbItem>
               {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}

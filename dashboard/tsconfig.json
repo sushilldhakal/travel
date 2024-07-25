@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "checkJs": true,
+    "strict": true,
     "paths": {
       "@/*": ["./src/*"]
     },

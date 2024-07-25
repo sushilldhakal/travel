@@ -22,6 +22,8 @@ export const login = async (data: { email: string; password: string }) => {
 
 export const getUsers = async () => api.get('/api/users/all');
 
+export const getUserById = async (userId: string) => api.get(`/api/users/${userId}`);
+
 export const register = async (data: { name: string; email: string; password: string }) =>
     api.post('/api/users/register', data);
 
@@ -72,22 +74,19 @@ export const deleteTour = async (tourId: string) => {
 
 
 
-export const subscribe = async (data: { email: string }) => {
+export const subscribe = async (data: { email: string[] }) => {
     try {
         const response = await api.post('/api/subscribers/add', data);
         return response.data; 
-    } catch (error) {
-        if (isAxiosError(error)) {
-            throw new Error(`Error Subscribing: ${error.response?.data.message || error.message}`);
-        } else {
-            throw new Error(`Error Subscribing: ${String(error)}`);
-        }
+    } catch (error: any) {
+        console.error('Error in subscribe function:', error.response?.data || error.message);
+        throw error;
     }
 }
 
 export const unsubscribe = async (data: { email: string }) => {
     try {
-        const response = await api.post('/api/subscriber/remove', data);
+        const response = await api.post('/api/subscribers/remove', data);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -100,7 +99,7 @@ export const unsubscribe = async (data: { email: string }) => {
 
 export const getAllSubscribers = async () => {
     try {
-        const response = await api.get('/api/subscriber');
+        const response = await api.get('/api/subscribers');
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
