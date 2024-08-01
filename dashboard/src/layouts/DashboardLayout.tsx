@@ -25,8 +25,6 @@ const DashboardLayout = () => {
   if (!token) {
     return <Navigate to="/" state={{ path: location.pathname }} />;
   }
-
-
   const handleNavigate = () => {
     setNavCollapse(!navCollapse);
   };

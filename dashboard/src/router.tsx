@@ -7,6 +7,7 @@ import HomeLayout from './layouts/HomeLayout';
 import routePaths from './routePath';
 import PrivateRoutes from './util/PrivateRoutes';
 
+const GalleryPage = lazy(() => import('./pages/Gallery/GalleryPage'));
 const EditUser = lazy(() => import('./pages/Users/EditUser'));
 const EditTour = lazy(() => import('./pages/Tours/EditTour'));
 const Subscriber = lazy(() => import('./pages/Subscriber/Subscriber'));
@@ -44,6 +45,22 @@ const router = createBrowserRouter([
     children: [
       {
         path: routePaths.auth.login,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.auth.verify,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.auth.forgot,
         element: (
           <Suspense fallback={<div>Loading...</div>}>
             <LoginPage />
@@ -129,6 +146,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<div>Loading...</div>}>
                 <HomePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.gallery,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <GalleryPage />
               </Suspense>
             ),
           },

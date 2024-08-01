@@ -1,33 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
-import { getSingleTour, createTour, updateTour, deleteTour } from '@/http/api';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createTour } from '@/http/api';
 import { useToast } from '@/components/ui/use-toast';
-import { Breadcrumb, TourData } from '@/Provider/types';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { FileText, LoaderCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { LoaderCircle } from 'lucide-react';
+import { Form } from "@/components/ui/form"
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input } from '@/components/ui/input';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import Loader from '@/userDefinedComponents/Loader';
+import TabContent from '@/userDefinedComponents/TabContent';
 
 
 const tabs = [
@@ -44,34 +28,6 @@ const tabs = [
   { id: 'enquiry', title: 'Enquiry' },
 ];
 
-
-interface TabContentProps {
-  activeTab: string;
-  tabs: { id: string; content: React.ReactNode }[];
-  mutation: { isPending: boolean };
-  isSingleTour: string;
-  generateTripCode: () => string;
-  initialTourData: InitialToutData;
-
-}
-
-interface DivType {
-  id: number;
-  date: Date | undefined;
-  content: string;
-}
-
-
-interface InitialToutData {
-  title: string,
-  description: string,
-  code: string,
-  tourStatus: string,
-  coverImage: string,
-  file: string,
-}
-
-
 function makeid(length: number) {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -85,45 +41,39 @@ function makeid(length: number) {
 }
 
 
+// Define the schema for a single itinerary item
+// const itineraryItemSchema = z.object({
+//   title: z.string().optional(),
+//   description: z.string().optional(),
+//   date: z.date().optional(),
+//   time: z.string().optional() // Assuming time is represented as a string
+// });
+
+// Define the schema for the itinerary as an array of itinerary items
+// const itinerarySchema = z.array(itineraryItemSchema);
+
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
-  code: z.string().min(2, 'Trip code must be at least 2 characters.'),
+  code: z.string().min(6, 'Trip code must be at least 6 characters.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   tourStatus: z.string(),
+  price: z.number().min(0, 'Price must be a positive number'),
   coverImage: z.instanceof(FileList).refine((file) => {
     return file.length == 1;
   }, 'Cover Image is required'),
-  file: z.instanceof(FileList).refine((file) => {
-    return file.length == 1;
-  }, 'PDF is required'),
+  file: z.any().optional(),
+
+  //itinerary: itinerarySchema.optional() // Include the itinerary in the main schema
 });
 
 
 const AddTour: React.FC = () => {
-  const { tourId } = useParams<{ tourId: string }>();
-  const { updateBreadcrumbs } = useBreadcrumbs();
-  const [tripCode, setTripCode] = useState(makeid(6).toUpperCase());
-  const [singleTour, setSingleTour] = useState<boolean>(true);
-  const [singleTourData, setSingleTourData] = useState<TourData | null>(null);
+  const [tripCode, setTripCode] = useState('');
   const queryClient = useQueryClient();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [singleTour, setSingleTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast()
-
-  const { data: initialTourData } = useQuery<TourData, Error>({
-    queryKey: ['tours', tourId],
-    queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
-    enabled: !!tourId,
-  });
-
-  useEffect(() => {
-    const breadcrumbs: Breadcrumb[] = [
-      { label: 'Dashboard', href: '/dashboard', type: 'link' },
-      { label: 'Tours', href: '/dashboard/tours', type: 'link' },
-      { label: 'Add Tour', href: '/dashboard/tours/add', type: 'page' },
-    ];
-    updateBreadcrumbs(breadcrumbs);
-  }, [updateBreadcrumbs]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -131,17 +81,17 @@ const AddTour: React.FC = () => {
       title: '',
       description: '',
       code: tripCode,
-      tourStatus: '',
+      tourStatus: 'Draft',
+      coverImage: null,
+      file: null,
+      price: '',
+      //itinerary: [{ title: '', description: '', date: '', time: '' }],
     }
   });
-
-  const coverImageRef = form.register('coverImage');
-  const fileRef = form.register('file');
-
   const tourMutation = useMutation({
     mutationFn: (data: FormData) => createTour(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tours', tourId].filter(Boolean) });
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
       const route = '/dashboard/tours';
       navigate(route);
       toast({
@@ -156,217 +106,56 @@ const AddTour: React.FC = () => {
       });
     }
   });
-
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!values) {
+      return;
+    }
     const formdata = new FormData();
     formdata.append('title', values.title);
     formdata.append('code', values.code);
     formdata.append('description', values.description);
     formdata.append('tourStatus', values.tourStatus);
-    formdata.append('coverImage', values.coverImage[0]);
-    formdata.append('file', values.file[0]);
-    tourMutation.mutate(formdata);
-    console.log("formData", formdata)
-    console.log(values);
-  }
-  const tab = tabs.find(t => t.id === activeTab);
-  if (!tab) return <div>Select a tab to see its content</div>;
+    formdata.append('price', values.price.toString());
+    if (values.coverImage && values.coverImage[0]) {
+      formdata.append('coverImage', values.coverImage[0]);
+    }
+    if (values.file && values.file[0]) {
+      formdata.append('file', values.file[0]);
+    }
 
-  const tourTabContent = () => {
-    switch (tab.id) {
 
-      case tabs[0].id: return <Overview />;
-      case tabs[1].id: return <h1>Project One</h1>;
-      case tabs[2].id: return <h1>Project One</h1>;
-      case tabs[3].id: return <h1>Project One</h1>;
+    // if (values.itinerary) {
+    //   values.itinerary.forEach((item, index) => {
+    //     if (item.title) formdata.append(`itinerary[${index}][title]`, item.title);
+    //     if (item.description) formdata.append(`itinerary[${index}][description]`, item.description);
+    //     if (item.date) formdata.append(`itinerary[${index}][date]`, item.date);
+    //     if (item.time) formdata.append(`itinerary[${index}][time]`, item.time);
+    //   });
+    // }
 
-      default: return <h1>No project match</h1>
+
+    try {
+      await tourMutation.mutate(formdata);
+      form.reset();
+    } catch (error) {
+      console.error('Error creating tour:', error);
     }
   }
 
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const tabQuery = queryParams.get('tab') || tabs[0].id;
+  useEffect(() => {
+    setActiveTab(tabQuery);
+  }, [tabQuery]);
 
-  const Overview = () => {
-    return (
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return <div>Select a tab to see its content</div>;
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tour Details</CardTitle>
-          <CardDescription>Enter title and description</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6">
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tour Title</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        className="w-full"
-                        {...field}
-                        placeholder='Tour Title'
-
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel> Trip Code:</FormLabel>
-                    <FormControl className="relative">
-                      <Input
-                        type="text"
-                        className="w-full"
-                        {...field}
-                        placeholder='Trip Code'
-                      />
-
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid gap-3">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="min-h-32"
-                        {...field}
-                        placeholder='Description'
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid gap-3 auto-rows-max grid-cols-2">
-              <FormField
-                control={form.control}
-                name="tourStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tour Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Publish">Publish</SelectItem>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="Expired">Expired</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tour Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        className="w-full"
-                        {...field}
-                        placeholder='Tour Price'
-
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-
-            </div>
-            <div className="grid grid-flow-col gap-3">
-              <div className="col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                <div className="flex flex-col space-y-1.5 p-6">
-                  <FormField
-                    control={form.control}
-                    name="coverImage"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Cover Image</FormLabel>
-                        <FormControl>
-
-                          <Input
-                            type="file"
-                            className="w-full"
-                            {...coverImageRef}
-
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          upload images.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-              <div className='col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
-                <div className="flex flex-col space-y-1.5 p-6">
-                  <FormField
-                    control={form.control}
-                    name="file"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Tour PDF File</FormLabel>
-                        <FormControl>
-
-                          <Input
-                            type="file"
-                            className="w-full"
-                            {...fileRef}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          upload Tour PDF.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-          <Button type="submit" size="sm"
-            disabled={tourMutation.isPending}
-          >
-            {tourMutation.isPending && <LoaderCircle className="animate-spin" />}
-            <span className="ml-2">Save</span>
-          </Button>
-        </CardFooter>
-      </Card>
-    )
-  }
+  const tabsWithContent = tabs.map(tab => ({
+    ...tab,
+    content: <div>{tab.title} content</div>
+  }));
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -409,16 +198,20 @@ const AddTour: React.FC = () => {
               ))}
             </nav>
             <div className="grid gap-3 lg:col-span-1">
-              {/* <TabContent
-            //@ts-expect-error
-            initialTourData={singleTourData}
-            mutation={tourMutation}
-            activeTab={activeTab}
-            tabs={tabsWithContent}
-            isSingleTour={singleTour}
-            onSubmit={onSubmit}
-          /> */}
-              {tourTabContent()}
+
+              <TabContent
+                form={form}
+                activeTab={activeTab}
+                tabs={tabsWithContent}
+                tripCode={tripCode}
+                singleTour={singleTour}
+                tourMutation={tourMutation}
+                handleGenerateCode={() => {
+                  const newCode = makeid(6);
+                  setTripCode(newCode);
+                  form.setValue('code', newCode);
+                }}
+              />
             </div>
           </div>
         </form>
@@ -428,5 +221,3 @@ const AddTour: React.FC = () => {
 };
 
 export default AddTour;
-
-

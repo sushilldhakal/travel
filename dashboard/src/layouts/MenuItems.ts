@@ -84,6 +84,13 @@ export const UserMenuItems = {
         ],
       },
       {
+        id: "gallery",
+        title: "Gallery",
+        type: "item",
+        icon: Footprints,
+        url: routePaths.dashboard.gallery,
+      },
+      {
         id: "user",
         title: "Users",
         type: "item",

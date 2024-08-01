@@ -118,7 +118,7 @@ const TourPage = () => {
       }
     },
     {
-      accessorKey: "price_usd",
+      accessorKey: "price",
       header: ({ column }) => {
         return (
           <Button
@@ -131,7 +131,7 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => {
-        const price_usd = parseFloat(row.getValue("price_usd"))
+        const price_usd = parseFloat(row.getValue("price"))
 
         // Format the amount as a dollar amount
         const formatted = new Intl.NumberFormat("en-US", {
@@ -143,7 +143,7 @@ const TourPage = () => {
       },
     },
     {
-      accessorKey: "status",
+      accessorKey: "tourStatus",
       header: ({ column }) => {
         return (
           <Button
@@ -156,7 +156,7 @@ const TourPage = () => {
         )
       },
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("status")}</div>
+        <div className="capitalize">{row.getValue("tourStatus")}</div>
       ),
     },
     {

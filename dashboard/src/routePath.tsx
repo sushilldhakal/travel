@@ -9,6 +9,7 @@ const routePaths = {
     addTour: "/dashboard/tours/add_tour",
     editTour: "/dashboard/tours/edit_tour/:tourId",
     users: "/dashboard/users",
+    gallery: "/dashboard/gallery",
     addUser: "/dashboard/users/add_user",
     editUser: "/dashboard/users/:userId",
     tourSetting: "/dashboard/tours/tour_setting",
@@ -26,6 +27,8 @@ const routePaths = {
   auth: {
     base: "/auth",
     login: "/auth/login",
+    verify: "/auth/login/verify",
+    forgot: "/auth/login/forgot",
     register: "/auth/register",
   },
   error: "*",

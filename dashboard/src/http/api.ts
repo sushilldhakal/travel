@@ -16,7 +16,9 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-export const login = async (data: { email: string; password: string }) => {
+
+//login/register
+export const login = async (data: { email: string; password: string, keepMeSignedIn: boolean }) => {
     return  api.post('/api/users/login', data);
 };
 
@@ -24,9 +26,21 @@ export const getUsers = async () => api.get('/api/users/all');
 
 export const getUserById = async (userId: string) => api.get(`/api/users/${userId}`);
 
-export const register = async (data: { name: string; email: string; password: string }) =>
-    api.post('/api/users/register', data);
+export const register = async (data: { name: string; email: string; password: string, phone: string  }) =>{
+    return  api.post('/api/users/register', data);
+}
+export const verifyEmail = async (data: { token: string }) => {
+    console.log("this is api page log",data)
+    return api.post('/api/users/login/verify', data);
+}
+   
 
+export const forgotPassword = async (data: { email: string }) => 
+    api.post('/api/users/login/forgot', data);
+
+export const resetPassword = async (data: { token: string, password: string }) => 
+    api.post('/api/users/login/reset', data);
+//tours
 export const getTours = async () => api.get('/api/tours');
 
 export const getSingleTour = async (tourId: string) => {
@@ -73,7 +87,7 @@ export const deleteTour = async (tourId: string) => {
 };
 
 
-
+//subscriber
 export const subscribe = async (data: { email: string[] }) => {
     try {
         const response = await api.post('/api/subscribers/add', data);
@@ -109,3 +123,46 @@ export const getAllSubscribers = async () => {
         }
     }
 }
+
+
+//gallery 
+export const getAllImages = async () => {
+    try {
+      // Fetch images without cursor parameter
+      const response = await api.get('/api/gallery/images');
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(`Error getting all images: ${error.response?.data.message || error.message}`);
+      } else {
+        throw new Error(`Error getting all images: ${String(error)}`);
+      }
+    }
+  };
+
+export const addImages = async (data: FormData, userId: string) =>
+    api.post(`/api/gallery/${userId}`, data, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+
+export const deleteImage = async (userId: string, imageIds: string | string[]) => {
+    console.log('deleteImage', userId, imageIds);
+    try {
+        const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+        console.log('deleteImage response', ids);
+
+      const response = await api.delete(`/api/gallery/${userId}`, {
+        data: { imageIds: ids },
+      });
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(`Error deleting image: ${error.response?.data.message || error.message}`);
+      } else {
+        throw new Error(`Error deleting image: ${String(error)}`);
+      }
+    }
+  };

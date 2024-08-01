@@ -57,7 +57,6 @@ const EditUser = () => {
         }
     }, [tableData, userId, updateBreadcrumbs]);
 
-    console.log("table data", tableData)
     return (
         <div> <div>
             <div className="px-4 space-y-6 md:px-6">

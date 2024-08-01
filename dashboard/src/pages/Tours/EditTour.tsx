@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
 import { getSingleTour, createTour, updateTour, deleteTour } from '@/http/api';
@@ -46,75 +46,58 @@ const tabs = [
 ];
 
 
-interface TabContentProps {
-    activeTab: string;
-    tabs: { id: string; content: React.ReactNode }[];
-    mutation: { isPending: boolean };
-    isSingleTour: string;
-    generateTripCode: () => string;
-    initialTourData: InitialToutData;
 
-}
-
-interface DivType {
-    id: number;
-    date: Date | undefined;
-    content: string;
-}
-
-
-interface InitialToutData {
+interface TourData {
     title: string,
     description: string,
     code: string,
     tourStatus: string,
     coverImage: string,
     file: string,
+    tour: string[],
+    breadcrumbs: string[],
+    itinerary: string[],
+    price: string[],
+    incExc: string[],
+    facts: string[],
+    gallery: string[],
+    locations: string[],
+    faqs: string[],
+    downloads: string[],
+    tabsDisplay: string[],
+    enquiry: string[],
 }
 
 
-function makeid(length: number) {
-    let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    const charactersLength = characters.length;
-    let counter = 0;
-    while (counter < length) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-        counter += 1;
-    }
-    return result;
-}
 
+
+const MAX_FILE_SIZE = 800000;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_FILE_TYPES = ["application/pdf"];
 
 const formSchema = z.object({
     title: z.string().min(2, 'Title must be at least 2 characters.'),
     code: z.string().min(2, 'Trip code must be at least 2 characters.'),
     description: z.string().min(2, 'Description must be at least 2 characters.'),
     tourStatus: z.string(),
-    coverImage: z.instanceof(FileList).refine((file) => {
-        return file.length == 1;
-    }, 'Cover Image is required'),
-    file: z.instanceof(FileList).refine((file) => {
-        return file.length == 1;
-    }, 'PDF is required'),
+    price: z.number().min(0, 'Price must be a positive number'),
+    coverImage: z.any().optional()
+        .refine(file => file.length == 1 ? ACCEPTED_IMAGE_TYPES.includes(file?.[0]?.type) ? true : false : true, 'Invalid file. choose either JPEG or PNG image')
+        .refine(file => file.length == 1 ? file[0]?.size <= MAX_FILE_SIZE ? true : false : true, 'Max file size allowed is 8MB.'),
+    file: z.any().optional()
+        .refine(file => file.length == 1 ? ACCEPTED_FILE_TYPES.includes(file?.[0]?.type) ? true : false : true, 'Invalid file. choose PDF file')
+        .refine(file => file.length == 1 ? file[0]?.size <= MAX_FILE_SIZE ? true : false : true, 'Max file size allowed is 8MB.'),
 });
-
-
-
 
 const EditTour: React.FC = () => {
     const { tourId } = useParams<{ tourId: string }>();
     const { updateBreadcrumbs } = useBreadcrumbs();
-    const [tripCode, setTripCode] = useState(makeid(6).toUpperCase());
     const [singleTour, setSingleTour] = useState<boolean>(false);
     const [singleTourData, setSingleTourData] = useState<TourData | null>(null);
     const queryClient = useQueryClient();
     const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('overview');
     const { toast } = useToast()
-
-
-
     const { data: initialTourData } = useQuery<TourData, Error>({
         queryKey: ['tours', tourId],
         queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
@@ -130,6 +113,7 @@ const EditTour: React.FC = () => {
             code: '',
             tourStatus: '',
             coverImage: '',
+            price: 0,
             file: '',
         }
 
@@ -148,35 +132,29 @@ const EditTour: React.FC = () => {
             setSingleTourData(initialTourData?.tour);
             setSingleTour(true);
         }
+    }, [updateBreadcrumbs, initialTourData, tourId]);
 
+    useEffect(() => {
         if (singleTourData) {
             const defaultValues = {
                 title: singleTourData.title || '',
                 description: singleTourData.description || '',
-                code: singleTourData.tripCode || tripCode,
+                code: singleTourData.code || '',
                 tourStatus: singleTourData.tourStatus || '',
                 coverImage: singleTourData.coverImage || '',
                 file: singleTourData.file || '',
-            }
+                price: singleTourData.price || 0,
+            };
             form.reset(defaultValues);
         }
-    }, [updateBreadcrumbs, initialTourData, singleTourData, tourId]);
+    }, [singleTourData, form]);
 
-
-
-
-
-    // console.log("singleTourData", singleTour)
-
-    const coverImageRef = form.register('coverImage');
-    const fileRef = form.register('file');
+    console.log(singleTourData);
 
     const tourMutation = useMutation({
         mutationFn: (data: FormData) => updateTour(tourId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tours', tourId].filter(Boolean) });
-            const route = `/dashboard/tours/edit_tour/${tourId}`;
-            navigate(route);
             toast({
                 title: 'Tour updated successfully',
                 description: 'The tour has been updated successfully.',
@@ -217,12 +195,16 @@ const EditTour: React.FC = () => {
         formdata.append('code', values.code);
         formdata.append('description', values.description);
         formdata.append('tourStatus', values.tourStatus);
-        formdata.append('coverImage', values.coverImage[0]);
-        formdata.append('file', values.file[0]);
+        formdata.append('price', values.price.toString());
+        if (values.coverImage && values.coverImage[0]) {
+            formdata.append('coverImage', values.coverImage[0]);
+        }
+        if (values.file && values.file[0]) {
+            formdata.append('file', values.file[0]);
+        }
         tourMutation.mutate(formdata);
-        console.log("formData", formdata)
-        console.log(values);
     }
+
 
     const handleDeleteTour = async () => {
         if (singleTour) {
@@ -231,196 +213,16 @@ const EditTour: React.FC = () => {
         }
     };
 
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const tabQuery = queryParams.get('tab') || tabs[0].id;
+    useEffect(() => {
+        setActiveTab(tabQuery);
+    }, [tabQuery]);
+
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return <div>Select a tab to see its content</div>;
 
-    const tourTabContent = () => {
-        switch (tab.id) {
-
-            case tabs[0].id: return <Overview />;
-            case tabs[1].id: return <h1>Project One</h1>;
-            case tabs[2].id: return <h1>Project One</h1>;
-            case tabs[3].id: return <h1>Project One</h1>;
-
-            default: return <h1>No project match</h1>
-        }
-    }
-
-    const Overview = () => {
-        return (
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Tour Details</CardTitle>
-                    <CardDescription>Enter title and description</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-6">
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tour Title</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="text"
-                                                className="w-full"
-                                                {...field}
-                                                placeholder='Tour Title'
-
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="code"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel> Trip Code:</FormLabel>
-                                        <FormControl className="relative">
-                                            <Input
-                                                type="text"
-                                                className="w-full"
-                                                {...field}
-                                                placeholder='Trip Code'
-                                                disabled
-                                            />
-
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                        </div>
-                        <div className="grid gap-3">
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="min-h-32"
-                                                {...field}
-                                                placeholder='Description'
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <div className="grid gap-3 auto-rows-max grid-cols-2">
-                            <FormField
-                                control={form.control}
-                                name="tourStatus"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tour Status</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select status type" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Publish">Publish</SelectItem>
-                                                <SelectItem value="Draft">Draft</SelectItem>
-                                                <SelectItem value="Expired">Expired</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-
-                        </div>
-                        <div className="grid grid-flow-col gap-3">
-                            <div className="col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                                <div className="flex flex-col space-y-1.5 p-6">
-                                    <span className="">
-                                        <img src={singleTourData?.coverImage} alt={singleTourData?.title} />
-                                    </span>
-                                    <FormField
-                                        control={form.control}
-                                        name="coverImage"
-                                        render={() => (
-                                            <FormItem>
-                                                <FormLabel>Cover Image</FormLabel>
-                                                <FormControl>
-
-                                                    <Input
-                                                        type="file"
-                                                        className="w-full"
-                                                        {...coverImageRef}
-
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    upload images.
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            <div className='col-span-5 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
-                                <div className="flex flex-col space-y-1.5 p-6">
-                                    <div className='mt-3'>
-                                        <Link target='_blank' className="" to={singleTourData?.file} download>
-                                            <FileText />
-                                            Download File
-
-                                        </Link>
-                                    </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="file"
-                                        render={() => (
-                                            <FormItem>
-                                                <FormLabel>Tour PDF File</FormLabel>
-                                                <FormControl>
-
-                                                    <Input
-                                                        type="file"
-                                                        className="w-full"
-                                                        {...fileRef}
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    upload Tour PDF.
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-                <CardFooter className="border-t px-6 py-4">
-                    <Button type="submit" size="sm"
-                        disabled={tourMutation.isPending}
-                    >
-                        {tourMutation.isPending && <LoaderCircle className="animate-spin" />}
-                        <span className="ml-2">Save</span>
-                    </Button>
-                </CardFooter>
-            </Card>
-        )
-    }
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -474,16 +276,15 @@ const EditTour: React.FC = () => {
                             ))}
                         </nav>
                         <div className="grid gap-3 lg:col-span-1">
-                            {/* <TabContent
-            //@ts-expect-error
-            initialTourData={singleTourData}
-            mutation={tourMutation}
-            activeTab={activeTab}
-            tabs={tabsWithContent}
-            isSingleTour={singleTour}
-            onSubmit={onSubmit}
-          /> */}
-                            {tourTabContent()}
+                            <TabContent
+                                form={form}
+                                activeTab={activeTab}
+                                tabs={tabs}
+                                singleTour={singleTour}
+                                tourMutation={tourMutation}
+                                singleTourData={singleTourData}
+
+                            />
                         </div>
                     </div>
                 </form>
@@ -493,5 +294,4 @@ const EditTour: React.FC = () => {
 };
 
 export default EditTour;
-
 

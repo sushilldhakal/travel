@@ -28,7 +28,6 @@ const RegisterPage = () => {
   const mutation = useMutation({
     mutationFn: register,
     onSuccess: (response) => {
-      console.log('Login successful');
       setToken(response.data.accessToken);
       navigate('/dashboard/home');
     },
@@ -38,8 +37,6 @@ const RegisterPage = () => {
     const email = emailRef.current?.value ?? '';
     const password = passwordRef.current?.value ?? '';
     const name = nameRef.current?.value ?? '';
-    console.log("data", { email, password, name });
-
     mutation.mutate({ name, email, password });
   };
 

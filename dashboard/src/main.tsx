@@ -1,4 +1,4 @@
-import React from 'react'
+import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   QueryClient,
@@ -14,7 +14,7 @@ import { Toaster } from './components/ui/toaster'
 const queryClient = new QueryClient
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
 
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -23,5 +23,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <RouterProvider router={router} />
       </ThemeProvider>
     </QueryClientProvider>
-  </React.StrictMode>,
+  </StrictMode>,
 )

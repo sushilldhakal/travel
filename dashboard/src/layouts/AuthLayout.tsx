@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { ReactNode } from 'react';
 
 export const isValidToken = (token: string | null): boolean => {
     if (!token) return false;
@@ -15,7 +16,7 @@ const getAccessToken = (): string | null => {
 type AccessTokenType = {
     email: string;
     isLoggedIn: boolean;
-    id: string;
+    sub: string;
     roles: string;
 };
 
@@ -31,6 +32,7 @@ export const getAuthUserRoles = (): string | null => {
         return null;
     }
 };
+
 
 
 interface AdminRouteProps {
@@ -53,6 +55,20 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
     return children ? <>{children}</> : <Outlet />;
 };
+
+export const getUserId = (): string | null => {
+    const accessToken = getAccessToken();
+    if (!isValidToken(accessToken)) return null;
+
+    try {
+        const decoded = jwtDecode<AccessTokenType>(accessToken!);
+        return decoded.sub;
+    } catch (e) {
+        console.error('Failed to decode token:', e);
+        return null;
+    }
+};
+
 
 
 const AuthLayout: React.FC = () => {
