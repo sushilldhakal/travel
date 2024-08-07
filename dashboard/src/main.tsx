@@ -4,11 +4,11 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
-import './index.css'
+import '@/assets/css/index.css'
 import { RouterProvider } from 'react-router-dom'
-import { router } from './router'
-import { ThemeProvider } from './Provider/themeProvider'
-import { Toaster } from './components/ui/toaster'
+import { router } from '@/router/router'
+import { ThemeProvider } from '@/Provider/themeProvider'
+import { Toaster } from '@/components/ui/toaster'
 
 
 const queryClient = new QueryClient

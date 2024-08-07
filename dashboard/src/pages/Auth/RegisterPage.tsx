@@ -10,8 +10,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRef } from "react"
-import { routePaths } from "@/router"
-import useTokenStore from "@/store"
+import routePaths from "@/lib/routePath"
+import useTokenStore from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 import { register } from "@/http/api"
 import { LoaderCircle } from "lucide-react"
@@ -22,6 +22,7 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +38,8 @@ const RegisterPage = () => {
     const email = emailRef.current?.value ?? '';
     const password = passwordRef.current?.value ?? '';
     const name = nameRef.current?.value ?? '';
-    mutation.mutate({ name, email, password });
+    const phone = phoneRef.current?.value ?? '';
+    mutation.mutate({ name, email, password, phone });
   };
 
   return (
@@ -64,6 +66,16 @@ const RegisterPage = () => {
                 placeholder="m@example.com"
                 required
                 ref={emailRef}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="phone"
+                placeholder="m@example.com"
+                required
+                ref={phoneRef}
               />
             </div>
             <div className="grid gap-2">

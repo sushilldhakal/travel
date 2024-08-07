@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import routePaths from "@/routePath";
+import routePaths from "@/lib/routePath";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {

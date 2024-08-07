@@ -10,10 +10,10 @@ import { ArrowUpDown, CirclePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
-import { routePaths } from '@/router';
+import routePaths from '@/lib/routePath';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
-import useTokenStore from '@/store';
+import useTokenStore from '@/store/store';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 

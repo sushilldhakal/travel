@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createTour } from '@/http/api';
 import { useToast } from '@/components/ui/use-toast';
+import { toast as Toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { LoaderCircle } from 'lucide-react';
 import { Form } from "@/components/ui/form"
@@ -12,7 +13,9 @@ import { z } from 'zod';
 import { Skeleton } from '@/components/ui/skeleton';
 import Loader from '@/userDefinedComponents/Loader';
 import TabContent from '@/userDefinedComponents/TabContent';
-
+import { HashLink } from 'react-router-hash-link';
+import { defaultValue } from '@/lib/default-value';
+import { JSONContent } from 'novel';
 
 const tabs = [
   { id: 'overview', title: 'Overview' },
@@ -62,18 +65,18 @@ const formSchema = z.object({
     return file.length == 1;
   }, 'Cover Image is required'),
   file: z.any().optional(),
-
   //itinerary: itinerarySchema.optional() // Include the itinerary in the main schema
 });
 
 
 const AddTour: React.FC = () => {
-  const [tripCode, setTripCode] = useState('');
+  const [tripCode, setTripCode] = useState<string>('');
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [singleTour, setSingleTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast()
+  const [editorContent, setEditorContent] = useState<JSONContent>(defaultValue);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -84,7 +87,7 @@ const AddTour: React.FC = () => {
       tourStatus: 'Draft',
       coverImage: null,
       file: null,
-      price: '',
+      price: '0',
       //itinerary: [{ title: '', description: '', date: '', time: '' }],
     }
   });
@@ -106,14 +109,20 @@ const AddTour: React.FC = () => {
       });
     }
   });
+
+
+  const handleEditorContentChange = (content: JSONContent) => {
+    setEditorContent(content);
+  };
+
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!values) {
-      return;
-    }
+    console.log(values);
     const formdata = new FormData();
     formdata.append('title', values.title);
     formdata.append('code', values.code);
-    formdata.append('description', values.description);
+    //  formdata.append('description', values.description);
+    formdata.append('description', JSON.stringify(editorContent));
     formdata.append('tourStatus', values.tourStatus);
     formdata.append('price', values.price.toString());
     if (values.coverImage && values.coverImage[0]) {
@@ -122,8 +131,6 @@ const AddTour: React.FC = () => {
     if (values.file && values.file[0]) {
       formdata.append('file', values.file[0]);
     }
-
-
     // if (values.itinerary) {
     //   values.itinerary.forEach((item, index) => {
     //     if (item.title) formdata.append(`itinerary[${index}][title]`, item.title);
@@ -132,30 +139,54 @@ const AddTour: React.FC = () => {
     //     if (item.time) formdata.append(`itinerary[${index}][time]`, item.time);
     //   });
     // }
-
-
     try {
       await tourMutation.mutate(formdata);
+      Toast.success("your tour has been created successfully");
       form.reset();
     } catch (error) {
       console.error('Error creating tour:', error);
     }
   }
 
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const tabQuery = queryParams.get('tab') || tabs[0].id;
-  useEffect(() => {
-    setActiveTab(tabQuery);
-  }, [tabQuery]);
 
-  const tab = tabs.find(t => t.id === activeTab);
-  if (!tab) return <div>Select a tab to see its content</div>;
+
+  const location = useLocation();
+  useEffect(() => {
+    const handleScroll = () => {
+      let foundTab = tabs[0].id;
+      for (const tab of tabs) {
+        const element = document.getElementById(tab.id);
+        if (element && element.getBoundingClientRect().top <= window.innerHeight / 2) {
+          foundTab = tab.id;
+        }
+      }
+      console.log("foundTab", foundTab)
+      setActiveTab(foundTab);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (location.hash) {
+      setActiveTab(location.hash.substring(1));
+    }
+  }, [location.hash]);
+
+  // const tab = tabs.find(t => t.id === activeTab);
+  // if (!tab) return <div>Select a tab to see its content</div>;
 
   const tabsWithContent = tabs.map(tab => ({
     ...tab,
     content: <div>{tab.title} content</div>
   }));
+
+  const onError = (errors) => {
+    console.log('Validation errors:', errors);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -169,7 +200,10 @@ const AddTour: React.FC = () => {
       <Form {...form}>
         <form onSubmit={(e) => {
           e.preventDefault()
-          form.handleSubmit(onSubmit)();
+          console.log('handleSubmit called');
+          const values = form.getValues();
+          console.log(values); // Add this line
+          form.handleSubmit(onSubmit, onError)();
         }}>
           <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
             <Link to="/dashboard/tours">
@@ -185,18 +219,33 @@ const AddTour: React.FC = () => {
             </Button>
           </div>
           <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-            <nav className="grid gap-5 text-md text-muted-foreground lg:col-span-1">
-              {tabs.map(tab => (
-                <Link
-                  key={tab.id}
-                  to={`?tab=${tab.id}`}
-                  className={`font-semibold ${activeTab === tab.id ? 'text-primary' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.title}
-                </Link>
-              ))}
-            </nav>
+            <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
+              <nav className="flex flex-col gap-2 p-2 text-sm rounded-xl">
+                {tabs.map((tab, index) => (
+                  <HashLink
+                    smooth
+                    key={tab.id}
+                    to={`#${tab.id}`}
+                    className={`inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 justify-start p-1 ${activeTab === tab.id ? 'text-primary bg-muted hover:bg-muted' : 'hover:bg-muted'
+                      }`}
+                    scroll={(el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    {tab.title}
+                  </HashLink>
+                ))}
+
+                <div className="py-4">
+                  <Button type="submit"
+                    disabled={tourMutation.isPending}
+                    className='pr-6 ml-4'
+                  >
+                    {tourMutation.isPending && <LoaderCircle className="animate-spin" />}
+                    <span className="ml-2">Save</span>
+                  </Button>
+                </div>
+              </nav>
+            </aside>
+
             <div className="grid gap-3 lg:col-span-1">
 
               <TabContent
@@ -206,11 +255,15 @@ const AddTour: React.FC = () => {
                 tripCode={tripCode}
                 singleTour={singleTour}
                 tourMutation={tourMutation}
+                submit={onSubmit}
                 handleGenerateCode={() => {
                   const newCode = makeid(6);
                   setTripCode(newCode);
                   form.setValue('code', newCode);
                 }}
+
+                editorContent={editorContent} // Pass editor content to TabContent
+                onEditorContentChange={handleEditorContentChange}
               />
             </div>
           </div>

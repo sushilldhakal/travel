@@ -1,4 +1,4 @@
-import useTokenStore from '@/store';
+import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
 
 const api = axios.create({
@@ -92,8 +92,12 @@ export const subscribe = async (data: { email: string[] }) => {
     try {
         const response = await api.post('/api/subscribers/add', data);
         return response.data; 
-    } catch (error: any) {
-        console.error('Error in subscribe function:', error.response?.data || error.message);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('Error in subscribe function:', error.message);
+        } else {
+            console.error('Error in subscribe function:', String(error));
+        }
         throw error;
     }
 }
@@ -126,11 +130,20 @@ export const getAllSubscribers = async () => {
 
 
 //gallery 
-export const getAllImages = async () => {
+export const getAllImages = async ({ pageParam = null }) => {
     try {
       // Fetch images without cursor parameter
-      const response = await api.get('/api/gallery/images');
-      return response.data;
+      const response = await api.get('/api/gallery/images', {
+        params: {
+            nextCursor: pageParam,
+            pageSize: 10,
+        },
+      });
+
+      return {
+        resources: response.data.data,
+        nextCursor: response.data.nextCursor,
+      };
     } catch (error) {
       if (isAxiosError(error)) {
         throw new Error(`Error getting all images: ${error.response?.data.message || error.message}`);
@@ -140,20 +153,24 @@ export const getAllImages = async () => {
     }
   };
 
-export const addImages = async (data: FormData, userId: string) =>
-    api.post(`/api/gallery/${userId}`, data, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+  export const addImages = async (formData: FormData, userId: string) => {
+    try {
+        const response = await api.post(`/api/gallery/${userId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error uploading images:', error);
+        throw error;
+    }
+};
 
 
 export const deleteImage = async (userId: string, imageIds: string | string[]) => {
-    console.log('deleteImage', userId, imageIds);
     try {
         const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
-        console.log('deleteImage response', ids);
-
       const response = await api.delete(`/api/gallery/${userId}`, {
         data: { imageIds: ids },
       });
@@ -165,4 +182,18 @@ export const deleteImage = async (userId: string, imageIds: string | string[]) =
         throw new Error(`Error deleting image: ${String(error)}`);
       }
     }
+  };
+
+
+
+  export interface GenerateCompletionParams {
+    prompt: string;
+    option: string;
+    command?: string;
+  }
+
+
+  export const generateCompletion = async (params: GenerateCompletionParams) => {
+    const response = await api.post('/api/generate', params);
+    return response.data;
   };

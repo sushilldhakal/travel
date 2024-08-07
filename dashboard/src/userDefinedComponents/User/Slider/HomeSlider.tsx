@@ -47,7 +47,10 @@ const HomeSlider = () => {
                             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
                                 <div className="overlay absolute z-10 p-5 text-white w-1/2">
                                     <h2 className="text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
-                                    <p className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide ">{tour.description.substring(1, 400)}...<span><Link to={`/tours/${tour._id}`}>Read More</Link></span></p>
+                                    <p className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide">
+                                        {tour.description ? `${tour.description.substring(0, 400)}...` : "No description available."}
+                                        <span><Link to={`/tours/${tour._id}`}>Read More</Link></span>
+                                    </p>
                                     <div className="mt-5">
                                         <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5">
                                             <Button>View Tour</Button>

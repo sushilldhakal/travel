@@ -1,16 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { Breadcrumb, BreadcrumbsContextType } from './types';
 
-interface Breadcrumb {
-    label: string;
-    href?: string;
-    type?: 'link' | 'page';
-    link?: string;
-}
 
-interface BreadcrumbsContextType {
-    breadcrumbs: Breadcrumb[];
-    updateBreadcrumbs: (newBreadcrumbs: Breadcrumb[]) => void;
-}
 
 const BreadcrumbsContext = createContext<BreadcrumbsContextType>({
     breadcrumbs: [],

@@ -1,15 +1,11 @@
-import { menuItems } from "./MenuItems";
+import { menuItems } from "@/lib/MenuItems";
 import MenuItem from "@/userDefinedComponents/MenuItem";
-import "../dashboard-style.css";
-import { Button } from "@/components/ui/button";
-import { ArrowRightToLine } from "lucide-react";
-import useTokenStore from "@/store";
+import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";
+import "@/assets/css/dashboard-style.css";
+
 
 const Navigation = ({ navCollapse, setNavCollapse }: { navCollapse: boolean, setNavCollapse: (value: boolean) => void }) => {
-  const handleNavigate = () => {
-    setNavCollapse(!navCollapse);
-  };
   const { token } = useTokenStore(state => state);
   const user = jwtDecode(token) as { roles?: string };
   const roles = user?.roles || '';
@@ -23,12 +19,6 @@ const Navigation = ({ navCollapse, setNavCollapse }: { navCollapse: boolean, set
             navCollapse={navCollapse} setNavCollapse={setNavCollapse} key={item.id} item={item} />
         ))}
       </nav>
-
-      {
-        navCollapse ? <Button onClick={handleNavigate} variant="outline" size="icon" className="mt-5 ml-4 h-6 w-6">
-          <ArrowRightToLine />
-        </Button> : ""
-      }
     </div>
   )
 }

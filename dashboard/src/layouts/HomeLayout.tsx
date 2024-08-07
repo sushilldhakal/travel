@@ -3,7 +3,7 @@ import Home from '@/pages/Home/Home';
 import UserHeader from '@/userDefinedComponents/User/UserHeader';
 import UserNav from '@/userDefinedComponents/User/UserNav';
 import UserFooter from '@/userDefinedComponents/User/UserFooter';
-import "../home-style.css"
+import "@/assets/css/home-style.css"
 const HomeLayout = () => {
 
     return (

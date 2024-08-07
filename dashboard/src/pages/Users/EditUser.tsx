@@ -7,7 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import useTokenStore from "@/store";
+import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";
 
 const EditUser = () => {

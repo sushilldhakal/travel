@@ -1,5 +1,3 @@
-"use client";
-
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -266,7 +264,7 @@ export const FileUploaderContent = forwardRef<
                 ref={ref}
                 className={cn(
                     "flex rounded-xl gap-1",
-                    orientation === "horizontal" ? "flex-raw flex-wrap" : "flex-col",
+                    orientation === "horizontal" ? "flex-raw flex-wrap" : "flex",
                     className
                 )}
             >
@@ -289,7 +287,7 @@ export const FileUploaderItem = forwardRef<
             ref={ref}
             className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "h-6 p-1 justify-between cursor-pointer relative",
+                "h-6 p-1 justify-between cursor-pointer relative ",
                 className,
                 isSelected ? "bg-muted" : ""
             )}
@@ -330,7 +328,7 @@ export const FileInput = forwardRef<
         >
             <div
                 className={cn(
-                    `w-full rounded-lg duration-300 ease-in-out
+                    `w-full rounded-lg duration-300 ease-in-out 
          ${dropzoneState.isDragAccept
                         ? "border-green-500"
                         : dropzoneState.isDragReject || isFileTooBig

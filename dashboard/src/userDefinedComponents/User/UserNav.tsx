@@ -1,12 +1,12 @@
-import { UserMenuItems } from "@/layouts/MenuItems";
+import { UserMenuItems } from "@/lib/MenuItems";
 // import MenuItem from "../MenuItem";
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ModeToggle } from "../ModeToggle";
 import { Link, useNavigate } from "react-router-dom";
-import { isValidToken } from "@/layouts/AuthLayout";
+import { isValidToken } from "@/util/AuthLayout";
 import { useEffect, useState } from "react";
-import useTokenStore from "@/store";
+import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";
 
 const UserNav = () => {

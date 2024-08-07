@@ -1,15 +1,16 @@
 import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeftToLine,
+  ChevronLeft,
+  ChevronRight,
   Package2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Breadcrumbs from './Breadcrumb';
-import useTokenStore from '@/store';
-import Navigation from './Navigation';
+import Breadcrumbs from '../userDefinedComponents/Breadcrumb';
+import useTokenStore from '@/store/store';
+import Navigation from '../userDefinedComponents/Navigation';
 import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
-import { routePaths } from '@/router';
+import routePaths from '@/lib/routePath';
 import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
 import { useState } from 'react';
 const DashboardLayout = () => {
@@ -34,8 +35,8 @@ const DashboardLayout = () => {
     <BreadcrumbsProvider>
       <div className={`${navCollapse ? 'flex min-h-screen w-full flex-col bg-muted/40' : 'grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'}  `}>
         <div className={`${navCollapse ? 'fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex' : 'hidden border-r bg-muted/40 md:block'}`}>
-          <div className="flex flex-col h-full gap-2 overflow-hidden">
-            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <div className="flex flex-col h-full gap-2">
+            <div className="flex h-14 items-center border-b px-2 lg:h-[60px] lg:px-3 relative">
               <Link to={routePaths.dashboard.home} className="flex items-center gap-2 font-semibold">
                 <Package2 className="h-6 w-6" />
                 {
@@ -43,11 +44,12 @@ const DashboardLayout = () => {
                 }
 
               </Link>
-              {
-                !navCollapse ? <Button onClick={handleNavigate} variant="outline" size="icon" className="ml-auto h-8 w-8">
-                  <ArrowLeftToLine />
-                </Button> : ""
-              }
+              <Button onClick={handleNavigate} variant="outline" size="icon" className="ml-auto h-8 w-8 absolute top-3 right-[-15px]">
+                {
+
+                  !navCollapse ? <ChevronLeft /> : <ChevronRight />}
+              </Button>
+
 
             </div>
             <Navigation

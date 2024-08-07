@@ -1,27 +1,26 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import './index.css';
-import AuthLayout, { AdminRoute } from './layouts/AuthLayout';
-import DashboardLayout from './layouts/DashboardLayout';
-import HomeLayout from './layouts/HomeLayout';
-import routePaths from './routePath';
-import PrivateRoutes from './util/PrivateRoutes';
+import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
+import DashboardLayout from '@/layouts/DashboardLayout';
+import HomeLayout from '@/layouts/HomeLayout';
+import routePaths from '@/lib/routePath';
+import PrivateRoutes from '@/util/PrivateRoutes';
 
-const GalleryPage = lazy(() => import('./pages/Gallery/GalleryPage'));
-const EditUser = lazy(() => import('./pages/Users/EditUser'));
-const EditTour = lazy(() => import('./pages/Tours/EditTour'));
-const Subscriber = lazy(() => import('./pages/Subscriber/Subscriber'));
-const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
-const HomePage = lazy(() => import('./pages/Dashboard/HomePage'));
-const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'));
-const UserPage = lazy(() => import('./pages/Users/UserPage'));
-const TourPage = lazy(() => import('./pages/Tours/TourPage'));
-const AddTour = lazy(() => import('./pages/Tours/AddTour'));
-const AddUser = lazy(() => import('./pages/Users/AddUser'));
-const ErrorPage = lazy(() => import('./pages/Error/ErrorPage'));
-const TourSetting = lazy(() => import('./pages/Tours/TourSetting'));
-const TourCategory = lazy(() => import('./pages/Tours/TourCategory'));
-const Home = lazy(() => import('./pages/Home/Home'));
+const GalleryPage = lazy(() => import('@/pages/Gallery/GalleryPage'));
+const EditUser = lazy(() => import('@/pages/Users/EditUser'));
+const EditTour = lazy(() => import('@/pages/Tours/EditTour'));
+const Subscriber = lazy(() => import('@/pages/Subscriber/Subscriber'));
+const LoginPage = lazy(() => import('@/pages/Auth/LoginPage'));
+const HomePage = lazy(() => import('@/pages/Dashboard/HomePage'));
+const RegisterPage = lazy(() => import('@/pages/Auth/RegisterPage'));
+const UserPage = lazy(() => import('@/pages/Users/UserPage'));
+const TourPage = lazy(() => import('@/pages/Tours/TourPage'));
+const AddTour = lazy(() => import('@/pages/Tours/AddTour'));
+const AddUser = lazy(() => import('@/pages/Users/AddUser'));
+const ErrorPage = lazy(() => import('@/pages/Error/ErrorPage'));
+const TourSetting = lazy(() => import('@/pages/Tours/TourSetting'));
+const TourCategory = lazy(() => import('@/pages/Tours/TourCategory'));
+const Home = lazy(() => import('@/pages/Home/Home'));
 
 const router = createBrowserRouter([
   {

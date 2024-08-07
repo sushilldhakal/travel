@@ -5,9 +5,8 @@ import { login, register, verifyEmail, forgotPassword, resetPassword } from "@/h
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import useTokenStore from '@/store';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Check, ContactRound, FolderPen, LockKeyhole, Mail, Repeat1, Smartphone } from "lucide-react";
+import useTokenStore from '@/store/store';
+import { Check, ContactRound, FolderPen, LockKeyhole, Mail, Smartphone } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 import { Switch } from "@/components/ui/switch";
 import './login.css';
@@ -28,14 +27,12 @@ const LoginPage = () => {
 
   const nameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const newPasswordRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const [checked, setChecked] = useState(false);
   const [showForm, setShowForm] = useState('login');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
-
-  const switchForm = (formType) => setShowForm(formType);
+  const switchForm = (formType: string) => setShowForm(formType);
   const [forgotToken, setForgotToken] = useState('');
   useEffect(() => {
     // Add the class if the path matches
@@ -61,7 +58,7 @@ const LoginPage = () => {
       document.body.classList.remove('login-page');
       document.body.classList.remove('forgot');
     };
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
 
   const resetPasswordMutation = useMutation({
@@ -80,7 +77,7 @@ const LoginPage = () => {
     }),
   });
 
-  const handleConfirmPasswordSubmit = (e: React.FormEvent) => {
+  const handleConfirmPasswordSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const token = forgotToken;
     const password = confirmPasswordRef.current?.value.trim() || '';
@@ -91,9 +88,13 @@ const LoginPage = () => {
     mutationFn: register,
     onSuccess: (response) => {
       verifyForm();
+      toast({
+        title: 'Registration Successful',
+        description: `${response} Your account has been created successfully. Please verify your email address to log in.`,
+      });
     }, onError: (error) => toast({
       title: 'Incorrect Email or Password',
-      description: `Please Enter new email and password`,
+      description: `${error}Please Enter new email and password`,
     })
   });
 
@@ -112,7 +113,7 @@ const LoginPage = () => {
       }
     }, onError: (error) => toast({
       title: 'Incorrect Email or Password',
-      description: `Please Enter your email and password`,
+      description: `${error}Please Enter your email and password`,
     }),
   });
 
@@ -204,7 +205,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleForgotPasswordSubmit = (e) => {
+  const handleForgotPasswordSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (validateForgotPassword()) {
       const email = forgotPasswordEmailRef.current?.value ?? '';
@@ -222,14 +223,21 @@ const LoginPage = () => {
     setShowForm('forgot-section login');
   }
 
-  const handleTicket = (e) => {
-    if (e.target.nextElementSibling) {
+  const handleTicket = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.target instanceof Element && e.target.nextElementSibling) {
       e.target.nextElementSibling.classList.add('selected');
     }
   }
 
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (forgotToken) {
+      handleConfirmPasswordSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+    } else {
+      handleForgotPasswordSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+    }
+  };
 
-  const handleChecked = (e) => {
+  const handleChecked = () => {
     setChecked(!checked);
   }
 
@@ -330,7 +338,7 @@ const LoginPage = () => {
                         <Check />
                       </div>
                     </div>
-                    <Button className="btn forgot-btn forgot_fields__user" onClick={forgotToken ? handleConfirmPasswordSubmit : handleForgotPasswordSubmit}>
+                    <Button className="btn forgot-btn forgot_fields__user" onClick={handleButtonClick}>
                       Submit
                     </Button>
                   </div>
@@ -423,56 +431,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
-
-
-{/* <Card className="mx-full max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>
-              Enter your email below to login to your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  ref={emailRef}
-                  placeholder="m@example.com"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link to="#" className="ml-auto inline-block text-sm underline">
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input ref={passwordRef} id="password" type="password" required />
-              </div>
-              <Button
-                onClick={handleLoginSubmit}
-                className="w-full"
-                disabled={mutation.isPending}>
-                {mutation.isPending && <LoaderCircle className="animate-spin" />}
-
-                <span className="ml-2">Sign in</span>
-              </Button>
-
-              <div className="flex items-center space-x-2">
-                <Switch id="longLogin" />
-                <Label htmlFor="longLogin">Keep me logged in</Label>
-              </div>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link to={routePaths.auth.register} className="underline">
-                Sign up
-              </Link>
-            </div>
-          </CardContent>
-        </Card> */}

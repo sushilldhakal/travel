@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFacebookF, faYoutube, faInstagram, faTwitter, faLinkedin, faAirbnb } from '@fortawesome/free-brands-svg-icons'
 import { faClock, faPhone } from '@fortawesome/free-solid-svg-icons'
-import { UserMenuItems } from "@/layouts/MenuItems";
+import { UserMenuItems } from "@/lib/MenuItems";
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link } from "react-router-dom";

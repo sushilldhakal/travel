@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import Icon from './Icon';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: boolean }) => {
   const location = useLocation(); // Hook to get current location
@@ -33,24 +34,16 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
             {item.children ? (
               <div
                 onClick={toggleChildren}
-                className={`flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
+                className={`flex relative items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
               >
                 <Tooltip>
                   <TooltipTrigger>
 
                     {<item.icon />}
                     <span className="menu-title">{!navCollapse ? item.title : ''}</span>
-                    {item.children && isOpen ? (
-                      <span className="ml-auto">
-                        {!navCollapse ? <Icon name="CircleArrowUp" /> : ''}
-
-                      </span>
-                    ) : (
-                      <span className="ml-auto">
-                        {!navCollapse ? <Icon name="CircleArrowDown" /> : ''}
-
-                      </span>
-                    )}
+                    <span className="ml-auto absolute top-2 right-1">
+                      {item.children && isOpen ? <ChevronUp /> : <ChevronDown />}
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{item.title}</p>
@@ -61,7 +54,7 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
             ) : (
               <NavLink
                 to={item.url || ''}
-                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted' : ''}`}
+                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted text-primary hover:bg-muted' : ''}`}
               >
                 <Tooltip>
                   <TooltipTrigger>
@@ -81,9 +74,12 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
             {
               item.children && isOpen && (
                 <div className={`${navCollapse ? 'menu-children shadow-inherit pl-1 text-xs border-l-2' : 'menu-children shadow-inherit pl-3 text-xs'}`}>
+
                   {item.children.map((child) => (
                     <MenuItem navCollapse={navCollapse} key={child.id} item={child} />
                   ))}
+
+
                 </div>
               )
             }
@@ -97,7 +93,7 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
             {item.children ? (
               <div
                 onClick={toggleChildren}
-                className={`flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
+                className={`flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted text-primary hover:bg-muted' : ''}`}
               >
 
 
@@ -105,12 +101,12 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
                 <span className="menu-title">{!navCollapse ? item.title : ''}</span>
                 {item.children && isOpen ? (
                   <span className="ml-auto">
-                    {!navCollapse ? <Icon name="CircleArrowUp" /> : ''}
+                    {!navCollapse ? <ChevronUp /> : ''}
 
                   </span>
                 ) : (
                   <span className="ml-auto">
-                    {!navCollapse ? <Icon name="CircleArrowDown" /> : ''}
+                    {!navCollapse ? <ChevronDown /> : ''}
 
                   </span>
                 )}
@@ -120,7 +116,7 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
             ) : (
               <NavLink
                 to={item.url || ''}
-                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted' : ''}`}
+                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted text-primary hover:bg-muted' : ''}`}
               >
 
                 {<item.icon />}

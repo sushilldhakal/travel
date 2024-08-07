@@ -1,5 +1,5 @@
-import routePaths from "../routePath";
-import { FilePlus, Footprints, Layers3, LayoutDashboard, ListCollapse, MailCheck, Settings, Users } from "lucide-react";
+import routePaths from "./routePath";
+import { FilePlus, Footprints, Images, Layers3, LayoutDashboard, ListCollapse, MailCheck, Settings, Users } from "lucide-react";
   
 
 export const UserMenuItems = {
@@ -87,7 +87,7 @@ export const UserMenuItems = {
         id: "gallery",
         title: "Gallery",
         type: "item",
-        icon: Footprints,
+        icon: Images,
         url: routePaths.dashboard.gallery,
       },
       {
