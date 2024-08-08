@@ -1,60 +1,75 @@
 import { createImageUpload } from "novel/plugins";
+import { getUserId } from "@/util/AuthLayout";
+import { addImages } from "@/http/api";
 import { toast } from "sonner";
 
-const onUpload = (file: File) => {
-  const promise = fetch("/api/upload", {
-    method: "POST",
-    headers: {
-      "content-type": file?.type || "application/octet-stream",
-      "x-vercel-filename": file?.name || "image.png",
-    },
-    body: file,
-  });
 
-  return new Promise((resolve, reject) => {
-    toast.promise(
-      promise.then(async (res) => {
-        // Successfully uploaded image
-        if (res.status === 200) {
-          const { url } = (await res.json()) as { url: string };
-          // preload the image
-          const image = new Image();
-          image.src = url;
-          image.onload = () => {
-            resolve(url);
-          };
-          // No blob store configured
-        } else if (res.status === 401) {
-          resolve(file);
-          throw new Error("`BLOB_READ_WRITE_TOKEN` environment variable not found, reading image locally instead.");
-          // Unknown error
-        } else {
-          throw new Error("Error uploading image. Please try again.");
-        }
-      }),
-      {
-        loading: "Uploading image...",
-        success: "Image uploaded successfully.",
-        error: (e) => {
-          reject(e);
-          return e.message;
-        },
-      },
-    );
-  });
+const base64ToFile = (base64: string, filename: string, mimeType: string): File => {
+  const byteString = atob(base64.split(',')[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new File([ab], filename, { type: mimeType });
 };
 
+
+// Get userId using a function
+const uploadImageFiles = async (files: File[]): Promise<string[]> => {
+  const userId = getUserId();
+  if (!userId) throw new Error('User ID is null');
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('imageList', file);
+  });
+  try {
+    const response = await addImages(formData, userId);
+    if (response && response.urls) {
+      return response.urls; // Ensure response contains URLs
+    } else {
+      throw new Error('No URLs in response');
+    }
+  } catch (error) {
+    console.error('Error uploading images:', error);
+    throw error;
+  }
+};
+
+// Image upload function
 export const uploadFn = createImageUpload({
-  onUpload,
+  onUpload: async (file: File | string) => {
+    if (typeof file === 'string') {
+      const [mimeType, base64] = file.split(';base64,');
+      const extension = mimeType.split('/')[1];
+      const filename = `image.${extension}`;
+      file = base64ToFile(base64, filename, mimeType);
+    }
+
+    try {
+      // Call the upload function
+      const imageUrls = await uploadImageFiles([file]);
+      return imageUrls[0]; // Assuming you want to return the first URL
+    } catch (error) {
+      console.error(error);
+      throw new Error('Failed to upload image');
+    }
+  },
   validateFn: (file) => {
+    if (typeof file === 'string') {
+      // Additional validation for base64 strings if needed
+      return true;
+    }
+
     if (!file.type.includes("image/")) {
       toast.error("File type not supported.");
       return false;
     }
-    if (file.size / 1024 / 1024 > 20) {
-      toast.error("File size too big (max 20MB).");
+    if (file.size / 1024 / 1024 > 10) {
+      toast.error("File size too big (max 10MB).");
       return false;
     }
     return true;
   },
 });
+

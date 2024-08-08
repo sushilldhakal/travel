@@ -3,7 +3,7 @@ export const defaultValue = {
     content: [
       {
         type: "heading",
-        attrs: { level: 2 },
+        attrs: { level: 1 },
         content: [{ type: "text", text: "Please Enter your Description here. You can use / to access more features." }],
       },
     ],

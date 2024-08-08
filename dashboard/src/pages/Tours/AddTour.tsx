@@ -76,7 +76,7 @@ const AddTour: React.FC = () => {
   const [singleTour, setSingleTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast()
-  const [editorContent, setEditorContent] = useState<JSONContent>(defaultValue);
+  const [editorContent, setEditorContent] = useState();
 
   const form = useForm({
     resolver: zodResolver(formSchema),

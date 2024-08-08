@@ -14,14 +14,12 @@ import {
 } from "lucide-react";
 import { createSuggestionItems } from "novel/extensions";
 import { Command, renderItems } from "novel/extensions";
-import { uploadFn } from "./image-upload";
 import Magic from "@/assets/icons/magic";
 import { generateCompletion } from "@/http/api";
 import {
   type JSONContent,
 } from "novel";
 import { toast } from "sonner";
-
 
 const extractTextFromJSONContent = (jsonContent: JSONContent): string => {
   let text = '';
@@ -39,6 +37,7 @@ const extractTextFromJSONContent = (jsonContent: JSONContent): string => {
   traverse(jsonContent);
   return text;
 };
+
 
 
 export const suggestionItems = createSuggestionItems([
@@ -150,25 +149,13 @@ export const suggestionItems = createSuggestionItems([
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
   {
-    title: "Image",
+    title: "Gallery Image",
     description: "Select an image from the gallery.",
-    searchTerms: ["photo", "picture", "media"],
+    searchTerms: ["gallery"],
     icon: <ImageIcon size={18} />,
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      // upload image
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.onchange = async () => {
-        if (input.files?.length) {
-          const file = input.files[0];
-          const pos = editor.view.state.selection.from;
-          uploadFn(file, editor.view, pos);
-        }
-      };
-      input.click();
-    },
+    // command: ({ editor, range }) => {
+    //   editor.chain().focus().deleteRange(range).run();
+    // }
   },
   {
     title: "Youtube",

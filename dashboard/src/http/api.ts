@@ -160,6 +160,7 @@ export const getAllImages = async ({ pageParam = null }) => {
                 'Content-Type': 'multipart/form-data',
             },
         });
+        console.log("response.data", response.data)
         return response.data;
     } catch (error) {
         console.error('Error uploading images:', error);

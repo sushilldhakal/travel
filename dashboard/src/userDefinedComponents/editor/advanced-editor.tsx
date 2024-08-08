@@ -33,6 +33,7 @@ import hljs from 'highlight.js';
 
 import '@/assets/css/editor.css';
 import GalleryPage from "@/pages/Gallery/GalleryPage";
+import CustomEditorCommandItem from "./CustomEditorCommandItem";
 
 const extensions = [...defaultExtensions, slashCommand];
 
@@ -47,6 +48,7 @@ interface SuggestionItem {
   description: string;
   icon: JSX.Element;
   command?: (props: { editor: EditorInstance; range: Range }) => void;
+  onEnterPress?: () => void;
 }
 
 const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
@@ -60,26 +62,33 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
   const [openAI, setOpenAI] = useState(false);
 
   const [editorInstance, setEditorInstance] = useState<EditorInstance | null>(null);
-  const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    if (editorInstance) {
-      // Initialize editor with initialValue or other setup
-    }
-  }, [editorInstance, initialValue]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
 
-  const handleImageSelect = (imageUrl) => {
+
+  const handleImageSelect = (imageUrl: string) => {
     if (editorInstance) {
       const { schema, view } = editorInstance;
-      const { dispatch } = view;
-      // Create an image node
+      const { dispatch, state } = view;
+
       const imageNode = schema.nodes.image.create({
         src: imageUrl,
       });
+
+      const { $from } = state.selection;
+      const commandStart = $from.pos - '/gallery'.length;
+
       // Insert image node at the current cursor position
-      dispatch(view.state.tr.insert(view.state.selection.$from.pos, imageNode));
-      setOpen(false);
+      dispatch(
+        state.tr
+          .insert($from.pos, imageNode)
+          .deleteRange(commandStart, $from.pos)
+      );
+
+      if (imageUrl) {
+        setDialogOpen(!dialogOpen);
+
+      }
     }
   };
   // Apply Codeblock Highlighting on the HTML from editor.getHTML()
@@ -105,7 +114,10 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
 
   useEffect(() => {
     setInitialContent(initialValue);
+    console.log("dialogOpen", dialogOpen)
   }, [initialValue]);
+
+
 
   return (
     <div className="relative w-full max-w-screen-lg">
@@ -116,106 +128,105 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
         </div>
       </div>
       <EditorRoot>
-        {initialContent && (
-          <EditorContent
-            initialContent={initialContent}
-            extensions={extensions}
-            className="relative pl-10 pr-5 pt-5 min-h-[300px] w-full max-w-screen-lg border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
-            editorProps={{
-              handleDOMEvents: {
-                keydown: (_view, event) => handleCommandNavigation(event),
-              },
-              handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
-              handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
-              attributes: {
-                class:
-                  "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
-              },
-            }}
-            onUpdate={({ editor }) => {
-              setEditorInstance(editor);
-              debouncedUpdates(editor);
-              setSaveStatus("Unsaved");
-            }}
-            slotAfter={<ImageResizer />}
-          >
-            <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
-              <EditorCommandEmpty className="px-2 text-muted-foreground">No results</EditorCommandEmpty>
-              <EditorCommandList>
+        <EditorContent
+          initialContent={initialContent}
+          extensions={extensions}
+          className="relative pl-10 pr-5 pt-5 min-h-[300px] w-full max-w-screen-lg border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
+          editorProps={{
+            handleDOMEvents: {
+              keydown: (_view, event) => handleCommandNavigation(event),
+            },
+            handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
+            handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
+            attributes: {
+              class:
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+            },
+          }}
+          onUpdate={({ editor }) => {
+            debouncedUpdates(editor);
+            setSaveStatus("Unsaved");
+          }}
+          slotAfter={<ImageResizer />}
+        >
+          <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
+            <EditorCommandEmpty className="px-2 text-muted-foreground">No results</EditorCommandEmpty>
+            <EditorCommandList>
 
-                {suggestionItems.map((item) => (
-                  <EditorCommandItem
-                    value={item.title}
-                    onCommand={(val) => {
-                      if (item.command) {
-                        item.command(val);
-                      }
-                    }}
-                    className="flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent aria-selected:bg-accent"
-                    key={item.title}
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-background">
-                      {item.icon}
-                    </div>
+              {suggestionItems.map((item) => (
+                <CustomEditorCommandItem
+                  key={item.title}
+                  value={item.title}
+                  onCommand={({ editor, range }) => {
+                    if (item.command) {
+                      item.command({ editor, range });
+                    }
+                  }}
+                  onEnterPress={() => {
+                    console.log("Gallery");
+                    if (item.title === "Gallery Image") {
+                      setDialogOpen(true); // Open the dialog when Enter is pressed
+                    }
+                  }}
+                  className="flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent aria-selected:bg-accent"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-background">
+                    {item.icon}
+                  </div>
+                  <div>
+                    {
+                      item.title === "Gallery Image" ? (
+                        <>
+                          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                            <DialogTrigger><p className="font-medium text-left">{item.title}</p>
+                              <p className="text-xs text-muted-foreground">{item.description}</p></DialogTrigger>
+                            <DialogContent className="z-[99999] asDialog"
+                              onInteractOutside={(e) => {
+                                e.preventDefault();
+                              }}
+                            >
+                              <DialogHeader >
+                                <DialogTitle className="mb-3">Choose Image From Gallery</DialogTitle>
+                                <div className="upload dialog">
+                                  <GalleryPage onImageSelect={handleImageSelect} />
+                                </div>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            <p className="font-medium">{item.title}</p>
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          </span>
 
-                    <div>
-                      {/* <p className="font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.description}</p> */}
-                      {
-                        item.title === "Image" ? (
+                        </>
+                      )
 
-                          <>
-
-                            <Dialog open={open} onOpenChange={setOpen}>
-                              <DialogTrigger><p className="font-medium text-left">{item.title}</p>
-                                <p className="text-xs text-muted-foreground">{item.description}</p></DialogTrigger>
-                              <DialogContent className="z-9999 asDialog">
-                                <DialogHeader >
-                                  <DialogTitle className="mb-3">Choose Image From Gallery</DialogTitle>
-                                  <div className="upload dialog">
-                                    <GalleryPage onImageSelect={handleImageSelect} />
-                                  </div>
-                                </DialogHeader>
-                              </DialogContent>
-                            </Dialog>
-                          </>
+                    }
+                  </div>
+                </CustomEditorCommandItem>
+              ))}
 
 
-                        ) : (
-                          <>
-                            <span>
+            </EditorCommandList>
+          </EditorCommand>
 
-                              <p className="font-medium">{item.title}</p>
-                              <p className="text-xs text-muted-foreground">{item.description}</p>
-                            </span>
+          <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
+            <Separator orientation="vertical" />
+            <NodeSelector open={openNode} onOpenChange={setOpenNode} />
+            <Separator orientation="vertical" />
 
-                          </>
-                        )
-
-                      }
-                    </div>
-                  </EditorCommandItem>
-                ))}
-
-
-              </EditorCommandList>
-            </EditorCommand>
-
-            <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
-              <Separator orientation="vertical" />
-              <NodeSelector open={openNode} onOpenChange={setOpenNode} />
-              <Separator orientation="vertical" />
-
-              <LinkSelector open={openLink} onOpenChange={setOpenLink} />
-              <Separator orientation="vertical" />
-              <MathSelector />
-              <Separator orientation="vertical" />
-              <TextButtons />
-              <Separator orientation="vertical" />
-              <ColorSelector open={openColor} onOpenChange={setOpenColor} />
-            </GenerativeMenuSwitch>
-          </EditorContent>
-        )}
+            <LinkSelector open={openLink} onOpenChange={setOpenLink} />
+            <Separator orientation="vertical" />
+            <MathSelector />
+            <Separator orientation="vertical" />
+            <TextButtons />
+            <Separator orientation="vertical" />
+            <ColorSelector open={openColor} onOpenChange={setOpenColor} />
+          </GenerativeMenuSwitch>
+        </EditorContent>
       </EditorRoot>
     </div>
   );

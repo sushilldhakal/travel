@@ -303,7 +303,7 @@ const GalleryPage = ({ onImageSelect }) => {
                     </SheetContent>
                 </Sheet>
             </div>
-            <div className=" grid grid-cols-2  sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            <div className=" grid grid-cols-2  sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
 
                 {uploadingFiles.length > 0 && uploadMutation.isPending && (
                     <>
@@ -332,7 +332,7 @@ const GalleryPage = ({ onImageSelect }) => {
                                 alt={image.display_name ? image.display_name : image.asset_id}
                                 width={300}
                                 height={300}
-                                className="aspect-square object-cover rounded-md"
+                                className="aspect-square object-cover rounded-md  w-full h-full"
                             />
                             <Button
                                 variant="ghost"
