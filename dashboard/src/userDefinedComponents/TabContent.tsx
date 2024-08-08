@@ -17,7 +17,6 @@ import { DropzoneOptions } from 'react-dropzone';
 import { FileInput, FileUploader, FileUploaderContent, FileUploaderItem } from '@/userDefinedComponents/FileUploader';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { defaultValue } from '@/lib/default-value';
 import { JSONContent } from "novel";
 import Editor from './editor/advanced-editor';
 import { TourData } from '@/Provider/types';
