@@ -1,7 +1,6 @@
 import React, { useCallback, useRef } from "react";
 import ImageItem from "./ImageItem";
 import { ImageResource } from "@/Provider/types";
-import ImageDetail from "./ImageDetail";
 
 interface ImageGridProps {
     images: ImageResource[];

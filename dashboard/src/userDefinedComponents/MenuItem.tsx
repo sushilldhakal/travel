@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import Icon from './Icon';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: boolean }) => {

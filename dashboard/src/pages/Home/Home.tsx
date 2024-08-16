@@ -5,8 +5,8 @@ const Home = () => {
     return (
         <div className="relative">
             <HomeSlider />
-            <div className="absolute top-20 right-0 w-full">
-                <div className="container mx-auto flex justify-end h-full ">
+            <div className="absolute inset-y-0 right-20 flex items-center pr-6 w-full max-w-[420px]">
+                <div className="container mx-auto ">
                     <Search />
                 </div>
             </div>
@@ -14,4 +14,4 @@ const Home = () => {
     )
 }
 
-export default Home
+export default Home;

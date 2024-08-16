@@ -30,7 +30,7 @@ const DashboardHeader = ({ handleLogout }: { handleLogout: () => void }) => {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col">
-          <Navigation />
+          <Navigation navCollapse={false} setNavCollapse={() => { }} />
         </SheetContent>
       </Sheet>
       <div className="w-full flex-1">

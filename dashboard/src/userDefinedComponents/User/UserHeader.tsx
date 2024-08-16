@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 
 const UserHeader = () => {
     return (
-        <Disclosure as="nav" className="h-10 bg-foreground">
+        <Disclosure as="nav" className="h-10 bg-secondary">
             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
                 <div className="relative flex items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -21,7 +21,7 @@ const UserHeader = () => {
                         </DisclosureButton>
 
                     </div>
-                    <div className="flex hidden sm:block flex-shrink-0 items-center text-secondary text-sm">
+                    <div className="flex hidden sm:block flex-shrink-0 items-center text-secondary-foreground  text-sm">
 
                         <span className='flex-initial w-64 pr-3'>
                             <FontAwesomeIcon icon={faPhone} className='pr-2 text-xs' />

@@ -12,8 +12,7 @@ const UserFooter = () => {
     const { toast } = useToast();
 
     const mutation = useMutation({
-        mutationFn: (email: string) => subscribe({ email }),
-        onSuccess: () => {
+        mutationFn: (email: string) => subscribe({ email: [email] }), onSuccess: () => {
             toast({
                 title: 'Success',
                 description: 'Subscribed successfully!',
@@ -38,7 +37,7 @@ const UserFooter = () => {
 
     return (
         <footer
-            className="relative z-1 bg-white pb-5 pt-20 lg:pb-5 lg:pt-[120px]"
+            className="relative z-1 bg-dark pb-5 pt-20 lg:pb-5 lg:pt-[120px]"
         >
             <div className="container mx-auto">
                 <div className="-mx-4 flex flex-wrap">

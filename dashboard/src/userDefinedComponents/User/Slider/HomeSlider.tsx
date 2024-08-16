@@ -2,15 +2,50 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useQuery } from "@tanstack/react-query";
-import { getTours } from "@/http/api";
+import { getLatestTours } from "@/http/api";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+
+const jsonToHtml = (json: any) => {
+    const createHtml = (node: any) => {
+        if (!node) return "";
+
+        switch (node.type) {
+            case "doc":
+                return (node.content || []).map(createHtml).join("") || "";
+
+            case "paragraph":
+                return `<p>${(node.content || []).map(createHtml).join("") || ""}</p>`;
+
+            case "text":
+                let text = node.text || "";
+                if (text.length > 400) {
+                    text = text.substring(0, 400) + "...Read More";
+                }
+                node.marks?.forEach((mark: any) => {
+                    if (mark.type === "link") {
+                        text = `<a href="${mark.attrs?.href || '#'}" target="${mark.attrs?.target || '_self'}">${text}</a>`;
+                    }
+                    if (mark.type === "code") {
+                        text = `<code>${text}</code>`;
+                    }
+                });
+                return text;
+
+            default:
+                console.warn(`Unhandled node type: ${node.type}`);
+                return "";
+        }
+    };
+
+    return createHtml(json);
+};
 
 
 const HomeSlider = () => {
     const { data } = useQuery({
         queryKey: ['tours'],
-        queryFn: getTours,
+        queryFn: getLatestTours,
     });
 
     const settings = {
@@ -28,13 +63,17 @@ const HomeSlider = () => {
         touchThreshold: 1000,
         cssEase: "ease"
     };
+    const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 1);
+    console.log(sortedTours)
 
-    const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5); console.log(data?.data.tours)
+
     return (
         <div className="overflow-hidden main-slider pattern-2">
             <Slider className="banner-slider" {...settings}>
-                {sortedTours?.map((tour: { _id: string; coverImage: string; title: string; description: string }) => (
-                    <div key={tour._id} className="w-full">
+                {sortedTours?.map((tour: any) => {
+                    const descriptionHtml = tour.description ? jsonToHtml(JSON.parse(tour.description)) : "No description available.";
+
+                    return (<div key={tour._id} className="w-full">
                         <div
                             className="banner-content"
                             style={{
@@ -45,13 +84,15 @@ const HomeSlider = () => {
                             }}
                         >
                             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
-                                <div className="overlay absolute z-10 p-5 text-white w-1/2">
+                                <div className="overlay relative z-10 p-5 text-white w-1/2">
                                     <h2 className="text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
-                                    <p className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide">
-                                        {tour.description ? `${tour.description.substring(0, 400)}...` : "No description available."}
-                                        <span><Link to={`/tours/${tour._id}`}>Read More</Link></span>
-                                    </p>
-                                    <div className="mt-5">
+
+                                    <p
+                                        className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide"
+                                        dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                                    />
+
+                                    <div className="mt-5 relative z-10">
                                         <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5">
                                             <Button>View Tour</Button>
                                         </Link>
@@ -65,7 +106,8 @@ const HomeSlider = () => {
                             <div className="showPattern"></div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </Slider>
         </div>
     )

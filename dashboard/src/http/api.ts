@@ -43,6 +43,8 @@ export const resetPassword = async (data: { token: string, password: string }) =
 //tours
 export const getTours = async () => api.get('/api/tours');
 
+export const getLatestTours = async () => api.get('/api/tours/latest');
+
 export const getSingleTour = async (tourId: string) => {
     try {
         const response = await api.get(`/api/tours/${tourId}`);
