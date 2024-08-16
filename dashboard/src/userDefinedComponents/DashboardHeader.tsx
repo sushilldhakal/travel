@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { ModeToggle } from "./ModeToggle"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Link } from "react-router-dom"
 
 const DashboardHeader = ({ handleLogout }: { handleLogout: () => void }) => {
 
@@ -54,6 +55,7 @@ const DashboardHeader = ({ handleLogout }: { handleLogout: () => void }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuSeparator />
+          <DropdownMenuItem><Link to="/"> Home Page </Link></DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
