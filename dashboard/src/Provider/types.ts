@@ -67,3 +67,12 @@ export interface BreadcrumbsContextType {
     onDelete: () => void;
     singleTour: boolean;
   }
+
+  export interface ImageResource {
+    asset_id: string;
+    secure_url: string;
+    display_name: string;
+    description: string;
+    url: string;
+    uploadedAt: Date;
+}

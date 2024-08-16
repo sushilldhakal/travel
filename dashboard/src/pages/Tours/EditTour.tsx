@@ -130,7 +130,7 @@ const EditTour: React.FC = () => {
             form.reset(defaultValues);
 
             try {
-                const parsedDescription = JSON.parse(singleTourData?.description || '{}');
+                const parsedDescription = JSON.parse(singleTourData.description || '');
                 setEditorContent(parsedDescription);
             } catch (error) {
                 console.error('Failed to parse description:', error);
@@ -139,7 +139,6 @@ const EditTour: React.FC = () => {
 
         }
     }, [singleTourData, form]);
-
     const tourMutation = useMutation({
         mutationFn: (data: FormData) => updateTour(tourId, data),
         onSuccess: () => {

@@ -26,6 +26,7 @@ const uploadImageFiles = async (files: File[]): Promise<string[]> => {
   try {
     const response = await addImages(formData, userId);
     if (response && response.urls) {
+      console.log('response', response);
       return response.urls; // Ensure response contains URLs
     } else {
       throw new Error('No URLs in response');

@@ -20,7 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { JSONContent } from "novel";
 import Editor from './editor/advanced-editor';
 import { TourData } from '@/Provider/types';
-import { Controller } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import GalleryPage from '@/pages/Gallery/GalleryPage';
 interface DivType {
     id: number;
     date: Date | undefined;
@@ -46,6 +48,7 @@ interface TabContentProps {
 const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCode, tabs, handleGenerateCode, tourMutation, singleTour, singleTourData, editorContent, onEditorContentChange }) => {
     const [divs, setDivs] = useState<DivType[]>([]);
     const [time, setTime] = useState<Date | undefined>(undefined);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return <div>Select a tab to see its content</div>;
     const handleAddDiv = () => {
@@ -58,14 +61,6 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
         setDivs(divs.map(div => (div.id === id ? { ...div, date: newDate } : div)));
     };
 
-    const dropzone: DropzoneOptions = {
-        accept: {
-            'image/*': ['.jpg', '.jpeg', '.png'],
-        },
-        multiple: false,
-        maxFiles: 1,
-        maxSize: 5 * 1024 * 1024, // 1 MB
-    };
     const dropzonePdf: DropzoneOptions = {
         accept: {
             'application/pdf': ['.pdf'],
@@ -75,7 +70,15 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
         maxSize: 5 * 1024 * 1024, // 1 MB
     };
 
-
+    const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
+        if (imageUrl) {
+            onChange(imageUrl); // Update the form field with the selected image URL
+            setDialogOpen(false); // Close the dialog
+        }
+    };
+    const handleRemoveImage = (onChange: (value: string) => void) => {
+        onChange(''); // Clear the form field
+    };
 
 
     return (
@@ -165,26 +168,9 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                                         form.setValue('description', JSON.stringify(content)); // Update the form value
                                     }}
                                 />
+
                             )}
                         />
-
-                        {/* <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            className="min-h-32"
-                                            {...field}
-                                            placeholder='Description'
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        /> */}
                     </div>
                     <div className="grid gap-3 auto-rows-max grid-cols-2">
                         <FormField
@@ -238,82 +224,70 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                     </div>
                     <div className="grid grid-flow-col grid-cols-2 gap-3">
                         <div className="w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                            {singleTour ?
-                                <span className="">
-                                    <img src={singleTourData?.coverImage} alt={singleTourData?.title} />
-                                    <p className="mt-2 pl-6">Change Cover Image</p>
-                                </span> : ''}
-                            <div className="flex flex-col h-[200px]  space-y-1.5 p-6 relative">
 
+                            <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                                 <FormField
                                     control={form.control}
                                     name="coverImage"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Cover Image</FormLabel>
-                                            <FileUploader
-                                                value={field.value}
-                                                // onValueChange={field.onChange}
-                                                onValueChange={(files) => {
-                                                    const dataTransfer = new DataTransfer();
-                                                    files?.forEach((file) => dataTransfer.items.add(file));
-                                                    field.onChange(dataTransfer.files);
-                                                }}
-                                                dropzoneOptions={dropzone}
-                                                reSelect={true}
-                                            >
-                                                <FileInput
-                                                    className={cn(
-                                                        buttonVariants({
-                                                            size: "icon",
-                                                        }),
-                                                        "size-8"
-                                                    )}
-                                                >
-                                                    <Paperclip className="size-4" />
-                                                    <span className="sr-only">Select your files</span>
-                                                </FileInput>
-                                                {field.value && field.value.length > 0 && (
-                                                    <FileUploaderContent className="absolute bottom-8 p-2 bottom-30  w-full -ml-3 rounded-b-none rounded-t-md flex-row gap-2 ">
-                                                        {Array.from(field.value).map((file, i) => {
-                                                            if (!(file instanceof File)) return null; // Add this type guard
-                                                            return (
-                                                                <FileUploaderItem
-                                                                    key={i}
-                                                                    index={i}
-                                                                    aria-roledescription={`file ${i + 1} containing ${file.name
-                                                                        }`}
-                                                                    className="p-0 size-20"
-                                                                >
-                                                                    <AspectRatio className="size-full">
-                                                                        <Link to={URL.createObjectURL(file)} className="block" target="_blank">
-                                                                            <img
-                                                                                src={URL.createObjectURL(file)}
-                                                                                alt={file.name}
-                                                                                className="object-cover rounded-md"
-                                                                            />
-                                                                        </Link>
+                                            <FormLabel>Cover Image <br /></FormLabel>
+                                            {field.value ? (
+                                                <div className="mt-2 relative">
+                                                    <Link to={field.value} target="_blank" rel="noopener noreferrer">
+                                                        <img
+                                                            src={field.value}
+                                                            alt="Selected Cover Image"
+                                                            className="rounded-md w-full "
 
-                                                                    </AspectRatio>
-                                                                    <button
-                                                                        type="button"
-                                                                        className={cn(
-                                                                            "absolute top-1  right-1 z-10"
-                                                                        )}
-                                                                        onClick={() => {
-                                                                            const files = Array.from(field.value);
-                                                                            field.onChange(files.filter((file, index) => index !== 0));
-                                                                        }}
-                                                                    >
-                                                                        <span className="sr-only">remove item</span>
-                                                                        <Trash2 className="w-4 h-4 hover:stroke-destructive duration-200 ease-in-out" />
-                                                                    </button>
-                                                                </FileUploaderItem>
-                                                            );
-                                                        })}
-                                                    </FileUploaderContent>
-                                                )}
-                                            </FileUploader>
+                                                        />
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveImage(field.onChange)}
+                                                        className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
+                                                    >
+                                                        <Trash2 />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                                                    <DialogTrigger >
+                                                        <div
+                                                            className={cn(
+                                                                buttonVariants({
+                                                                    size: "icon",
+                                                                }),
+                                                                "size-8"
+                                                            )}
+                                                        >
+                                                            <Paperclip className="size-4" />
+                                                            <span className="sr-only">Select your files</span>
+                                                        </div>
+                                                        <span className="pl-2">Choose Image</span></DialogTrigger>
+                                                    <DialogContent
+                                                        className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
+                                                        onInteractOutside={(e) => {
+                                                            e.preventDefault();
+                                                        }}
+                                                    >
+                                                        <DialogHeader>
+                                                            <DialogTitle className="mb-3 text-left">Choose Image From Gallery</DialogTitle>
+                                                            <div className="upload dialog">
+                                                                <GalleryPage
+                                                                    isGalleryPage={false}
+                                                                    onImageSelect={(imageUrl) =>
+                                                                        handleImageSelect(imageUrl, field.onChange)
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </DialogHeader>
+                                                        <DialogDescription>
+                                                            Select a Image.
+                                                        </DialogDescription>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
                                         </FormItem>
                                     )}
                                 />
@@ -323,7 +297,7 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                             <div className="flex relative flex-col space-y-1.5 p-6 h-[200px]">
                                 {singleTour && singleTourData.file ?
                                     <span className="">
-                                        <Link className='text-primary' to={singleTourData?.file} target="_blank">Download Tour PDF </Link>
+                                        <Link className='text-primary' to={singleTourData?.file ? singleTourData?.file : ''} target="_blank">Download Tour PDF </Link>
 
                                         <p className="mt-2 pl-6">Change Cover Image</p>
                                     </span> : ''}
@@ -405,7 +379,7 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
             </CardContent>
 
 
-            <div id="itinerary">
+            {/* <div id="itinerary">
                 <CardHeader>
                     <CardTitle>Itinerary Details</CardTitle>
                     <CardDescription>Enter Itinerary step by step format</CardDescription>
@@ -557,7 +531,7 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                         </Button>
                     </div>
                 </CardContent>
-            </div>
+            </div> */}
         </Card>
     )
 }

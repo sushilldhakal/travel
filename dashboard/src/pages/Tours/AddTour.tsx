@@ -14,8 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Loader from '@/userDefinedComponents/Loader';
 import TabContent from '@/userDefinedComponents/TabContent';
 import { HashLink } from 'react-router-hash-link';
-import { defaultValue } from '@/lib/default-value';
 import { JSONContent } from 'novel';
+import { defaultValue } from '@/lib/default-value';
 
 const tabs = [
   { id: 'overview', title: 'Overview' },
@@ -61,9 +61,7 @@ const formSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   tourStatus: z.string(),
   price: z.number().min(0, 'Price must be a positive number'),
-  coverImage: z.instanceof(FileList).refine((file) => {
-    return file.length == 1;
-  }, 'Cover Image is required'),
+  coverImage: z.string().min(1, 'Please Select a Cover Image'),
   file: z.any().optional(),
   //itinerary: itinerarySchema.optional() // Include the itinerary in the main schema
 });
@@ -76,7 +74,7 @@ const AddTour: React.FC = () => {
   const [singleTour, setSingleTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast()
-  const [editorContent, setEditorContent] = useState();
+  const [editorContent, setEditorContent] = useState(defaultValue);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -120,14 +118,12 @@ const AddTour: React.FC = () => {
     console.log(values);
     const formdata = new FormData();
     formdata.append('title', values.title);
-    formdata.append('code', values.code);
+    formdata.append('code', values.code.toUpperCase());
     //  formdata.append('description', values.description);
     formdata.append('description', JSON.stringify(editorContent));
     formdata.append('tourStatus', values.tourStatus);
     formdata.append('price', values.price.toString());
-    if (values.coverImage && values.coverImage[0]) {
-      formdata.append('coverImage', values.coverImage[0]);
-    }
+    formdata.append('coverImage', values.coverImage);
     if (values.file && values.file[0]) {
       formdata.append('file', values.file[0]);
     }
@@ -175,9 +171,6 @@ const AddTour: React.FC = () => {
       setActiveTab(location.hash.substring(1));
     }
   }, [location.hash]);
-
-  // const tab = tabs.find(t => t.id === activeTab);
-  // if (!tab) return <div>Select a tab to see its content</div>;
 
   const tabsWithContent = tabs.map(tab => ({
     ...tab,

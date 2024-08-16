@@ -12,11 +12,30 @@ import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
 import routePaths from '@/lib/routePath';
 import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 const DashboardLayout = () => {
   const { token, setToken } = useTokenStore((state) => state);
   const [navCollapse, setNavCollapse] = useState<boolean>(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setNavCollapse(true);
+      } else {
+        setNavCollapse(false);
+      }
+    };
+
+    // Set the initial state based on the current window width
+    handleResize();
+
+    // Add event listener to handle window resize
+    window.addEventListener('resize', handleResize);
+
+    // Clean up the event listener on component unmount
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const handleLogout = () => {
     setToken('');
     localStorage.removeItem("token-store");
@@ -31,9 +50,12 @@ const DashboardLayout = () => {
   };
 
 
+
+
+
   return (
     <BreadcrumbsProvider>
-      <div className={`${navCollapse ? 'flex min-h-screen w-full flex-col bg-muted/40' : 'grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'}  `}>
+      <div className={`${navCollapse ? 'flex min-h-screen w-full flex-col bg-muted/40' : 'grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[220px_1fr]'}  `}>
         <div className={`${navCollapse ? 'fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex' : 'hidden border-r bg-muted/40 md:block'}`}>
           <div className="flex flex-col h-full gap-2">
             <div className="flex h-14 items-center border-b px-2 lg:h-[60px] lg:px-3 relative">

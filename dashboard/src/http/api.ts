@@ -153,6 +153,27 @@ export const getAllImages = async ({ pageParam = null }) => {
     }
   };
 
+  export const getSingleImage = async (imageUrl: string) => {
+    const publicId = extractPublicId(imageUrl);
+    try {
+        const response = await api.get(`/api/gallery/${publicId}`);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error getting image: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error getting image: ${String(error)}`);
+        }
+    }
+  };
+
+  const extractPublicId = (url: string) => {
+    const parts = url.split('/');
+    const fileName = parts.pop(); // Get the last part of the URL
+    const publicId = fileName?.split('.')[0]; // Remove the file extension
+    return publicId;
+  };
+
   export const addImages = async (formData: FormData, userId: string) => {
     try {
         const response = await api.post(`/api/gallery/${userId}`, formData, {

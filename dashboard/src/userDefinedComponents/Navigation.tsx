@@ -12,7 +12,7 @@ const Navigation = ({ navCollapse, setNavCollapse }: { navCollapse: boolean, set
   const filteredMenuItems = filterMenuItems(menuItems.items, roles);
   return (
     <div className="flex-1">
-      <nav className={`${navCollapse ? "grid items-start text-sm font-medium" : "grid items-start px-2 text-sm font-medium lg:px-4"}`}>
+      <nav className={`${navCollapse ? "grid items-start text-sm font-medium" : "grid sticky top-3 items-start px-2 text-sm font-medium lg:px-4"}`}>
         {filteredMenuItems.map((item) => (
           <MenuItem
             //@ts-expect-error
