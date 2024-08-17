@@ -19,7 +19,7 @@ const FrontTours = () => {
 
       <div className="banner pattern-2 relative" style={{ backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1722998270/main/tour-cover/jcr8shoq75elaafzlb6e.jpg")`, backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "cover" }} >
         <div className="showPattern"></div>
-        <div className="mx-auto max-w-screen-xl px-4 2xl:px-0">
+        <div className="mx-auto max-w-screen-xl 2xl:px-0">
           <BreadCrumbTourList />
         </div>
       </div >
