@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
-import DashboardLayout from '@/layouts/DashboardLayout';
-import HomeLayout from '@/layouts/HomeLayout';
 import routePaths from '@/lib/routePath';
 import PrivateRoutes from '@/util/PrivateRoutes';
-
+const DashboardLayout = lazy(() => import('@/layouts/DashboardLayout'));
+const HomeLayout = lazy(() => import('@/layouts/HomeLayout'));
+const FrontTours = lazy(() => import('@/pages/FrontEnd/Tours/FrontTours'));
+const FrontSingleTours = lazy(() => import('@/pages/FrontEnd/SingleTours/FrontSingleTours'));
 const GalleryPage = lazy(() => import('@/pages/Gallery/GalleryPage'));
 const EditUser = lazy(() => import('@/pages/Users/EditUser'));
 const EditTour = lazy(() => import('@/pages/Tours/EditTour'));
@@ -35,7 +36,21 @@ const router = createBrowserRouter([
             <Home />
           </Suspense>
         ),
-      },
+      }, {
+        path: routePaths.home.tours,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <FrontTours />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.singleTours,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <FrontSingleTours />
+          </Suspense>
+        ),
+      }
     ],
   },
   {
@@ -104,7 +119,7 @@ const router = createBrowserRouter([
             path: routePaths.dashboard.singleTours,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <AddTour />
+                <EditTour />
               </Suspense>
             ),
           },
@@ -152,7 +167,7 @@ const router = createBrowserRouter([
             path: routePaths.dashboard.gallery,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <GalleryPage />
+                <GalleryPage onImageSelect={() => { }} isGalleryPage={true} />
               </Suspense>
             ),
           },

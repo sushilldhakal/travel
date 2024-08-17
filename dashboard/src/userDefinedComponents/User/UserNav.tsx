@@ -58,7 +58,7 @@ const UserNav = () => {
 
     return (
         <Disclosure as="nav" className="bg-secondary text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary" id="main-header">
-            <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl">
                 <div className="relative flex h-16 items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                         {/* Mobile menu button*/}
