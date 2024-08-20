@@ -5,11 +5,5 @@
             "destination": "/index.html"
         }
     ],
-    "installCommand": "npm install --force",
-    "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node"
-    }
-  ]
+    "installCommand": "npm install --force"
 }
