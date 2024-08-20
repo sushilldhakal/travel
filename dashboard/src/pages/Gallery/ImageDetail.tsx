@@ -107,7 +107,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
     }
 
     if (error) {
-        return <div>Error loading image: {error.message}</div>;
+        return <div>Error loading image:{''} {error.message}</div>;
     }
     // Display the image details
     return (
