@@ -12,9 +12,6 @@ const FrontTours = () => {
     queryFn: getTours,
   });
 
-
-
-  console.log(data)
   return (
     <>
 

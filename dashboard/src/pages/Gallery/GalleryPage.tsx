@@ -67,13 +67,9 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
 
         return mergedImages;
     }, [data]);
-
-    console.log("userId", userId)
-
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
-            console.log("inside upload", formData)
             return addImages(formData, userId);
         },
         onMutate: (formData: FormData) => {
@@ -113,7 +109,6 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     });
 
     const handleUpload = () => {
-        console.log("formData", files)
 
         if (!files || files.length === 0) return;
         const formData = new FormData();

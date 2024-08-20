@@ -151,7 +151,6 @@ const LoginPage = () => {
   const validateLogin = () => {
     const email = loginEmailRef.current?.value.trim() || '';
     const password = passwordRef.current?.value.trim() || '';
-    console.log("email", email, "password", password);
     const newErrors: { [key: string]: string } = {};
     if (!email) newErrors.email = 'Email is required';
     if (!password) newErrors.password = 'Password is required';
@@ -199,8 +198,6 @@ const LoginPage = () => {
       const password = registerPasswordRef.current?.value ?? '';
       const name = nameRef.current?.value ?? '';
       const phone = phoneRef.current?.value ?? '';
-      console.log("inside handle registration");
-
       registrationMutation.mutate({ name, email, password, phone });
     }
   };

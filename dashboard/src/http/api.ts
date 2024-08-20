@@ -31,7 +31,6 @@ export const register = async (data: { name: string; email: string; password: st
     return  api.post('/api/users/register', data);
 }
 export const verifyEmail = async (data: { token: string }) => {
-    console.log("this is api page log",data)
     return api.post('/api/users/login/verify', data);
 }
 export const forgotPassword = async (data: { email: string }) => 
@@ -196,7 +195,6 @@ export const getAllImages = async ({ pageParam = null }) => {
                 'Content-Type': 'multipart/form-data',
             },
         });
-        console.log("response.data", response.data)
         return response.data;
     } catch (error) {
         console.error('Error uploading images:', error);

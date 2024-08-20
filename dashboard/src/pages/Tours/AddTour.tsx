@@ -115,7 +115,6 @@ const AddTour: React.FC = () => {
 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
     const formdata = new FormData();
     formdata.append('title', values.title);
     formdata.append('code', values.code.toUpperCase());
@@ -156,7 +155,6 @@ const AddTour: React.FC = () => {
           foundTab = tab.id;
         }
       }
-      console.log("foundTab", foundTab)
       setActiveTab(foundTab);
     };
 
@@ -178,7 +176,12 @@ const AddTour: React.FC = () => {
   }));
 
   const onError = (errors) => {
-    console.log('Validation errors:', errors);
+    toast({
+      title: 'Error',
+      description: `There are errors in the form${errors}`,
+      variant: 'destructive',
+      duration: 9000,
+    })
   };
 
   return (
@@ -193,9 +196,6 @@ const AddTour: React.FC = () => {
       <Form {...form}>
         <form onSubmit={(e) => {
           e.preventDefault()
-          console.log('handleSubmit called');
-          const values = form.getValues();
-          console.log(values); // Add this line
           form.handleSubmit(onSubmit, onError)();
         }}>
           <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">

@@ -49,8 +49,6 @@ export const suggestionItems = createSuggestionItems([
     command: async ({ editor, range }) => {
       const prompt: JSONContent = editor.getJSON(); // or however you get the current text
       const promptString = extractTextFromJSONContent(prompt);
-      console.log("Prompt:", prompt.content);
-      console.log("promptString:", promptString);
       editor.chain().focus().deleteRange(range).run();
       try {
         const response = await generateCompletion({

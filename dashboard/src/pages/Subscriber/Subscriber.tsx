@@ -105,7 +105,11 @@ const Subscriber = () => {
         try {
             await deleteMutation.mutateAsync({ email });
         } catch (error) {
-            console.log("error", (error as Error).message);
+            toast({
+                title: "Failed to remove subscriber",
+                description: `An unexpected error occurred. Please try again later.${error}`,
+                variant: "destructive",
+            })
         }
     };
     const columns: ColumnDef<Tour>[] = [

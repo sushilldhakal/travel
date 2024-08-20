@@ -66,7 +66,10 @@ const TourPage = () => {
     try {
       await mutation.mutateAsync(tourId);
     } catch (error) {
-      console.log("error", (error as Error).message);
+      toast({
+        title: "Failed to delete tour",
+        description: `An error occurred while deleting the tour. Please try again later.${error}`,
+      });
     }
   };
   const tableData = filteredTours;

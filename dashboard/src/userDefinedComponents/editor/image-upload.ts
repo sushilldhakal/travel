@@ -26,13 +26,17 @@ const uploadImageFiles = async (files: File[]): Promise<string[]> => {
   try {
     const response = await addImages(formData, userId);
     if (response && response.urls) {
-      console.log('response', response);
       return response.urls; // Ensure response contains URLs
     } else {
       throw new Error('No URLs in response');
     }
   } catch (error) {
-    console.error('Error uploading images:', error);
+    toast({
+      title: 'Error uploading images',
+      description: `${error}`,
+      variant: 'destructive',
+      duration: 9000,
+    })
     throw error;
   }
 };
@@ -52,7 +56,11 @@ export const uploadFn = createImageUpload({
       const imageUrls = await uploadImageFiles([file]);
       return imageUrls[0]; // Assuming you want to return the first URL
     } catch (error) {
-      console.error(error);
+      toast({
+        title: 'Error uploading images',
+        description: `${error}`,
+        variant: 'destructive',
+      })
       throw new Error('Failed to upload image');
     }
   },

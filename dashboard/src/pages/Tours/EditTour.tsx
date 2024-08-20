@@ -108,7 +108,6 @@ const EditTour: React.FC = () => {
         }
 
     }, [updateBreadcrumbs, initialTourData, tourId]);
-    console.log("singleTourData", singleTourData)
     useEffect(() => {
         if (singleTourData) {
             const defaultValues = {

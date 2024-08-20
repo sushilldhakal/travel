@@ -142,7 +142,6 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
                       }
                     }}
                     onEnterPress={() => {
-                      console.log("Gallery");
                       if (item.title === "Gallery Image") {
                         setDialogOpen(true); // Open the dialog when Enter is pressed
                       }

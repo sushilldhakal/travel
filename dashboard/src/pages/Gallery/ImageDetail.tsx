@@ -50,8 +50,6 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
         queryFn: () => getSingleImage(imageUrl, userId),
         enabled: !!imageUrl,
     });
-    console.log("userId from imageDetails page", userId)
-
     const handleEdit = () => {
         setIsEditing(!isEditing)
     }
@@ -90,15 +88,13 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
             // Otherwise, append the new file to the existing array
             return [...prevFiles, file];
         });
-        setChangesMade(!changesMade);
     };
 
     const handleUploadChange = async () => {
-        console.log("files after uploading", files);
         setTimeout(() => {
             handleUpload();
         }, 100);
-        setChangesMade(!changesMade);
+
     };
 
     // Handle loading and error states
@@ -165,13 +161,14 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
                                     </div>
                                     <DialogFooter>
                                         <Button onClick={() => {
-                                            handleClickButton(image?.title ? image?.title : image?.url);
+                                            handleClickButton(image?.title ? image?.title : image?.url).then(() => setChangesMade(true));
 
                                         }}
                                         >Save changes</Button>
                                         <Button onClick={() => {
                                             handleUploadChange()
                                                 .then(() => setOpen(false));
+                                            setChangesMade(false);
                                         }}
                                             disabled={changesMade}
                                         >Upload changes</Button>

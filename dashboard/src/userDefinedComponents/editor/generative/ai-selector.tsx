@@ -27,7 +27,11 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
     mutationFn: generateCompletion,
     onSuccess: (data) => {
       if (data.completion) {
-        console.log("Completion received:", data.completion);
+        toast({
+          title: "AI Completion",
+          description: <Markdown>{data.completion}</Markdown>,
+          duration: 9000,
+        })
       }
     },
     onError: (error: any) => {
@@ -100,7 +104,11 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
                   complete({ prompt: text, option: "zap", command: inputValue });
                   setInputValue("");
                 } else {
-                  console.log("Editor is not available");
+                  toast({
+                    title: "Something went wrong",
+                    description: "Editor is not available",
+                    variant: "destructive",
+                  })
                 }
               }}
             >
