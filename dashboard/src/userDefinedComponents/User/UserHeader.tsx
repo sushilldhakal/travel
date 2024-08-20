@@ -23,12 +23,12 @@ const UserHeader = () => {
                     </div>
                     <div className="flex hidden sm:block flex-shrink-0 items-center text-secondary-foreground  text-sm">
 
-                        <span className='flex-initial w-64 pr-3'>
+                        <span className='flex-initial w-64 pr-3 text-xs'>
                             <FontAwesomeIcon icon={faPhone} className='pr-2 text-xs' />
                             +61 0433 926 079
                         </span>
 
-                        <span className='flex-initial w-64'>
+                        <span className='flex-initial w-64 text-xs'>
                             <FontAwesomeIcon icon={faClock} className='pr-2 text-xs' />
                             Mon – Fri 8.00 – 18.00. Weekend CLOSED
                         </span>

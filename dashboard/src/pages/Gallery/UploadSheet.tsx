@@ -23,7 +23,7 @@ interface UploadSheetProps {
 const UploadSheet = ({ files, setFiles, handleUpload, dropZoneConfig }: UploadSheetProps) => (
     <Dialog>
         <DialogTrigger asChild>
-            <Button className="absolute top-5 right-8">
+            <Button className="absolute top-10 right-8">
                 <UploadIcon className="w-4 h-4 mr-2" />
                 Upload
             </Button>

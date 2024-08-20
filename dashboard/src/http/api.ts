@@ -1,3 +1,4 @@
+import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
 
@@ -33,13 +34,22 @@ export const verifyEmail = async (data: { token: string }) => {
     console.log("this is api page log",data)
     return api.post('/api/users/login/verify', data);
 }
-   
-
 export const forgotPassword = async (data: { email: string }) => 
     api.post('/api/users/login/forgot', data);
 
 export const resetPassword = async (data: { token: string, password: string }) => 
     api.post('/api/users/login/reset', data);
+
+
+export const getUserSetting = async (userId: string) => api.get(`/api/users/setting/${userId}`);
+
+export const userSetting = async (userId: string, data: FormData) =>
+    api.patch(`/api/users/setting/${userId}`, data, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+  
 //tours
 export const getTours = async () => api.get('/api/tours');
 
@@ -155,10 +165,13 @@ export const getAllImages = async ({ pageParam = null }) => {
     }
   };
 
-  export const getSingleImage = async (imageUrl: string) => {
+  export const getSingleImage = async (imageUrl: string, user: string | null) => {
     const publicId = extractPublicId(imageUrl);
+    const userId = user || null;
     try {
-        const response = await api.get(`/api/gallery/${publicId}`);
+        const response = await api.get(`/api/gallery/${publicId}`,  {
+            params: { userId: userId },
+          });
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -218,6 +231,43 @@ export const deleteImage = async (userId: string, imageIds: string | string[]) =
 
 
   export const generateCompletion = async (params: GenerateCompletionParams) => {
-    const response = await api.post('/api/generate', params);
-    return response.data;
+    try {
+        const response = await api.post('/api/generate', params);
+        return response.data;
+      } catch (error: unknown) {
+        // Check if the error is an AxiosError
+        if (axios.isAxiosError(error)) {
+          // Handle specific HTTP status codes
+          if (error.response) {
+            const status = error.response.status;
+            if (status === 410) {
+                toast({
+                    variant: "destructive",
+                    title: "No Open API Key Found",
+                    description: "Please add Open API Key in setting",
+                  })
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: `HTTP Error: ${status}`,
+                    description: `HTTP Error: ${status}`,
+                  })
+              
+            }
+          } else {
+            toast({
+                variant: "destructive",
+                title:'An error occurred with the request.',
+                description: `HTTP Error: ${error}`,
+              })
+          }
+        } else {
+            toast({
+                variant: "destructive",
+                title:'An unexpected error occurred.',
+                description: `HTTP Error: ${error}`,
+              })
+        }
+        throw error; // Rethrow the error if needed
+      }
   };

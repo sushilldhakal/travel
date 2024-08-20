@@ -14,10 +14,10 @@ const ImageItem = memo(
         ({ image, onDelete, onSelect, ...props }, ref) => {
             return (
                 <div
-                    className="relative group break-inside-avoid"
+                    className="relative group break-inside-avoid mb-2 cursor-pointer"
                     ref={ref}
                     {...props}
-                    onClick={() => onSelect(image.secure_url)}
+                    onClick={() => onSelect(image.url)}
                 >
                     <img
                         src={image.secure_url ? image.secure_url : image.url}

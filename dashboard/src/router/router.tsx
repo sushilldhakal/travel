@@ -3,6 +3,8 @@ import { createBrowserRouter } from 'react-router-dom';
 import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
 import routePaths from '@/lib/routePath';
 import PrivateRoutes from '@/util/PrivateRoutes';
+
+const Setting = lazy(() => import('@/pages/Setting/Setting'));
 const DashboardLayout = lazy(() => import('@/layouts/DashboardLayout'));
 const HomeLayout = lazy(() => import('@/layouts/HomeLayout'));
 const FrontTours = lazy(() => import('@/pages/FrontEnd/Tours/FrontTours'));
@@ -164,6 +166,14 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: routePaths.dashboard.setting,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Setting />
+              </Suspense>
+            ),
+          },
+          {
             path: routePaths.dashboard.gallery,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
@@ -208,6 +218,7 @@ const router = createBrowserRouter([
           },
         ],
       },
+
     ]
   },
 

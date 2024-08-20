@@ -1,7 +1,7 @@
 import { createImageUpload } from "novel/plugins";
 import { getUserId } from "@/util/AuthLayout";
 import { addImages } from "@/http/api";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 
 const base64ToFile = (base64: string, filename: string, mimeType: string): File => {
@@ -63,11 +63,19 @@ export const uploadFn = createImageUpload({
     }
 
     if (!file.type.includes("image/")) {
-      toast.error("File type not supported.");
+      toast({
+        title: "Error",
+        description: "File type not supported.",
+        duration: 5000,
+      })
       return false;
     }
     if (file.size / 1024 / 1024 > 10) {
-      toast.error("File size too big (max 10MB).");
+      toast({
+        title: "Error",
+        description: "File size too big (max 10MB).",
+        duration: 5000,
+      })
       return false;
     }
     return true;

@@ -9,6 +9,7 @@ import { getUserId } from "@/util/AuthLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDetail from "./ImageDetail";
 import { useLocation } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface GalleryPageProps {
     onImageSelect: (image: string) => void; // Adjusted type for the callback
@@ -18,10 +19,11 @@ interface GalleryPageProps {
 
 const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     const userId = getUserId();
+    const [tab, setTab] = useState("image");
     const [files, setFiles] = useState<File[] | null>(null);
     const queryClient = useQueryClient();
     const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string>("");
     const [isGalleryPage, setIsGalleryPage] = useState<boolean>(false);
     const location = useLocation();
 
@@ -55,8 +57,8 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         if (data?.pages) {
             data.pages.forEach(page => {
                 page.resources.forEach((image: ImageResource) => {
-                    if (!allImageUrls.has(image.secure_url)) {
-                        allImageUrls.add(image.secure_url);
+                    if (!allImageUrls.has(image.url)) {
+                        allImageUrls.add(image.url);
                         mergedImages.push(image);
                     }
                 });
@@ -66,9 +68,12 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         return mergedImages;
     }, [data]);
 
+    console.log("userId", userId)
+
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
+            console.log("inside upload", formData)
             return addImages(formData, userId);
         },
         onMutate: (formData: FormData) => {
@@ -82,6 +87,7 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             queryClient.invalidateQueries({ queryKey: ['images'] });
             queryClient.refetchQueries({ queryKey: ['images'] });
             setUploadingFiles([]);
+            setFiles([]);
             toast({
                 title: 'Files uploaded successfully',
                 description: 'Your files have been uploaded.',
@@ -89,17 +95,27 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         },
         onError: (error) => {
             setUploadingFiles([]);
-            toast({
-                title: 'Error uploading files',
-                description: `There was an error uploading your files: ${error.message}`,
-                variant: 'destructive',
-            });
+            if (error.message === 'Request failed with status code 410') {
+                toast({
+                    title: 'please add Cloudinary API key to setting',
+                    description: ` ${error}`,
+                    variant: 'destructive',
+                });
+            } else {
+                toast({
+                    title: 'Error uploading files',
+                    description: `There was an error uploading your files: ${error.message}`,
+                    variant: 'destructive',
+                });
+            }
+
         },
     });
 
     const handleUpload = () => {
-        if (!files || files.length === 0) return;
+        console.log("formData", files)
 
+        if (!files || files.length === 0) return;
         const formData = new FormData();
         files.forEach((file) => {
             if (file.type === 'application/pdf') {
@@ -108,7 +124,6 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
                 formData.append('imageList', file);
             }
         });
-
         uploadMutation.mutate(formData);
     };
 
@@ -156,6 +171,9 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             'image/png': ['.png'],
             'image/gif': ['.gif'],
             'application/pdf': ['.pdf'],
+            "video/mp4": [".mp4"],
+            "video/mpeg": [".mpeg"],
+            "video/webm": [".webm"],
         },
         maxFiles: 10,
         multiple: true,
@@ -165,10 +183,14 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         setSelectedImage(image);
         onImageSelect(image); // Correctly pass the selected image to the callback
     };
+
+    const onTabChange = (value) => {
+        setTab(value);
+    }
     const handleClose = () => {
+        //@ts-expect-error
         setSelectedImage(null);
     };
-
     if (isLoading) {
         return (
             <div>
@@ -188,38 +210,67 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         );
     }
 
-    if (isError) {
-        return <div className="text-red-600">Error loading images</div>;
-    }
+
 
     return (
-        <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
-            <div className="col-span-2">
-                <div className="mb-4">
-                    <UploadSheet
-                        files={files}
-                        setFiles={setFiles}
-                        handleUpload={handleUpload}
-                        dropZoneConfig={dropZoneConfig}
-                    />
-                </div>
-                <ImageGrid
-                    images={allImages}
-                    onImageSelect={handleImageSelect}
-                    onDelete={handleDelete}
-                    isLoading={isLoading}
-                    isFetchingNextPage={isFetchingNextPage}
-                    hasNextPage={hasNextPage}
-                    fetchNextPage={fetchNextPage}
+        <>
+            <div className="m">
+                <UploadSheet
+                    files={files}
+                    setFiles={setFiles}
+                    handleUpload={handleUpload}
+                    dropZoneConfig={dropZoneConfig}
                 />
             </div>
-            <div>
-                {
-                    isGalleryPage ? <ImageDetail handleClose={handleClose} imageUrl={selectedImage} /> : null
-                }
-                {/* Updated prop name */}
-            </div>
-        </div>
+            <Tabs value={tab} onValueChange={onTabChange} className="w-full">
+                <TabsList>
+                    <TabsTrigger value="image">Images</TabsTrigger>
+                    <TabsTrigger value="video">Video</TabsTrigger>
+                    <TabsTrigger value="pdf">PDF</TabsTrigger>
+                </TabsList>
+                <TabsContent value="image">
+                    <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                        <div className="col-span-2">
+
+                            {
+                                isError ? <div className="text-red-600">Error loading images</div> : null
+                            }
+                            <ImageGrid
+                                images={allImages}
+                                onImageSelect={handleImageSelect}
+                                onDelete={handleDelete}
+                                isLoading={isLoading}
+                                isFetchingNextPage={isFetchingNextPage}
+                                hasNextPage={hasNextPage}
+                                fetchNextPage={fetchNextPage}
+                                uploadingFiles={uploadingFiles}
+                                uploadMutation={uploadMutation}
+                            />
+                        </div>
+                        <div>
+                            {
+                                isGalleryPage && selectedImage ? <ImageDetail files={files}
+                                    setFiles={setFiles}
+                                    setSelectedImage={setSelectedImage}
+                                    onDelete={handleDelete}
+                                    handleUpload={handleUpload}
+                                    handleClose={handleClose}
+                                    imageUrl={selectedImage}
+                                    userId={userId}
+                                /> : null
+
+                            }
+                            {/* Updated prop name */}
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="video">Video</TabsContent>
+                <TabsContent value="pdf">PDF</TabsContent>
+            </Tabs>
+
+
+        </>
+
     );
 };
 

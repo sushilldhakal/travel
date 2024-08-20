@@ -12,7 +12,7 @@ import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
 import routePaths from '@/lib/routePath';
 import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 const DashboardLayout = () => {
   const { token, setToken } = useTokenStore((state) => state);
   const [navCollapse, setNavCollapse] = useState<boolean>(false);
@@ -37,9 +37,11 @@ const DashboardLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const handleLogout = () => {
-    setToken('');
-    localStorage.removeItem("token-store");
-    navigate('/');
+    startTransition(() => {
+      setToken('');
+      localStorage.removeItem("token-store");
+      navigate('/');
+    });
   };
 
   if (!token) {
@@ -48,10 +50,6 @@ const DashboardLayout = () => {
   const handleNavigate = () => {
     setNavCollapse(!navCollapse);
   };
-
-
-
-
 
   return (
     <BreadcrumbsProvider>

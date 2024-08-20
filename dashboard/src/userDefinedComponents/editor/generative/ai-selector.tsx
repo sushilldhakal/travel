@@ -4,7 +4,6 @@ import { useEditor } from "novel";
 import { addAIHighlight } from "novel/extensions";
 import { useState } from "react";
 import Markdown from "react-markdown";
-import { toast } from "sonner";
 import AICompletionCommands from "./ai-completion-command";
 import AISelectorCommands from "./ai-selector-commands";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +12,7 @@ import CrazySpinner from "@/assets/icons/crazy-spinner";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { generateCompletion } from "@/http/api"; // Assuming this is your API function
+import { toast } from "@/components/ui/use-toast";
 
 interface AISelectorProps {
   open: boolean;
@@ -32,9 +32,19 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
     },
     onError: (error: any) => {
       if (error.response && error.response.status === 429) {
-        toast.error("You have reached your request limit for the day.");
+        toast({
+          title: "Rate limit exceeded",
+          description: "You have reached your request limit for the day.",
+          variant: "destructive",
+          duration: 9000,
+        })
       } else {
-        toast.error(error.message || 'Internal Server Error');
+        toast({
+          title: "Something went wrong",
+          description: error.message || 'Internal Server Error',
+          variant: "destructive",
+          duration: 9000,
+        })
       }
     }
   });

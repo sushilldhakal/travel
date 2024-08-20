@@ -120,6 +120,13 @@ export const UserMenuItems = {
         icon: MailCheck,
         url: routePaths.dashboard.subscribers,
       },
+      {
+        id: "setting",
+        title: "Setting",
+        type: "item",
+        icon: Settings,
+        url: routePaths.dashboard.setting,
+      },
     ],
       }
 

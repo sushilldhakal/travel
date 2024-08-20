@@ -19,7 +19,7 @@ import { generateCompletion } from "@/http/api";
 import {
   type JSONContent,
 } from "novel";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 const extractTextFromJSONContent = (jsonContent: JSONContent): string => {
   let text = '';
@@ -63,10 +63,20 @@ export const suggestionItems = createSuggestionItems([
         if (completion) {
           editor.chain().focus().insertContent(completion).run();
         } else {
-          toast.error("No completion received.");
+          toast({
+            title: "No completion received.",
+            description: "Please try again later.",
+            variant: "destructive",
+            duration: 9000,
+          })
         }
       } catch (error) {
-        toast.error(`"An error occurred while generating the text.", ${error}`);
+        toast({
+          title: "An error occurred while generating the text.",
+          description: `Please try again later.${error}`,
+          variant: "destructive",
+          duration: 9000,
+        })
       }
     },
   },

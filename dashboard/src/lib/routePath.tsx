@@ -15,6 +15,7 @@ const routePaths = {
     tourSetting: "/dashboard/tours/tour_setting",
     tourCategory: "/dashboard/tours/tour_category",
     subscribers: "/dashboard/subscribers",
+    setting: "/dashboard/setting",
   },
   home: {
     base: "/",

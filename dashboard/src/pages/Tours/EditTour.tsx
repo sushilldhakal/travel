@@ -43,13 +43,6 @@ const tabs = [
     { id: 'enquiry', title: 'Enquiry' },
 ];
 
-
-
-
-
-
-
-
 const MAX_FILE_SIZE = 800000;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const ACCEPTED_FILE_TYPES = ["application/pdf"];
@@ -115,7 +108,7 @@ const EditTour: React.FC = () => {
         }
 
     }, [updateBreadcrumbs, initialTourData, tourId]);
-
+    console.log("singleTourData", singleTourData)
     useEffect(() => {
         if (singleTourData) {
             const defaultValues = {
@@ -189,14 +182,14 @@ const EditTour: React.FC = () => {
         formdata.append('description', values.description);
         formdata.append('tourStatus', values.tourStatus);
         formdata.append('price', values.price.toString());
-        if (values.coverImage && values.coverImage[0]) {
-            formdata.append('coverImage', values.coverImage[0]);
-        }
-        if (values.file && values.file[0]) {
-            formdata.append('file', values.file[0]);
-        }
+        formdata.append('coverImage', values.coverImage);
+        formdata.append('file', values.file);
+        // if (values.file && values.file[0]) {
+        //     formdata.append('file', values.file[0]);
+        // }
         tourMutation.mutate(formdata);
     }
+
 
 
     const handleDeleteTour = async () => {
