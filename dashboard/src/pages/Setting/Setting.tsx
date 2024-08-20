@@ -124,7 +124,7 @@ const Setting = () => {
                                     size="sm"
                                     className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
                                 >
-                                    OpenAI
+                                    OpenAI{''}
                                 </Button>
 
                                 <Button size="sm">
