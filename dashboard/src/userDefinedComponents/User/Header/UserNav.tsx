@@ -2,19 +2,19 @@ import { UserMenuItems } from "@/lib/MenuItems";
 // import MenuItem from "../MenuItem";
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { ModeToggle } from "../ModeToggle";
+import { ModeToggle } from "../../ModeToggle";
 import { Link, useNavigate } from "react-router-dom";
 import { isValidToken } from "@/util/AuthLayout";
 import { useEffect, useState } from "react";
 import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";
+import { Search } from "lucide-react";
 
-const UserNav = () => {
+const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
     const { setToken } = useTokenStore((state) => state);
     const navigate = useNavigate();
     const [valid, setValid] = useState(false);
     const [dashRight, setDashRight] = useState(false);
-
 
     useEffect(() => {
         const accessToken = localStorage.getItem("token-store");
@@ -41,9 +41,11 @@ const UserNav = () => {
         const scrollTop = window.scrollY;
         if (header) {
             if (scrollTop >= 40) {
-                header.classList.add('sticky');
+                header.classList.add('fixed');
+                header.classList.remove('relative');
             } else {
-                header.classList.remove('sticky');
+                header.classList.remove('fixed');
+                header.classList.add('relative');
             }
         }
     };
@@ -55,9 +57,8 @@ const UserNav = () => {
         navigate('/');
     };
 
-
     return (
-        <Disclosure as="nav" className="bg-secondary text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary" id="main-header">
+        <Disclosure id="main-header" as="nav" className={`bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary`}>
             <div className="mx-auto max-w-7xl">
                 <div className="relative flex h-16 items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -148,6 +149,11 @@ const UserNav = () => {
                                 :
                                 <Link to={'/auth/login'} className="text-white ml-3">Login</Link>
                         }
+
+                        <div className="ml-3 cursor-pointer" onClick={handleSearch}>
+                            <Search />
+                        </div>
+
                     </div>
                 </div>
             </div>

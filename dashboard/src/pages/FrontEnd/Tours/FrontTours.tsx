@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import BreadCrumbTourList from "./BreadCrumbTourList";
 import Filter from "./Filter";
+import Search from "@/userDefinedComponents/User/Search/Search";
 
 const FrontTours = () => {
 
@@ -22,14 +23,14 @@ const FrontTours = () => {
         </div>
       </div >
 
-      <section className="bg-gray-50 py-8 antialiased dark:bg-gray-900 md:py-12">
-        <div className="mx-auto max-w-screen-xl px-4 2xl:px-0">
+      <section className="bg-gray-50 grid gap-4 grid-cols-3 mx-auto max-w-screen-xl py-8 antialiased dark:bg-gray-900 md:py-12">
+        <div className="col-span-2 mx-auto max-w-screen-xl px-4 2xl:px-0">
           {/* Search bar */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <Filter />
-          </div>
+          </div> */}
 
-          <div className="mb-4 grid gap-4 sm:grid-cols-2 md:mb-8 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 md:mb-8 lg:grid-cols-3 xl:grid-cols-3">
             {isLoading && <p>Loading...</p>}
             {isError && <p>Error loading tours</p>}
             {data?.data.tours.map((tour) => (
@@ -225,8 +226,17 @@ const FrontTours = () => {
                 </div>
               </div>
             ))}
+
+          </div>
+
+        </div>
+        <div className="col-span-1 sticky top-4 h-full px-4">
+          <div className=" sticky top-20">
+            <Search />
+
           </div>
         </div>
+
       </section>
     </>
 

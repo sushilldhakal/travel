@@ -1,4 +1,9 @@
-
+html body[data-scroll-locked]{
+    margin-right:0 !important;
+    scroll-behavior: smooth;
+    overflow: visible !important;
+    pointer-events: visible !important;
+}
 
 .main-slider .slick-dots {
     top: 0;

@@ -71,8 +71,25 @@ export interface BreadcrumbsContextType {
   export interface ImageResource {
     asset_id: string;
     secure_url: string;
+    id: string;
     display_name: string;
     description: string;
     url: string;
     uploadedAt: Date;
+    resource_type: string;
+    title: string;
+    tags: string[];
+    original_filename: string;
+    public_id: string;
+    width: number;
+    height: number;
+    format: string;
+    created_at: Date;
+    pages: number;
+    bytes: number;
+    type: string;
+    etag: string;
+    placeholder: boolean;
+    asset_folder: string;
+    api_key: string;
 }

@@ -10,9 +10,10 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
-import { Paperclip, UploadIcon } from "lucide-react";
+import { FileText, UploadIcon, Video } from "lucide-react";
 import { FileInput, FileUploader, FileUploaderContent, FileUploaderItem } from "@/userDefinedComponents/FileUploader";
 import FileSvgDraw from "./FileSvgDraw";
+import { Link } from "react-router-dom";
 interface UploadSheetProps {
     files: File[] | null;
     setFiles: (files: File[]) => void;
@@ -60,14 +61,39 @@ const UploadSheet = ({ files, setFiles, handleUpload, dropZoneConfig }: UploadSh
                                             className="size-20 p-0 rounded-md overflow-hidden"
                                             aria-roledescription={`file ${i + 1} containing ${file.name}`}
                                         >
-                                            <Paperclip className="h-4 w-4 stroke-current" />
-                                            <img
-                                                src={URL.createObjectURL(file)}
-                                                alt={file.name}
-                                                height={80}
-                                                width={80}
-                                                className="size-20 p-0 object-cover"
-                                            />
+                                            {
+                                                file.type.includes("image") && (
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt={file.type}
+                                                        height={80}
+                                                        width={80}
+                                                        className="size-20 p-0 object-cover"
+                                                    />
+                                                )
+                                            }
+
+                                            {
+                                                file.type.includes("pdf") && (
+                                                    <Link to={URL.createObjectURL(file)} target={"_blank"} >
+                                                        <FileText width={80} height={80} />
+
+                                                    </Link>
+
+                                                )
+                                            }
+
+                                            {
+                                                file.type.includes("video") && (
+                                                    <Link to={URL.createObjectURL(file)} target={"_blank"} >
+                                                        <Video width={80} height={80} />
+
+                                                    </Link>
+
+                                                )
+                                            }
+
+
                                         </FileUploaderItem>
                                     ))}
                                 </FileUploaderContent>

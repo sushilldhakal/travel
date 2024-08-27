@@ -35,7 +35,7 @@ const Search = () => {
 
     return (
 
-        <div className="search-advance dark-layout p-5 [background-color:rgb(37_41_41_/_80%)] [width:420px]  text-white rounded-lg">
+        <div className="search-advance w-full dark-layout p-5 [background-color:rgb(37_41_41_/_80%)]  text-white rounded-lg">
             <div className="mx-auto">
                 <div className="ws-advance-form text-left" id="ws-advance-form">
                     <form action="">
@@ -89,14 +89,7 @@ const Search = () => {
                                         </p>
                                     }
                                 />
-                                {/* <select className="form-control w-full px-4 py-2 rounded" id="ws-trip-type" multiple>
-                                    <option value="31">Rafting</option>
-                                    <option value="32">Paragliding</option>
-                                    <option value="33">Jungle Safari</option>
-                                    <option value="34">Trekk</option>
-                                    <option value="35">Boating</option>
-                                    <option value="36">Sight Seeing</option>
-                                </select> */}
+
                             </div>
                             <div className="form-content">
                                 <label className="block mb-2" htmlFor="ws-trip-duration">Choose Trip Duration</label>
@@ -121,7 +114,7 @@ const Search = () => {
                                                 id="date"
                                                 variant={"outline"}
                                                 className={cn(
-                                                    "w-[380px] h-9 pt-1 pb-1 [background-color:rgb(0_0_0_/_40%)] hover:[background-color:rgb(0_0_0_/_40%)] border-0 justify-start text-left hover:text-white font-normal",
+                                                    "h-9 pt-1 pb-1 [background-color:rgb(0_0_0_/_40%)] hover:[background-color:rgb(0_0_0_/_40%)] border-0 justify-start text-left hover:text-white font-normal",
                                                     !date && "text-muted-foreground"
                                                 )}
                                             >
@@ -152,20 +145,10 @@ const Search = () => {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                {/* <label className="block text-white mb-2">Trip Start End Range</label>
-                                <input type="text" data-range="true" data-multiple-dates-separator=" - " data-language="en" placeholder="Select a date range" className="w-full px-4 py-2 rounded" readOnly /> */}
+
                             </div>
                             <div className="form-content">
                                 <label className="block text-white mb-2" htmlFor="ws-min-price">Price Range</label>
-                                {/* <Slider
-                                    value={localValues}
-                                    minStepsBetweenThumbs={100}
-                                    max={3000}
-                                    min={0}
-                                    step={1}
-                                    onValueChange={handleValueChange}
-                                    className={cn("w-full")}
-                                /> */}
                                 <DualRangeSlider
                                     label={(localValues) => <span>{localValues}$</span>}
                                     value={localValues}
@@ -199,3 +182,5 @@ const Search = () => {
 };
 
 export default Search;
+
+

@@ -1,0 +1,27 @@
+@media only screen and (min-width: 1024px) {
+    .cd-main-search.z-10 {
+        animation: cd-slide-in 0.3s;
+    }
+  .cd-main-search.z-10 .cd-search-suggestions {
+    transform-origin: center top;
+    animation: cd-3d-rotation 0.5s 0.3s;
+    animation-fill-mode: backwards;
+  }
+}
+
+@keyframes cd-slide-in {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes cd-3d-rotation {
+    0% {
+      transform: perspective(1000px) rotateX(-90deg);
+    }
+    100% {
+      transform: perspective(1000px) translateY(0);
+    }
+  }

@@ -1,3 +1,4 @@
+import { MediaType } from './../../../server/node_modules/@types/express-serve-static-core/index.d';
 import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
@@ -141,18 +142,18 @@ export const getAllSubscribers = async () => {
 
 
 //gallery 
-export const getAllImages = async ({ pageParam = null }) => {
+export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: string | null; mediaType: string }) => {
     try {
       // Fetch images without cursor parameter
-      const response = await api.get('/api/gallery/images', {
+      const response = await api.get(`/api/gallery/media`, {
         params: {
+            mediaType,
             nextCursor: pageParam,
             pageSize: 10,
         },
       });
-
       return {
-        resources: response.data.data,
+        resources: response.data[mediaType], // Access the correct media type
         nextCursor: response.data.nextCursor,
       };
     } catch (error) {
@@ -167,9 +168,11 @@ export const getAllImages = async ({ pageParam = null }) => {
   export const getSingleImage = async (imageUrl: string, user: string | null) => {
     const publicId = extractPublicId(imageUrl);
     const userId = user || null;
+    const mediaType = imageUrl.split('/').slice(-3).join('/');
+    const resourcesType = mediaType.split('/')[1];
     try {
         const response = await api.get(`/api/gallery/${publicId}`,  {
-            params: { userId: userId },
+            params: { userId: userId, resourcesType: resourcesType },
           });
         return response.data;
     } catch (error) {
@@ -202,13 +205,32 @@ export const getAllImages = async ({ pageParam = null }) => {
     }
 };
 
+export const updateMedia = async (formData: FormData, userId: string, imageId: string, mediaType: string) => {
+    console.log(`/api/gallery/${userId}/${imageId}?mediaType=${mediaType}`)
+    console.log("formData in api",formData)
+    try {
+        const response = await api.patch(`/api/gallery/${userId}/${imageId}?mediaType=${mediaType}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error uploading images:', error);
+        throw error;
+    }
+};
 
-export const deleteImage = async (userId: string, imageIds: string | string[]) => {
+
+
+export const deleteImage = async (userId: string, imageIds: string | string[], mediaType: string) => {
+    console.log("imageIds",userId, imageIds)
     try {
         const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
       const response = await api.delete(`/api/gallery/${userId}`, {
-        data: { imageIds: ids },
-      });
+        data: { imageIds: ids, mediaType },
+      }
+    );
       return response.data;
     } catch (error) {
       if (isAxiosError(error)) {

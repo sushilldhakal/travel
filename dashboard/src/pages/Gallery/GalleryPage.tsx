@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ImageGrid from "./ImageGrid";
 import UploadSheet from "./UploadSheet";
-import { addImages, deleteImage, getAllImages } from "@/http/api";
+import { addImages, deleteImage, getAllMedia } from "@/http/api";
 import { toast } from "@/components/ui/use-toast";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImageResource } from "@/Provider/types";
@@ -19,7 +19,7 @@ interface GalleryPageProps {
 
 const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     const userId = getUserId();
-    const [tab, setTab] = useState("image");
+    const [tab, setTab] = useState("images");
     const [files, setFiles] = useState<File[] | null>(null);
     const queryClient = useQueryClient();
     const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
@@ -44,29 +44,30 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery({
-        queryKey: ['images'],
-        queryFn: ({ pageParam = null }) => getAllImages({ pageParam }),
+        queryKey: ["media", tab], // Dynamic media type based on tab
+        queryFn: ({ pageParam = null, queryKey }) => {
+            const MediaType: string = queryKey[1]; // This will be either 'image', 'video', or 'pdf'
+            return getAllMedia({ pageParam, mediaType: MediaType });
+        },
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
         initialPageParam: null,
     });
+    const allMedia = useMemo(() => {
+        const mediaUrls = new Set<string>();
+        const mergedMedia: ImageResource[] = [];
 
-    const allImages = useMemo(() => {
-        const allImageUrls = new Set<string>();
-        const mergedImages: ImageResource[] = [];
-
-        if (data?.pages) {
-            data.pages.forEach(page => {
-                page.resources.forEach((image: ImageResource) => {
-                    if (!allImageUrls.has(image.url)) {
-                        allImageUrls.add(image.url);
-                        mergedImages.push(image);
+        data?.pages.forEach(page => {
+            // Filter based on tab to match 'image', 'pdf', or 'video' types
+            page.resources
+                .forEach((resource: ImageResource) => {
+                    if (!mediaUrls.has(resource.url)) {
+                        mediaUrls.add(resource.url);
+                        mergedMedia.push(resource);
                     }
                 });
-            });
-        }
-
-        return mergedImages;
-    }, [data]);
+        });
+        return mergedMedia;
+    }, [data, tab]);
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
@@ -80,8 +81,8 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             setUploadingFiles(prev => [...prev, ...filesBeingUploaded]);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['images'] });
-            queryClient.refetchQueries({ queryKey: ['images'] });
+            queryClient.invalidateQueries({ queryKey: ['media', tab] });
+            queryClient.refetchQueries({ queryKey: ['media', tab] });
             setUploadingFiles([]);
             setFiles([]);
             toast({
@@ -109,23 +110,29 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     });
 
     const handleUpload = () => {
-
         if (!files || files.length === 0) return;
+
         const formData = new FormData();
+
         files.forEach((file) => {
             if (file.type === 'application/pdf') {
-                formData.append('pdfList', file);
-            } else {
+                formData.append('pdf', file);
+            } else if (file.type.startsWith('video/')) {  // Check for video types
+                formData.append('video', file);
+            } else if (file.type.startsWith('image/')) {  // Check for image types
                 formData.append('imageList', file);
+            } else {
+                console.warn('Unsupported file type:', file.type);
             }
         });
+
         uploadMutation.mutate(formData);
     };
 
     const deleteMutation = useMutation({
-        mutationFn: (imageIds: string | string[]) => deleteImage(userId!, imageIds),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['images'] });
+        mutationFn: ({ imageIds, mediaType }: { imageIds: string | string[], mediaType: string }) => deleteImage(userId!, imageIds, mediaType),
+        onSuccess: ({ data, mediaType }) => {
+            queryClient.invalidateQueries({ queryKey: [mediaType] });
             toast({
                 title: 'Deletion Successful',
                 description: 'The selected image/file has been deleted.',
@@ -140,10 +147,10 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         },
     });
 
-    const handleDelete = async (imageIds: string | string[]) => {
+    const handleDelete = async (imageIds: string | string[], mediaType: string) => {
         try {
             if (userId) {
-                await deleteMutation.mutateAsync(imageIds);
+                await deleteMutation.mutateAsync({ imageIds, mediaType });
             } else {
                 toast({
                     title: 'User Error',
@@ -179,7 +186,7 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
         onImageSelect(image); // Correctly pass the selected image to the callback
     };
 
-    const onTabChange = (value) => {
+    const onTabChange = (value: string) => {
         setTab(value);
     }
     const handleClose = () => {
@@ -204,9 +211,6 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             </div>
         );
     }
-
-
-
     return (
         <>
             <div className="m">
@@ -219,11 +223,11 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             </div>
             <Tabs value={tab} onValueChange={onTabChange} className="w-full">
                 <TabsList>
-                    <TabsTrigger value="image">Images</TabsTrigger>
-                    <TabsTrigger value="video">Video</TabsTrigger>
-                    <TabsTrigger value="pdf">PDF</TabsTrigger>
+                    <TabsTrigger value="images">Images</TabsTrigger>
+                    <TabsTrigger value="videos">Video</TabsTrigger>
+                    <TabsTrigger value="pdfs">PDF</TabsTrigger>
                 </TabsList>
-                <TabsContent value="image">
+                <TabsContent value="images">
                     <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
                         <div className="col-span-2">
 
@@ -231,7 +235,7 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
                                 isError ? <div className="text-red-600">Error loading images</div> : null
                             }
                             <ImageGrid
-                                images={allImages}
+                                images={allMedia}
                                 onImageSelect={handleImageSelect}
                                 onDelete={handleDelete}
                                 isLoading={isLoading}
@@ -259,8 +263,78 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
                         </div>
                     </div>
                 </TabsContent>
-                <TabsContent value="video">Video</TabsContent>
-                <TabsContent value="pdf">PDF</TabsContent>
+                <TabsContent value="videos">
+                    <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                        <div className="col-span-2">
+
+                            {
+                                isError ? <div className="text-red-600">Error loading images</div> : null
+                            }
+                            <ImageGrid
+                                images={allMedia}
+                                onImageSelect={handleImageSelect}
+                                onDelete={handleDelete}
+                                isLoading={isLoading}
+                                isFetchingNextPage={isFetchingNextPage}
+                                hasNextPage={hasNextPage}
+                                fetchNextPage={fetchNextPage}
+                                uploadingFiles={uploadingFiles}
+                                uploadMutation={uploadMutation}
+                            />
+                        </div>
+                        <div>
+                            {
+                                isGalleryPage && selectedImage ? <ImageDetail files={files}
+                                    setFiles={setFiles}
+                                    setSelectedImage={setSelectedImage}
+                                    onDelete={handleDelete}
+                                    handleUpload={handleUpload}
+                                    handleClose={handleClose}
+                                    imageUrl={selectedImage}
+                                    userId={userId}
+                                /> : null
+
+                            }
+                            {/* Updated prop name */}
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="pdfs">
+                    <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                        <div className="col-span-2">
+
+                            {
+                                isError ? <div className="text-red-600">Error loading images</div> : null
+                            }
+                            <ImageGrid
+                                images={allMedia}
+                                onImageSelect={handleImageSelect}
+                                onDelete={handleDelete}
+                                isLoading={isLoading}
+                                isFetchingNextPage={isFetchingNextPage}
+                                hasNextPage={hasNextPage}
+                                fetchNextPage={fetchNextPage}
+                                uploadingFiles={uploadingFiles}
+                                uploadMutation={uploadMutation}
+                            />
+                        </div>
+                        <div>
+                            {
+                                isGalleryPage && selectedImage ? <ImageDetail files={files}
+                                    setFiles={setFiles}
+                                    setSelectedImage={setSelectedImage}
+                                    onDelete={handleDelete}
+                                    handleUpload={handleUpload}
+                                    handleClose={handleClose}
+                                    imageUrl={selectedImage}
+                                    userId={userId}
+                                /> : null
+
+                            }
+                            {/* Updated prop name */}
+                        </div>
+                    </div>
+                </TabsContent>
             </Tabs>
 
 

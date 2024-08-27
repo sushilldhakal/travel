@@ -64,8 +64,6 @@ const HomeSlider = () => {
         cssEase: "ease"
     };
     const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 2);
-    console.log(sortedTours)
-
 
     return (
         <div className="overflow-hidden main-slider pattern-2">

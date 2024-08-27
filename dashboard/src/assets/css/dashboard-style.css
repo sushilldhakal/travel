@@ -26,6 +26,8 @@ input[type=file]{
   }
   
 
+
+
   input:-webkit-autofill {
     -webkit-background-clip: content-box !important;
     transition: all 100000000s ease-in-out 0s !important;
@@ -37,6 +39,11 @@ input[type=file]{
   input:-webkit-autofill,
   input:-webkit-autofill:focus {
     transition: background-color 0s 100000000s, color 0s 100000000s !important;
+  }
+
+  .pdf-container canvas{
+    width: 100% !important;
+    height: auto !important;
   }
 
 /* div[class=menu-item] {
