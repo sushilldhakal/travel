@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getSingleImage, updateMedia } from "@/http/api";
+import { getSingleMedia, updateMedia } from "@/http/api";
 import { ImageResource } from "@/Provider/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import 'tui-image-editor/dist/tui-image-editor.css';
@@ -67,7 +67,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
     const [pageNumber, setPageNumber] = useState<number>(1);
     const { data: imageDetails, isLoading, error } = useQuery<ImageResource, Error>({
         queryKey: ['image', imageUrl],
-        queryFn: () => getSingleImage(imageUrl, userId),
+        queryFn: () => getSingleMedia(imageUrl, userId),
         enabled: !!imageUrl,
     });
 

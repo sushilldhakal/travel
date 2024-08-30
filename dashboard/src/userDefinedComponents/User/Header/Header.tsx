@@ -4,13 +4,9 @@ import UserNav from "./UserNav"
 import MenuBarSearch from "../Search/MenuBarSearch";
 
 const Header = () => {
-
     const [headerSearch, setHeaderSearch] = useState(false);
-
-
     const handleSearch = () => {
         setHeaderSearch(!headerSearch);
-        console.log('search clicked');
     }
     return (
         <div className="relative">

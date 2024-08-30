@@ -1,7 +1,8 @@
-import { MediaType } from './../../../server/node_modules/@types/express-serve-static-core/index.d';
+import { deeCategory } from './../../../server/src/user/category/categoryController';
 import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
+import { CategoryData } from '@/Provider/types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL,
@@ -165,7 +166,7 @@ export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: 
     }
   };
 
-  export const getSingleImage = async (imageUrl: string, user: string | null) => {
+  export const getSingleMedia = async (imageUrl: string, user: string | null) => {
     const publicId = extractPublicId(imageUrl);
     const userId = user || null;
     const mediaType = imageUrl.split('/').slice(-3).join('/');
@@ -191,7 +192,7 @@ export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: 
     return publicId;
   };
 
-  export const addImages = async (formData: FormData, userId: string) => {
+  export const addMedia = async (formData: FormData, userId: string) => {
     try {
         const response = await api.post(`/api/gallery/${userId}`, formData, {
             headers: {
@@ -223,7 +224,7 @@ export const updateMedia = async (formData: FormData, userId: string, imageId: s
 
 
 
-export const deleteImage = async (userId: string, imageIds: string | string[], mediaType: string) => {
+export const deleteMedia = async (userId: string, imageIds: string | string[], mediaType: string) => {
     console.log("imageIds",userId, imageIds)
     try {
         const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
@@ -291,3 +292,54 @@ export const deleteImage = async (userId: string, imageIds: string | string[], m
         throw error; // Rethrow the error if needed
       }
   };
+
+
+// category
+
+export const getCategories = async () => api.get('/api/category');
+
+// export const getUserCategories = async (userId: string): Promise<CategoryData[]> => {
+//     const response = await axios.get(`/api/category/${userId}`);
+//     return response.data; // Return only the data
+// };
+
+
+export const getUserCategories = async (userId: string) => {
+    try {
+        const response = await api.get(`/api/category/user/${userId}`);
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+export const getSingleCategory = async (categoryId: string) => {
+    try {
+        const response = await api.get(`/api/category/${categoryId}`);
+        return response.data.categories;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+
+export const addCategory = async (categoryData: FormData) => {
+    return api.post('/api/category', categoryData);
+};
+
+export const updateCategory = async (categoryData: FormData, categoryId: string) => {
+    return api.patch(`/api/category/${categoryId}`, categoryData);
+};
+
+export const deleteCategory = async (categoryId: string) => {
+    console.log("categoryId",categoryId)
+    return api.delete(`/api/category/${categoryId}`);
+};

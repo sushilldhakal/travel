@@ -1,6 +1,6 @@
 import { createImageUpload } from "novel/plugins";
 import { getUserId } from "@/util/AuthLayout";
-import { addImages } from "@/http/api";
+import { addMedia } from "@/http/api";
 import { toast } from "@/components/ui/use-toast";
 
 
@@ -24,7 +24,7 @@ const uploadImageFiles = async (files: File[]): Promise<string[]> => {
     formData.append('imageList', file);
   });
   try {
-    const response = await addImages(formData, userId);
+    const response = await addMedia(formData, userId);
     if (response && response.urls) {
       return response.urls; // Ensure response contains URLs
     } else {

@@ -22,7 +22,7 @@ const AddTour = lazy(() => import('@/pages/Tours/AddTour'));
 const AddUser = lazy(() => import('@/pages/Users/AddUser'));
 const ErrorPage = lazy(() => import('@/pages/Error/ErrorPage'));
 const TourSetting = lazy(() => import('@/pages/Tours/TourSetting'));
-const TourCategory = lazy(() => import('@/pages/Tours/TourCategory'));
+const TourCategory = lazy(() => import('@/pages/Tours/Category/TourCategory'));
 const Home = lazy(() => import('@/pages/Home/Home'));
 
 const router = createBrowserRouter([

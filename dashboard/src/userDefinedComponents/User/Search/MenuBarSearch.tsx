@@ -19,12 +19,9 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // const toggleSearch = () => {
-    //     setSearchVisible((prevState) => !prevState);
-    // };
-
-    const closeSearch = () => {
-        console.log('close search trigger')
+    const closeSearch = (e: MouseEvent) => {
+        e.preventDefault();
+        console.log("cross clicked")
         handleSearch();
     };
 
@@ -87,7 +84,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                         </Select>
                         <button
                             className="cd-search-trigger cd-text-replace ml-3"
-                            onClick={closeSearch}
+                            onClick={(e) => closeSearch}
                         >
                             <X />
                         </button>

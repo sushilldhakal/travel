@@ -93,3 +93,13 @@ export interface BreadcrumbsContextType {
     asset_folder: string;
     api_key: string;
 }
+
+
+export interface CategoryData {
+  id: string | null;
+  name: string;
+  description: string;
+  imageUrl: string;
+  isActive: boolean;
+  userId: string;
+}

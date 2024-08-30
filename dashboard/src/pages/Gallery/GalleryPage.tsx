@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ImageGrid from "./ImageGrid";
 import UploadSheet from "./UploadSheet";
-import { addImages, deleteImage, getAllMedia } from "@/http/api";
+import { addMedia, deleteMedia, getAllMedia } from "@/http/api";
 import { toast } from "@/components/ui/use-toast";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImageResource } from "@/Provider/types";
@@ -71,7 +71,7 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
-            return addImages(formData, userId);
+            return addMedia(formData, userId);
         },
         onMutate: (formData: FormData) => {
             const filesBeingUploaded = Array.from(formData.entries())
@@ -130,7 +130,7 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
     };
 
     const deleteMutation = useMutation({
-        mutationFn: ({ imageIds, mediaType }: { imageIds: string | string[], mediaType: string }) => deleteImage(userId!, imageIds, mediaType),
+        mutationFn: ({ imageIds, mediaType }: { imageIds: string | string[], mediaType: string }) => deleteMedia(userId!, imageIds, mediaType),
         onSuccess: ({ data, mediaType }) => {
             queryClient.invalidateQueries({ queryKey: [mediaType] });
             toast({
