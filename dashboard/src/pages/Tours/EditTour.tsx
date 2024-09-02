@@ -28,6 +28,8 @@ import { tabs } from './Components/tabs';
 import { useFormHandlers } from './Components/useFormHandlers';
 import TabNavigation from './Components/TabNavigation';
 import { useTourMutation } from './Components/useTourMutation';
+import { useCategories } from './Components/useCategories';
+import { getUserId } from '@/util/AuthLayout';
 
 
 const EditTour: React.FC = () => {
@@ -40,15 +42,14 @@ const EditTour: React.FC = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const { toast } = useToast()
     const [editorContent, setEditorContent] = useState<JSONContent>();
-
+    const userId = getUserId();
     const { data: initialTourData } = useQuery<TourData, Error>({
         queryKey: ['tours', tourId],
         queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
         enabled: !!tourId,
 
     });
-
-    console.log(initialTourData)
+    const { data: categories } = useCategories(userId);
 
     useEffect(() => {
         if (initialTourData && tourId) {
@@ -78,6 +79,14 @@ const EditTour: React.FC = () => {
         }
     ];
 
+    const defaultCategory = [
+        {
+            label: '',
+            value: '',
+        }
+    ];
+
+
     useEffect(() => {
         if (singleTourData) {
             const defaultValues = {
@@ -89,6 +98,10 @@ const EditTour: React.FC = () => {
                 file: singleTourData.file || '',
                 price: typeof singleTourData.price === 'number' ? singleTourData.price.toString() : singleTourData.price,
                 outline: singleTourData.outline || '',
+                category: singleTourData.category?.map(item => ({
+                    label: item.categoryName || '',
+                    value: item.categoryId || '',
+                })) || defaultCategory,
                 itinerary: singleTourData.itinerary?.map(item => ({
                     day: item.day || '',
                     title: item.title || '',
@@ -240,6 +253,7 @@ const EditTour: React.FC = () => {
                                 fields={fields}
                                 append={append}
                                 remove={remove}
+                                categories={categories}
                             />
                         </div>
                     </div>

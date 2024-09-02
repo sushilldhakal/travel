@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LoaderCircle, Paperclip, Trash2 } from 'lucide-react';
+import { LoaderCircle, Paperclip, PlusIcon, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import GalleryPage from '@/pages/Gallery/GalleryPage';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { tabs } from './tabs';
+import MultipleSelector, { Option } from '@/userDefinedComponents/MultipleSelector';
+
 export interface DivType {
     day: string;
     title: string;
@@ -37,12 +39,14 @@ interface TabContentProps {
     fields: DivType[];
     append: (value: Partial<DivType>) => void;
     remove: (index: number) => void;
+    categories: Option[];
 }
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
 ).toString();
+
 
 
 const TabContent: React.FC<TabContentProps> = (
@@ -55,18 +59,18 @@ const TabContent: React.FC<TabContentProps> = (
         singleTour,
         editorContent,
         onEditorContentChange,
-        fields, append, remove,
+        fields, append, remove, categories
     }) => {
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
     const [pageNumber, setPageNumber] = useState<number>(1);
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return <div>Select a tab to see its content</div>;
-
-
-    // const handleDateChange = (id: number, newDate: Date | undefined) => {
-    //     setItinerary(itinerary.map(div => (div.id === id ? { ...div, date: newDate } : div)));
-    // };
+    const categoryOptions: Option[] = (categories || []).map(category => ({
+        label: typeof category.name === 'string' ? category.name : '',
+        value: typeof category.id === 'string' ? category.id : '',
+        ...(!category.isActive ? { disable: true } : {})
+    }));
     const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
         if (imageUrl) {
             onChange(imageUrl);
@@ -95,6 +99,7 @@ const TabContent: React.FC<TabContentProps> = (
 
     const watchedItinerary = form.watch('itinerary');
 
+    const galleryImage = Array.from({ length: 10 }, (_, index) => index + 1);
 
 
     return (
@@ -171,6 +176,7 @@ const TabContent: React.FC<TabContentProps> = (
                             )}
                         />
                     </div>
+
                     <div className="grid gap-3">
                         <FormLabel>Description</FormLabel>
                         <Controller
@@ -187,6 +193,39 @@ const TabContent: React.FC<TabContentProps> = (
 
                             )}
                         />
+                    </div>
+                    <div className="grid gap-3">
+                        {/* {categoryOptions.map((category) => (
+                            <span key={category.value}>{category.label}</span>
+                        ))} */}
+
+                        {
+                            categories &&
+
+                            <FormField
+                                control={form.control}
+                                name="category"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Category</FormLabel>
+                                        <FormControl>
+
+                                            <MultipleSelector
+                                                {...field}
+                                                defaultOptions={categoryOptions}
+                                                placeholder="Select Category"
+                                                emptyIndicator={
+                                                    <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+                                                        no results found.
+                                                    </p>
+                                                }
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        }
                     </div>
                     <div className="grid gap-3 auto-rows-max grid-cols-2">
                         <FormField
@@ -532,6 +571,37 @@ const TabContent: React.FC<TabContentProps> = (
                     </div >
                 </CardContent >
             </div >
+
+            <div id="gallery">
+                <CardHeader>
+                    <CardTitle>Gallery Details</CardTitle>
+                    <CardDescription>Select gallery images for the tour.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 h-[500px] overflow-y-auto">
+
+                        <GalleryPage
+                            isGalleryPage={false}
+                            onImageSelect={(imageUrl) =>
+                                handleImageSelect(imageUrl, field.onChange)
+                            }
+                        />
+                    </div>
+                </CardContent>
+            </div>
+
+            <div id="location">
+                <CardHeader>
+                    <CardTitle>Location Details</CardTitle>
+                    <CardDescription>Select google Url for the tour location.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Input type="text" placeholder="Enter Google Map URL" />
+                    <iframe src="https://www.google.com/maps/d/embed?mid=14cqfbihuJgRL5Sgdw4WQqVkXUPwgLDk&usp=sharing" className="w-full h-[500px]"></iframe>
+
+                </CardContent>
+            </div>
+
         </Card >
     )
 }

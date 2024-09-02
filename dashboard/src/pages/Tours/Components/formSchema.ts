@@ -11,6 +11,12 @@ const itineraryItemSchema = z.object({
 // Define the schema for the itinerary as an array of itinerary items
 const itinerarySchema = z.array(itineraryItemSchema);
 
+const optionSchema = z.object({
+    label: z.string(),
+    value: z.string(),
+    disable: z.boolean().optional(),
+  });
+
 
 export const formSchema = z.object({
     title: z.string().min(2, 'Title must be at least 2 characters.'),
@@ -20,6 +26,7 @@ export const formSchema = z.object({
     price: z.number().min(0, 'Price must be a positive number'),
     coverImage: z.string().min(1, 'Please Select a Cover Image'),
     file: z.string().optional(),
+    category:z.array(optionSchema).min(1),
     outline: z.string().optional(),
     itinerary: itinerarySchema.optional() // Include the itinerary in the main schema
 });

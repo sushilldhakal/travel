@@ -58,7 +58,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
     };
 
     return (
-        <Disclosure id="main-header" as="nav" className={`bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary`}>
+        <Disclosure id="main-header" as="nav" className={`bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary px-5`}>
             <div className="mx-auto max-w-7xl">
                 <div className="relative flex h-16 items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -78,13 +78,13 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                         <div className="hidden sm:ml-6 sm:block">
                             <div className="flex space-x-4 text-secondary-foreground ">
                                 {UserMenuItems.items.map((item) => (
-                                    <a
+                                    <Link
                                         key={item.id}
-                                        href={item.url}
+                                        to={item.url}
                                         className="hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"
                                     >
                                         {item.title}
-                                    </a>
+                                    </Link>
                                 ))}
                             </div>
                         </div>

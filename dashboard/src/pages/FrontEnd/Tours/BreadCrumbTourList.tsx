@@ -17,7 +17,7 @@ const BreadCrumbTourList = () => {
                         <svg className="rtl:rotate-180 w-3 h-3 text-white-700 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
                         </svg>
-                        <Link to={"/tours"} className="ms-1 text-md font-medium text-white-700 hover:text-primary-600 md:ms-2 dark:text-white-500 dark:hover:text-white">Projects</Link>
+                        <Link to={"/tours"} className="ms-1 text-md font-medium text-white-700 hover:text-primary-600 md:ms-2 dark:text-white-500 dark:hover:text-white">Tours</Link>
                     </div>
                 </li>
 

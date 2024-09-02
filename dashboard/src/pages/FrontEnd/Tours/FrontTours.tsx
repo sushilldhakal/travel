@@ -13,10 +13,12 @@ const FrontTours = () => {
     queryFn: getTours,
   });
 
+  console.log("data", data)
+
   return (
     <>
 
-      <div className="banner pattern-2 relative" style={{ backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1722998270/main/tour-cover/jcr8shoq75elaafzlb6e.jpg")`, backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "cover" }} >
+      <div className="banner pattern-2 relative" style={{ backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1721751420/tour-covers/s99i5i9r2fwbrjyyfjbm.jpg")`, backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "cover" }} >
         <div className="showPattern"></div>
         <div className="mx-auto max-w-screen-xl px-4 2xl:px-0">
           <BreadCrumbTourList />
@@ -38,18 +40,14 @@ const FrontTours = () => {
                 key={tour._id}
                 className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
               >
-                <div className="h-56 w-full">
+                <div className="w-full">
                   <Link to={`/tours/${tour._id}`} className="block">
                     <img
-                      className="mx-auto h-full dark:hidden"
+                      className="mx-auto h-full"
                       src={tour.coverImage}
                       alt={tour.title}
                     />
-                    <img
-                      className="mx-auto hidden h-full dark:block"
-                      src={tour.coverImage}
-                      alt={tour.title}
-                    />
+
                   </Link>
                 </div>
                 <div className="pt-6">
@@ -130,12 +128,12 @@ const FrontTours = () => {
                     </div>
                   </div>
 
-                  <a
-                    href="#"
+                  <Link
+                    to={`/tours/${tour._id}`}
                     className="text-lg font-semibold leading-tight text-gray-900 hover:underline dark:text-white"
                   >
                     {tour.title}
-                  </a>
+                  </Link>
 
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex items-center">
@@ -201,8 +199,8 @@ const FrontTours = () => {
                     <span className="text-lg font-bold text-gray-900 dark:text-white">
                       ${tour.price}
                     </span>
-                    <a
-                      href="#"
+                    <Link
+                      to={`/tours/${tour._id}`}
                       className="inline-flex items-center rounded-lg border border-primary-600 bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:border-primary-500 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-600"
                     >
                       Book now
@@ -221,7 +219,7 @@ const FrontTours = () => {
                           d="M5 12h14m-7 7l7-7-7-7"
                         />
                       </svg>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>

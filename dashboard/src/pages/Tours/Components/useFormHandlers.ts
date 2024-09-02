@@ -14,7 +14,9 @@ export const useFormHandlers = (editorContent: JSONContent) => {
       tourStatus: 'Draft',
       coverImage: '',
       file: '',
-      price: '0',
+      price: 0,
+      category: [{
+        label: '', value: ''}],
       outline: '',
       itinerary: [{ day: '', title: '', description: '', dateTime: undefined }],
     },
@@ -34,7 +36,14 @@ export const useFormHandlers = (editorContent: JSONContent) => {
     formdata.append('coverImage', values.coverImage);
     if (values.file) formdata.append('file', values.file);
     if (values.outline) formdata.append('outline', values.outline);
-
+     // Append categories
+     const categories = form.getValues('category');
+     if (categories && Array.isArray(categories)) {
+      categories.forEach((item, index) => {
+        formdata.append(`category[${index}][label]`, item.label);
+        formdata.append(`category[${index}][value]`, item.value);
+      });
+    }
     const itinerary = form.getValues('itinerary');
     if (itinerary) {
       itinerary.forEach((item, index) => {
@@ -44,10 +53,13 @@ export const useFormHandlers = (editorContent: JSONContent) => {
         if (item.dateTime) formdata.append(`itinerary[${index}][date]`, item.dateTime);
       });
     }
+  // formdata.forEach((value, key) => {
+  //   console.log(key, value);
+  // });
 
     try {
       await mutate(formdata);
-      form.reset();
+      //form.reset();
     } catch (error) {
       console.error('Error creating tour:', error);
     }

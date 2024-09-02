@@ -16,8 +16,9 @@ export interface Tour {
     tourStatus: string,
     tour: string[],
     outline: string,
+    category: Category[],
     itinerary: Itinerary[] | undefined,
-    price: string,
+    price: number,
     incExc: string[],
     facts: string[],
     gallery: string[],
@@ -39,7 +40,10 @@ export interface User {
     payment_methods: string[];
     createdAt: string;
 }
-
+export interface Category {
+  categoryName: string;
+  categoryId: string;
+}
 
 
   export interface Breadcrumb {

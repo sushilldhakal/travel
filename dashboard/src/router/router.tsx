@@ -1,29 +1,28 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
 import routePaths from '@/lib/routePath';
 import PrivateRoutes from '@/util/PrivateRoutes';
-
-const Setting = lazy(() => import('@/pages/Setting/Setting'));
-const DashboardLayout = lazy(() => import('@/layouts/DashboardLayout'));
-const HomeLayout = lazy(() => import('@/layouts/HomeLayout'));
-const FrontTours = lazy(() => import('@/pages/FrontEnd/Tours/FrontTours'));
-const FrontSingleTours = lazy(() => import('@/pages/FrontEnd/SingleTours/FrontSingleTours'));
-const GalleryPage = lazy(() => import('@/pages/Gallery/GalleryPage'));
-const EditUser = lazy(() => import('@/pages/Users/EditUser'));
-const EditTour = lazy(() => import('@/pages/Tours/EditTour'));
-const Subscriber = lazy(() => import('@/pages/Subscriber/Subscriber'));
-const LoginPage = lazy(() => import('@/pages/Auth/LoginPage'));
-const HomePage = lazy(() => import('@/pages/Dashboard/HomePage'));
-const RegisterPage = lazy(() => import('@/pages/Auth/RegisterPage'));
-const UserPage = lazy(() => import('@/pages/Users/UserPage'));
-const TourPage = lazy(() => import('@/pages/Tours/TourPage'));
-const AddTour = lazy(() => import('@/pages/Tours/AddTour'));
-const AddUser = lazy(() => import('@/pages/Users/AddUser'));
-const ErrorPage = lazy(() => import('@/pages/Error/ErrorPage'));
-const TourSetting = lazy(() => import('@/pages/Tours/TourSetting'));
-const TourCategory = lazy(() => import('@/pages/Tours/Category/TourCategory'));
-const Home = lazy(() => import('@/pages/Home/Home'));
+import HomeLayout from '@/layouts/HomeLayout';
+import Home from '@/pages/Home/Home';
+import FrontTours from '@/pages/FrontEnd/Tours/FrontTours';
+import FrontSingleTours from '@/pages/FrontEnd/SingleTours/FrontSingleTours';
+import LoginPage from '@/pages/Auth/LoginPage';
+import RegisterPage from '@/pages/Auth/RegisterPage';
+import ErrorPage from '@/pages/Error/ErrorPage';
+import DashboardLayout from '@/layouts/DashboardLayout';
+import TourPage from '@/pages/Tours/TourPage';
+import EditTour from '@/pages/Tours/EditTour';
+import AddTour from '@/pages/Tours/AddTour';
+import TourSetting from '@/pages/Tours/TourSetting';
+import TourCategory from '@/pages/Tours/Category/TourCategory';
+import HomePage from '@/pages/Dashboard/HomePage';
+import Setting from '@/pages/Setting/Setting';
+import GalleryPage from '@/pages/Gallery/GalleryPage';
+import UserPage from '@/pages/Users/UserPage';
+import AddUser from '@/pages/Users/AddUser';
+import Subscriber from '@/pages/Subscriber/Subscriber';
+import EditUser from '@/pages/Users/EditUser';
 
 const router = createBrowserRouter([
   {

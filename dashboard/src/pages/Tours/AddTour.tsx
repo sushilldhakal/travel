@@ -12,15 +12,19 @@ import { LoaderCircle } from 'lucide-react';
 import TabNavigation from './Components/TabNavigation';
 import { Button } from '@/components/ui/button';
 import makeid from './Components/randomId';
+import { getUserId } from '@/util/AuthLayout';
+import { useCategories } from './Components/useCategories';
 
 const AddTour: React.FC = () => {
   const [tripCode, setTripCode] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
   const [editorContent, setEditorContent] = useState(defaultValue);
-
+  const userId = getUserId();
   const { mutate: createTour, isPending } = useTourMutation();
 
   const { form, onSubmit, fields, append, remove } = useFormHandlers(editorContent);
+  const { data: categories } = useCategories(userId);
+
 
   const location = useLocation();
 
@@ -102,6 +106,7 @@ const AddTour: React.FC = () => {
                 fields={fields}
                 append={append}
                 remove={remove}
+                categories={categories}
               />
             </div>
           </div>
