@@ -1,8 +1,6 @@
-import { deeCategory } from './../../../server/src/user/category/categoryController';
 import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
-import { CategoryData } from '@/Provider/types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL,

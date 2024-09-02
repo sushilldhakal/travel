@@ -157,14 +157,14 @@ function getDateByType(date: Date | null, type: TimePickerType) {
       return getValidMinuteOrSecond(String(date.getSeconds()));
     case 'hours':
       return getValidHour(String(date.getHours()));
-    case '12hours':
+    case '12hours': {
       const hours = display12HourValue(date.getHours());
       return getValid12Hour(String(hours));
+    }
     default:
       return '00';
   }
 }
-
 function getArrowByType(value: string, step: number, type: TimePickerType) {
   switch (type) {
     case 'minutes':

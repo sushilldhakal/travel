@@ -1,4 +1,3 @@
-import { JSONContent } from "novel";
 
 export interface Author {
     _id: string;
@@ -13,6 +12,20 @@ export interface Tour {
     coverImage: string;
     file: string;
     createdAt: string;
+    code: string,
+    tourStatus: string,
+    tour: string[],
+    outline: string,
+    itinerary: Itinerary[] | undefined,
+    price: string,
+    incExc: string[],
+    facts: string[],
+    gallery: string[],
+    locations: string[],
+    faqs: string[],
+    downloads: string[],
+    tabsDisplay: string[],
+    enquiry: string[],
 }
 export interface User {
     _id: string;
@@ -41,25 +54,18 @@ export interface BreadcrumbsContextType {
     updateBreadcrumbs: (newBreadcrumbs: Breadcrumb[]) => void;
 }
 
+export interface Itinerary {
+  day: string;
+    title: string;
+    description: string;
+    dateTime: Date | undefined;
+}
+
   export interface TourData {
-    title: string,
-    description: JSONContent,
-    code: string,
-    tourStatus: string,
-    coverImage: string,
-    file: string,
-    tour: string[],
-    breadcrumbs: string[],
-    itinerary: string[],
-    price: string[],
-    incExc: string[],
-    facts: string[],
-    gallery: string[],
-    locations: string[],
-    faqs: string[],
-    downloads: string[],
-    tabsDisplay: string[],
-    enquiry: string[],
+    tour: Tour;
+    breadcrumbs?: Breadcrumb[],
+    
+   
 }
   export interface TabContentProps {
     initialTourData?: TourData;

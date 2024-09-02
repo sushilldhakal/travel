@@ -8,25 +8,39 @@ import { ImageResource } from "@/Provider/types";
 import { getUserId } from "@/util/AuthLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDetail from "./ImageDetail";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 
 interface GalleryPageProps {
     onImageSelect: (image: string) => void; // Adjusted type for the callback
     isGalleryPage: boolean;
     imageUrl?: string;
+    activeTab?: string | null;
 }
 
-const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
+const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
     const userId = getUserId();
-    const [tab, setTab] = useState("images");
+    const [tab, setTab] = useState<string>(() => activeTab ?? "images");
     const [files, setFiles] = useState<File[] | null>(null);
     const queryClient = useQueryClient();
     const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [isGalleryPage, setIsGalleryPage] = useState<boolean>(false);
     const location = useLocation();
+    const navigate = useNavigate();
 
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const tabFromQuery = activeTab ? activeTab : queryParams.get('tab') || 'images';
+        onTabChange(tabFromQuery);
+    }, [location.search, activeTab]);
+
+    const handleTabClick = (tabValue: string) => {
+        onTabChange(tabValue);
+        // Update URL with the new tab value
+        navigate(`?tab=${tabValue}`);
+    };
 
     useEffect(() => {
         if (location.pathname === '/dashboard/gallery') {
@@ -223,9 +237,14 @@ const GalleryPage = ({ onImageSelect }: GalleryPageProps) => {
             </div>
             <Tabs value={tab} onValueChange={onTabChange} className="w-full">
                 <TabsList>
-                    <TabsTrigger value="images">Images</TabsTrigger>
-                    <TabsTrigger value="videos">Video</TabsTrigger>
-                    <TabsTrigger value="pdfs">PDF</TabsTrigger>
+                    <TabsTrigger value="images"
+                        onClick={() => handleTabClick('images')}
+                        className={tab === 'images' ? 'active' : ''}
+                    >Images</TabsTrigger>
+                    <TabsTrigger value="videos" onClick={() => handleTabClick('videos')}
+                        className={tab === 'videos' ? 'active' : ''}>Video</TabsTrigger>
+                    <TabsTrigger value="pdfs" onClick={() => handleTabClick('pdfs')}
+                        className={tab === 'pdfs' ? 'active' : ''}>PDF</TabsTrigger>
                 </TabsList>
                 <TabsContent value="images">
                     <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>

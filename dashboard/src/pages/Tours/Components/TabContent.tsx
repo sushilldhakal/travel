@@ -1,32 +1,27 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, FileText, LoaderCircle, Paperclip, Trash2 } from 'lucide-react';
+import { LoaderCircle, Paperclip, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { TimePicker } from './DateTimePicker';
-import { DropzoneOptions } from 'react-dropzone';
-import { FileInput, FileUploader, FileUploaderContent, FileUploaderItem } from '@/userDefinedComponents/FileUploader';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { JSONContent } from "novel";
-import Editor from './editor/advanced-editor';
-import { TourData } from '@/Provider/types';
+import Editor from '../../../userDefinedComponents/editor/advanced-editor';
 import { Controller, useForm } from 'react-hook-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GalleryPage from '@/pages/Gallery/GalleryPage';
-interface DivType {
-    id: number;
-    date: Date | undefined;
-    content: string;
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { tabs } from './tabs';
+export interface DivType {
+    day: string;
+    title: string;
+    description: string;
+    dateTime: Date | undefined;
 }
 interface TabContentProps {
     activeTab: string;
@@ -36,49 +31,70 @@ interface TabContentProps {
     singleTour: boolean;
     tripCode: string | undefined;
     handleGenerateCode: () => string;
-    singleTourData: TourData | undefined;
     form: ReturnType<typeof useForm>;
-    submit: (values: z.infer<typeof formSchema>) => void;
     editorContent: JSONContent; // Add this prop
     onEditorContentChange: (content: JSONContent) => void; // Add this prop
-
+    fields: DivType[];
+    append: (value: Partial<DivType>) => void;
+    remove: (index: number) => void;
 }
 
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
 
-const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCode, tabs, handleGenerateCode, tourMutation, singleTour, singleTourData, editorContent, onEditorContentChange }) => {
-    const [divs, setDivs] = useState<DivType[]>([]);
-    const [time, setTime] = useState<Date | undefined>(undefined);
-    const [dialogOpen, setDialogOpen] = useState(false);
+
+const TabContent: React.FC<TabContentProps> = (
+    {
+        form,
+        activeTab,
+        tripCode,
+        handleGenerateCode,
+        tourMutation,
+        singleTour,
+        editorContent,
+        onEditorContentChange,
+        fields, append, remove,
+    }) => {
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+    const [pageNumber, setPageNumber] = useState<number>(1);
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return <div>Select a tab to see its content</div>;
-    const handleAddDiv = () => {
-        setDivs([...divs, { id: divs.length, date: undefined, content: '' }]);
-    };
-    const deleteDivs = (id: number) => {
-        setDivs(divs.filter(div => div.id !== id));
-    };
-    const handleDateChange = (id: number, newDate: Date | undefined) => {
-        setDivs(divs.map(div => (div.id === id ? { ...div, date: newDate } : div)));
-    };
 
-    const dropzonePdf: DropzoneOptions = {
-        accept: {
-            'application/pdf': ['.pdf'],
-        },
-        multiple: false,
-        maxFiles: 1,
-        maxSize: 5 * 1024 * 1024, // 1 MB
-    };
 
+    // const handleDateChange = (id: number, newDate: Date | undefined) => {
+    //     setItinerary(itinerary.map(div => (div.id === id ? { ...div, date: newDate } : div)));
+    // };
     const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
         if (imageUrl) {
-            onChange(imageUrl); // Update the form field with the selected image URL
-            setDialogOpen(false); // Close the dialog
+            onChange(imageUrl);
+            setImageDialogOpen(false); // Close the image dialog
         }
     };
     const handleRemoveImage = (onChange: (value: string) => void) => {
-        onChange(''); // Clear the form field
+        onChange('');
     };
+
+    const handlePdfSelect = (pdfUrl: string, onChange: (value: string) => void) => {
+        if (pdfUrl) {
+            onChange(pdfUrl);
+            setPdfDialogOpen(false); // Close the PDF dialog
+        }
+    };
+
+    const handleRemovePdf = (onChange: (value: string) => void) => {
+        onChange('');
+    };
+
+
+    function onDocumentLoadSuccess() {
+        setPageNumber(1);
+    }
+
+    const watchedItinerary = form.watch('itinerary');
+
 
 
     return (
@@ -251,7 +267,7 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                                                <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
                                                     <DialogTrigger >
                                                         <div
                                                             className={cn(
@@ -294,92 +310,82 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                             </div>
                         </div>
                         <div className='w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
-                            <div className="flex relative flex-col space-y-1.5 p-6 h-[200px]">
-                                {singleTour && singleTourData.file ?
-                                    <span className="">
-                                        <Link className='text-primary' to={singleTourData?.file ? singleTourData?.file : ''} target="_blank">Download Tour PDF </Link>
-
-                                        <p className="mt-2 pl-6">Change Cover Image</p>
-                                    </span> : ''}
-
+                            <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                                 <FormField
                                     control={form.control}
                                     name="file"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Tour PDF</FormLabel>
-                                            <FileUploader
-                                                value={field.value}
-                                                // onValueChange={field.onChange}
-                                                onValueChange={(files) => {
-                                                    const dataTransfer = new DataTransfer();
-                                                    files?.forEach((file) => dataTransfer.items.add(file));
-                                                    field.onChange(dataTransfer.files);
-                                                }}
-                                                dropzoneOptions={dropzonePdf}
-                                                reSelect={true}
-                                            >
-                                                <FileInput
-                                                    className={cn(
-                                                        buttonVariants({
-                                                            size: "icon",
-                                                        }),
-                                                        "size-8"
-                                                    )}
-                                                >
-                                                    <Paperclip className="size-4" />
-                                                    <span className="sr-only">Select your files</span>
-                                                </FileInput>
-                                                {field.value && field.value.length > 0 && (
-                                                    <FileUploaderContent className="absolute bottom-8 p-2 bottom-30  w-full -ml-3 rounded-b-none rounded-t-md flex-row gap-2 ">
-                                                        {Array.from(field.value).map((file, i) => {
-                                                            if (!(file instanceof File)) return null; // Add this type guard
-                                                            return (
-                                                                <FileUploaderItem
-                                                                    key={i}
-                                                                    index={i}
-                                                                    aria-roledescription={`file ${i + 1} containing ${file.name
-                                                                        }`}
-                                                                    className="p-0 size-20"
-                                                                >
-                                                                    <AspectRatio className="size-full">
-                                                                        <Link to={URL.createObjectURL(file)} className="block text-lg" target="_blank">
-                                                                            <FileText className="text-lg" size="80" />
-                                                                        </Link>
+                                            <FormLabel>PDF<br /></FormLabel>
+                                            {field.value ? (
+                                                <div className="mt-2 relative">
+                                                    <Link to={field.value} target="_blank" rel="noopener noreferrer">
 
-                                                                    </AspectRatio>
-                                                                    <button
-                                                                        type="button"
-                                                                        className={cn(
-                                                                            "absolute top-1  right-1 z-10"
-                                                                        )}
-                                                                        onClick={() => {
-                                                                            const files = Array.from(field.value);
-                                                                            field.onChange(files.filter((file, index) => index !== 0));
-                                                                        }}
-                                                                    >
-                                                                        <span className="sr-only">remove item</span>
-                                                                        <Trash2 className="w-4 h-4 hover:stroke-destructive duration-200 ease-in-out" />
-                                                                    </button>
-                                                                </FileUploaderItem>
-                                                            );
-                                                        })}
-                                                    </FileUploaderContent>
-                                                )}
-                                            </FileUploader>
+                                                        <div className="relative group pdf-container">
+                                                            <Document file={field.value} onLoadSuccess={onDocumentLoadSuccess}>
+                                                                <Page
+                                                                    pageNumber={pageNumber}
+                                                                    height={300}
+                                                                    className="w-full" />
+                                                            </Document>
+                                                        </div>
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemovePdf(field.onChange)}
+                                                        className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
+                                                    >
+                                                        <Trash2 />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+                                                    <DialogTrigger >
+                                                        <div
+                                                            className={cn(
+                                                                buttonVariants({
+                                                                    size: "icon",
+                                                                }),
+                                                                "size-8"
+                                                            )}
+                                                        >
+                                                            <Paperclip className="size-4" />
+                                                            <span className="sr-only">Select your files</span>
+                                                        </div>
+                                                        <span className="pl-2">Choose PDF</span></DialogTrigger>
+                                                    <DialogContent
+                                                        className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
+                                                        onInteractOutside={(e) => {
+                                                            e.preventDefault();
+                                                        }}
+                                                    >
+                                                        <DialogHeader>
+                                                            <DialogTitle className="mb-3 text-left">Choose pdf From Gallery</DialogTitle>
+                                                            <div className="upload dialog">
+                                                                <GalleryPage
+                                                                    isGalleryPage={false}
+                                                                    activeTab="pdfs"
+                                                                    onImageSelect={(pdfUrl) =>
+                                                                        handlePdfSelect(pdfUrl, field.onChange)
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </DialogHeader>
+                                                        <DialogDescription>
+                                                            Select a Pdf.
+                                                        </DialogDescription>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
                                         </FormItem>
                                     )}
                                 />
-
-
                             </div>
                         </div>
                     </div>
                 </div>
             </CardContent>
-
-
-            {/* <div id="itinerary">
+            <div id="itinerary">
                 <CardHeader>
                     <CardTitle>Itinerary Details</CardTitle>
                     <CardDescription>Enter Itinerary step by step format</CardDescription>
@@ -389,7 +395,7 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                         <div className="grid gap-3">
                             <FormField
                                 control={form.control}
-                                name="itineraryOutline"
+                                name="outline"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Tour Outline</FormLabel>
@@ -406,133 +412,127 @@ const TabContent: React.FC<TabContentProps> = ({ submit, form, activeTab, tripCo
                             />
                         </div>
                         <div className="grid gap-3">
-                            <Button type="button" className="w-32 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium" onClick={handleAddDiv}>Add Itinerary</Button>
+                            <Button type="button"
+                                className="w-32 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium"
+                                onClick={() => append({ day: '', title: '', description: '', dateTime: undefined })}
+                            >
+                                Add Itinerary
+                            </Button>
                             <Accordion type="single" collapsible>
-                                {divs.map(({ id, date }) => (
-                                    <AccordionItem key={id} value={`item-${id}`}>
-                                        <AccordionTrigger>
-                                            <div className="flex items-center justify-between">
-                                                <span>
+                                {fields && fields.length > 0 ? (
+                                    fields.map((item, index) => (
+                                        <AccordionItem key={index} value={`item-${index}`} >
+                                            <AccordionTrigger className="hover:no-underline hover:text-primary text-decoration-none">
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="">
+                                                        {`${watchedItinerary[index]?.day || 'Day ' + (index + 1) + ' - No Activity'}`}
+                                                    </div>
+                                                    <div className="flex justify-end">
+                                                        <div
+                                                            className="text-sm ml-5 px-1 py-1 leading-4 bg-transparent hover:bg-transparent hover:text-destructive/60 hover:text-decoration-none rounded text-destructive cursor-pointer"
+                                                            onClick={() => remove(index)}
+                                                        >
+                                                            <Trash2 />
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+                                            </AccordionTrigger>
+
+                                            <AccordionContent>
+                                                <div className="grid gap-3">
+                                                    {/* Day Field */}
                                                     <FormField
                                                         control={form.control}
-                                                        name={`day${id + 1} header`}
+                                                        name={`itinerary.${index}.day`}
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormControl>
                                                                     <Input
                                                                         type="text"
-                                                                        className="w-full"
                                                                         {...field}
-                                                                        placeholder={`Day ${id + 1} - Arrival`}
-                                                                        value={field.value || ''}
-                                                                        onChange={field.onChange}
+                                                                        placeholder={`Day ${index + 1} - Activity`}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
-                                                </span>
-                                                <Link to={(e) => e.preventDefault()} className="text-xs ml-5 px-1 py-1 leading-4" onClick={() => deleteDivs(id)}>
-                                                    Delete
-                                                </Link>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="grid gap-3">
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`day${id + 1} title`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="text"
-                                                                    className="w-full"
-                                                                    {...field}
-                                                                    placeholder={`Day ${id + 1} - Title`}
-                                                                    value={field.value || ''}
-                                                                    onChange={field.onChange}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`day${id + 1} description`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormControl>
-                                                                <Textarea
-                                                                    className="min-h-32"
-                                                                    {...field}
-                                                                    placeholder={`Day ${id + 1} - Description`}
-                                                                    value={field.value || ''}
-                                                                    onChange={field.onChange}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <div className="flex items-center gap-2">
+
+                                                    {/* Title Field */}
                                                     <FormField
                                                         control={form.control}
-                                                        name={`day${id + 1} date`}
+                                                        name={`itinerary.${index}.title`}
                                                         render={({ field }) => (
-                                                            <FormItem className="flex flex-col">
-                                                                <Popover>
-                                                                    <PopoverTrigger asChild>
-                                                                        <FormControl>
-                                                                            <Button
-                                                                                variant={"outline"}
-                                                                                className={cn(
-                                                                                    "w-[240px] pl-3 text-left font-normal",
-                                                                                    !field.value && "text-muted-foreground"
-                                                                                )}
-                                                                            >
-                                                                                {field.value ? (
-                                                                                    format(field.value, "PPP")
-                                                                                ) : (
-                                                                                    <span>Pick a date</span>
-                                                                                )}
-                                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                                            </Button>
-                                                                        </FormControl>
-                                                                    </PopoverTrigger>
-                                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                                        <Calendar
-                                                                            mode="single"
-                                                                            selected={field.value}
-                                                                            onSelect={field.onChange}
-                                                                            disabled={(date) =>
-                                                                                date > new Date() || date < new Date("1900-01-01")
-                                                                            }
-                                                                            initialFocus
-                                                                        />
-                                                                    </PopoverContent>
-                                                                </Popover>
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="text"
+                                                                        {...field}
+                                                                        placeholder={`Day ${index + 1} - Title`}
+                                                                    />
+                                                                </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
-                                                    <TimePicker date={time} onChange={setTime} />
+
+                                                    {/* Description Field */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`itinerary.${index}.description`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <Textarea
+                                                                        className="min-h-32"
+                                                                        {...field}
+                                                                        placeholder={`Day ${index + 1} - Description`}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    {/* DateTime Field */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`itinerary.${index}.dateTime`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <DateTimePicker
+                                                                        value={field.value ? new Date(field.value) : undefined}
+                                                                        onChange={field.onChange}
+                                                                        granularity="minute"
+                                                                        hourCycle={12}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                 </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        </div>
-                        <Button onClick={submit} className="ml-auto">
-                            Save Changes
+                                            </AccordionContent>
+                                        </AccordionItem >
+                                    ))) : (
+                                    <p>No itinerary added yet.</p>
+                                )}
+                            </Accordion >
+
+
+                        </div >
+                        <Button type="submit" className="ml-auto">
+                            {
+                                !singleTour ? "Create Tour" : "Save Changes"
+                            }
                         </Button>
-                    </div>
-                </CardContent>
-            </div> */}
-        </Card>
+                    </div >
+                </CardContent >
+            </div >
+        </Card >
     )
 }
 
