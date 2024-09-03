@@ -4,6 +4,7 @@ export interface Author {
     name: string;
 }
 export interface Tour {
+  id:string;
     _id: string;
     title: string;
     description: string;
@@ -12,6 +13,7 @@ export interface Tour {
     coverImage: string;
     file: string;
     createdAt: string;
+    updatedAt: string;
     code: string,
     tourStatus: string,
     tour: string[],
@@ -68,7 +70,7 @@ export interface Itinerary {
   export interface TourData {
     tour: Tour;
     breadcrumbs?: Breadcrumb[],
-    
+    tours: Tour;
    
 }
   export interface TabContentProps {
@@ -106,6 +108,7 @@ export interface Itinerary {
 
 
 export interface CategoryData {
+  _id: string;
   id: string | null;
   name: string;
   description: string;

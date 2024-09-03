@@ -58,7 +58,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
     };
 
     return (
-        <Disclosure id="main-header" as="nav" className={`bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary px-5`}>
+        <Disclosure id="main-header" as="nav" className={`relative z-2 bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary px-5`}>
             <div className="mx-auto max-w-7xl">
                 <div className="relative flex h-16 items-center justify-between">
                     <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">

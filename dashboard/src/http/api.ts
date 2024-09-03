@@ -52,7 +52,7 @@ export const userSetting = async (userId: string, data: FormData) =>
 //tours
 export const getTours = async () => api.get('/api/tours');
 
-export const getLatestTours = async () => api.get('/api/tours/latest');
+export const getLatestTours = async () => api.get('/api/tour/search/latest');
 
 export const getSingleTour = async (tourId: string) => {
     try {
@@ -341,3 +341,17 @@ export const deleteCategory = async (categoryId: string) => {
     console.log("categoryId",categoryId)
     return api.delete(`/api/category/${categoryId}`);
 };
+
+
+export const searchTours = async (query: string) => {
+    try {
+        const response = await api.get(`/api/tour/search?${query}`);
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+}
