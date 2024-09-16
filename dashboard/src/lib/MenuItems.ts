@@ -1,5 +1,5 @@
 import routePaths from "./routePath";
-import { FilePlus, Footprints, Images, Layers3, LayoutDashboard, ListCollapse, MailCheck, Settings, Users } from "lucide-react";
+import { FilePlus, Footprints, Images, Layers3, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
   
 
 export const UserMenuItems = {
@@ -73,6 +73,20 @@ export const UserMenuItems = {
             type: "item",
             icon: Layers3,
             url:routePaths.dashboard.tourCategory, // This routePath should be added to routePaths if exists
+          },
+          {
+            id: "fact",
+            title: "Facts",
+            type: "item",
+            icon: Lightbulb,
+            url:routePaths.dashboard.tourFacts, // This routePath should be added to routePaths if exists
+          },
+          {
+            id: "faq",
+            title: "Faq",
+            type: "item",
+            icon: MessageCircleMore,
+            url:routePaths.dashboard.tourFaq, // This routePath should be added to routePaths if exists
           },
           {
             id: "tripsetting",

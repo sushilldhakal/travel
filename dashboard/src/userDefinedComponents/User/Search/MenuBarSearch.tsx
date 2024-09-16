@@ -145,6 +145,9 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
+                                    <SelectItem value={null}>
+                                        Select all Category
+                                    </SelectItem>
                                     {categories?.data.categories && categories?.data.categories.map((category: CategoryData) => (
                                         <SelectItem key={category._id} value={category._id}>
                                             {category.name}
@@ -185,14 +188,16 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                             </div>
                         }
                         <ul>
+                            {sortedToursByDate && sortedToursByDate.length === 0 && <p>No tours found</p>}
+
                             {sortedToursByDate && sortedToursByDate.map((tour: Tour) => (
                                 <li className="flex relative flex-col pl-[100px] mb-5 items-start" key={tour._id}>
-                                    <Link className="image-wrapper pr-5 absolute left-0 top-0" to={`/tour/${tour._id}`}>
+                                    <Link className="image-wrapper pr-5 absolute left-0 top-0" to={`/tours/${tour._id}`}>
                                         <img className="w-20 h-15" src={tour.coverImage} alt="News image" />
                                     </Link>
                                     <h4>
-                                        <Link className="cd-nowrap" to={`/tour/${tour._id}`}>
-                                            {tour.title} {tour._id}
+                                        <Link className="cd-nowrap" to={`/tours/${tour._id}`}>
+                                            {tour.title}
                                         </Link>
                                     </h4>
                                     <time dateTime={tour.updatedAt} className="text-xs mt-1">{formatDate(tour.updatedAt)}</time>

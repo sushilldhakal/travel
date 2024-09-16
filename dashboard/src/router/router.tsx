@@ -23,6 +23,8 @@ import UserPage from '@/pages/Users/UserPage';
 import AddUser from '@/pages/Users/AddUser';
 import Subscriber from '@/pages/Subscriber/Subscriber';
 import EditUser from '@/pages/Users/EditUser';
+import TourFacts from '@/pages/Tours/FACTS/Facts';
+import TourFaq from '@/pages/Tours/FAQ/Faq';
 
 const router = createBrowserRouter([
   {
@@ -153,6 +155,22 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<div>Loading...</div>}>
                 <TourCategory />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.tourFacts,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <TourFacts />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.tourFaq,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <TourFaq />
               </Suspense>
             ),
           },

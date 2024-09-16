@@ -293,14 +293,7 @@ export const deleteMedia = async (userId: string, imageIds: string | string[], m
 
 
 // category
-
 export const getCategories = async () => api.get('/api/category');
-
-// export const getUserCategories = async (userId: string): Promise<CategoryData[]> => {
-//     const response = await axios.get(`/api/category/${userId}`);
-//     return response.data; // Return only the data
-// };
-
 
 export const getUserCategories = async (userId: string) => {
     try {
@@ -355,3 +348,93 @@ export const searchTours = async (query: string) => {
         }
     }
 }
+
+
+//facts
+
+export const getFacts = async () => api.get('/api/facts');
+
+export const getUserFacts = async (userId: string) => {
+    try {
+        const response = await api.get(`/api/facts/user/${userId}`);
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+export const getSingleFacts = async (factId: string) => {
+    try {
+        const response = await api.get(`/api/facts/${factId}`);
+        return response.data.facts;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+
+export const addFacts = async (factData: FormData) => {
+    return api.post('/api/facts', factData);
+};
+
+export const updateFacts = async (factData: FormData, factId: string) => {
+    return api.patch(`/api/facts/${factId}`, factData);
+};
+
+export const deleteFacts = async (factId: string) => {
+    console.log("factId",factId)
+    return api.delete(`/api/facts/${factId}`);
+};
+
+
+
+//faq
+
+export const getFaq = async () => api.get('/api/faqs');
+
+export const getUserFaq = async (userId: string) => {
+    try {
+        const response = await api.get(`/api/faqs/user/${userId}`);
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+export const getSingleFaq = async (faqId: string) => {
+    try {
+        const response = await api.get(`/api/faqs/${faqId}`);
+        return response.data.faqs;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour: ${String(error)}`);
+        }
+    }
+};
+
+
+export const addFaq = async (faqData: FormData) => {
+    return api.post('/api/faqs', faqData);
+};
+
+export const updateFaq = async (faqData: FormData, faqId: string) => {
+    return api.patch(`/api/faqs/${faqId}`, faqData);
+};
+
+export const deleteFaq = async (faqId: string) => {
+    return api.delete(`/api/faqs/${faqId}`);
+};

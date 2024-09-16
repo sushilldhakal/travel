@@ -26,7 +26,7 @@ interface CategoryFormData {
 }
 
 
-const AddCategory = () => {
+const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
     const userId = getUserId();
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -47,7 +47,9 @@ const AddCategory = () => {
                 title: 'Category added successfully',
                 description: 'Category has been added successfully.',
             });
+            onCategoryAdded();
             form.reset();
+
         },
         onError: () => {
             toast({

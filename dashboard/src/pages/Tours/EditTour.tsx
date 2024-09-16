@@ -30,6 +30,8 @@ import TabNavigation from './Components/TabNavigation';
 import { useTourMutation } from './Components/useTourMutation';
 import { useCategories } from './Components/useCategories';
 import { getUserId } from '@/util/AuthLayout';
+import { useFacts } from './Components/useFacts';
+import { useFaq } from './Components/useFaq';
 
 
 const EditTour: React.FC = () => {
@@ -49,7 +51,6 @@ const EditTour: React.FC = () => {
         enabled: !!tourId,
 
     });
-    const { data: categories } = useCategories(userId);
 
     useEffect(() => {
         if (initialTourData && tourId) {
@@ -68,7 +69,22 @@ const EditTour: React.FC = () => {
 
 
     const { mutate: tourMutation, isPending } = useTourMutation();
-    const { form, onSubmit, fields, append, remove } = useFormHandlers(editorContent);
+    const { form,
+        onSubmit,
+        itineraryFields,
+        itineraryAppend,
+        itineraryRemove,
+        factsFields,
+        factsAppend,
+        factsRemove,
+        faqFields,
+        faqAppend,
+        faqRemove
+    } = useFormHandlers(editorContent);
+
+    const { data: categories } = useCategories(userId);
+    const { data: facts } = useFacts(userId);
+    const { data: faq } = useFaq(userId);
 
     const defaultItinerary = [
         {
@@ -86,6 +102,29 @@ const EditTour: React.FC = () => {
         }
     ];
 
+    const defaultDates = [
+        {
+            tripDuration: '',
+            startDate: '',
+            endDate: '',
+        }
+    ];
+
+
+    const defaultLocation = [
+        {
+            city: '',
+            country: '',
+            street: '',
+            state: '',
+            lat: '',
+            lng: '',
+        }
+    ]
+
+
+
+    console.log("singleTourData", singleTourData)
 
     useEffect(() => {
         if (singleTourData) {
@@ -96,8 +135,10 @@ const EditTour: React.FC = () => {
                 tourStatus: singleTourData.tourStatus || '',
                 coverImage: singleTourData.coverImage || '',
                 file: singleTourData.file || '',
-                price: typeof singleTourData.price === 'number' ? singleTourData.price.toString() : singleTourData.price,
+                price: typeof singleTourData.price === 'number' ? singleTourData.price : singleTourData.price,
                 outline: singleTourData.outline || '',
+                include: singleTourData?.include || '',
+                exclude: singleTourData?.exclude || '',
                 category: singleTourData.category?.map(item => ({
                     label: item.categoryName || '',
                     value: item.categoryId || '',
@@ -108,7 +149,58 @@ const EditTour: React.FC = () => {
                     description: item.description || '',
                     dateTime: item.dateTime ? new Date(item.dateTime) : new Date()
                 })) || defaultItinerary,
-            };
+
+                dates: {
+                    tripDuration: singleTourData?.dates?.tripDuration || '',
+                    startDate: singleTourData?.dates?.startDate ? new Date(singleTourData.dates.startDate) : '',
+                    endDate: singleTourData?.dates?.endDate ? new Date(singleTourData.dates.endDate) : '',
+                } || defaultDates,
+
+                location: {
+                    city: singleTourData?.location?.city || '',
+                    country: singleTourData?.location?.country || '',
+                    street: singleTourData?.location?.street || '',
+                    state: singleTourData?.location?.state || '',
+                    lat: singleTourData?.location?.lat ? String(singleTourData.location.lat) : '',
+                    lng: singleTourData?.location?.lng ? String(singleTourData.location.lng) : '',
+                } || defaultLocation,
+
+                faqs: singleTourData.faqs?.map(item => ({
+                    question: item?.question || '',
+                    answer: item?.answer || '',
+                })),
+                map: singleTourData?.map || '',
+                facts: singleTourData.facts?.map(item => {
+                    // Flatten nested arrays based on field_type
+                    let formattedValue = item?.value;
+
+                    if (item?.field_type === 'Multi Select') {
+                        if (Array.isArray(item?.value) && Array.isArray(item.value[0])) {
+                            formattedValue = item.value[0].map(val => ({
+                                label: val,
+                                value: val
+                            }));
+                        } else {
+                            formattedValue = [];
+                        }
+                    } else if (item?.field_type === 'Plain Text' || item?.field_type === 'Single Select') {
+                        if (Array.isArray(item?.value) && Array.isArray(item.value[0])) {
+                            formattedValue = item.value[0];
+                        } else {
+                            formattedValue = [];
+                        }
+                    } else {
+                        formattedValue = [];
+                    }
+
+                    return {
+                        title: item?.title || '',
+                        field_type: item?.field_type || '',
+                        value: formattedValue,
+                        icon: item?.icon || ''
+                    };
+                }) || []
+            }
 
             form.reset(defaultValues);
 
@@ -201,7 +293,15 @@ const EditTour: React.FC = () => {
             <Form {...form}>
                 <form onSubmit={(e) => {
                     e.preventDefault()
-                    form.handleSubmit((values) => onSubmit(values, tourMutation))();
+                    console.log("form", form.getValues());
+                    form.handleSubmit(
+                        (values) => {
+                            onSubmit(values, tourMutation); // your submit logic
+                        },
+                        (errors) => {
+                            console.log("Form Errors:", errors); // log errors
+                        }
+                    )();
                 }}>
                     <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
                         <AlertDialog>
@@ -250,9 +350,18 @@ const EditTour: React.FC = () => {
                                 singleTourData={singleTourData}
                                 editorContent={editorContent} // Pass editor content to TabContent
                                 onEditorContentChange={handleEditorContentChange}
-                                fields={fields}
-                                append={append}
-                                remove={remove}
+                                itineraryFields={itineraryFields}
+                                itineraryAppend={itineraryAppend}
+                                itineraryRemove={itineraryRemove}
+                                factsFields={factsFields}
+                                factsAppend={factsAppend}
+                                factsRemove={factsRemove}
+                                faqFields={faqFields}
+                                faqAppend={faqAppend}
+                                faqRemove={faqRemove}
+                                categories={categories}
+                                facts={facts}
+                                faq={faq}
                                 categories={categories}
                             />
                         </div>

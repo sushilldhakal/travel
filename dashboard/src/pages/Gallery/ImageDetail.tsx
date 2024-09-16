@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { getSingleMedia, updateMedia } from "@/http/api";
 import { ImageResource } from "@/Provider/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import 'tui-image-editor/dist/tui-image-editor.css';
-import ImageEditor from '@toast-ui/react-image-editor';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -19,12 +17,15 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckIcon, ChevronLeft, ChevronRight, PencilIcon, Trash2Icon, X } from "lucide-react";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-
+import FilerobotImageEditor, {
+    TABS,
+    TOOLS,
+} from 'react-filerobot-image-editor';
 
 interface ImageDetailProps {
     imageUrl: string;
@@ -37,25 +38,10 @@ interface ImageDetailProps {
     userId: string | null;
 }
 
-interface ImageData extends ImageResource {
-    description: string;
-    title: string;
-    bytes: number | any;
-    width: number;
-    height: number;
-    tags: string[];
-}
-
-
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
 ).toString();
-
-const options = {
-    cMapUrl: '/cmaps/',
-    standardFontDataUrl: '/standard_fonts/',
-};
 
 
 const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDelete, handleClose, handleUpload }: ImageDetailProps) => {
@@ -65,6 +51,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
     const [isEditing, setIsEditing] = useState(false);
     const [numPages, setNumPages] = useState<number>(1);
     const [pageNumber, setPageNumber] = useState<number>(1);
+    const [isImgEditorShown, setIsImgEditorShown] = useState(false);
     const { data: imageDetails, isLoading, error } = useQuery<ImageResource, Error>({
         queryKey: ['image', imageUrl],
         queryFn: () => getSingleMedia(imageUrl, userId),
@@ -80,25 +67,19 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
         }, 200);
     }
 
+    const openImgEditor = () => {
+        setIsImgEditorShown(true);
+    };
 
-
-
-    const editorRef = useRef<any>(null);
-    // Define handleClickButton function
+    const closeImgEditor = () => {
+        setIsImgEditorShown(false);
+    };
     const handleClickButton = async (image: string) => {
-
-        let fileName: string;
-
-        try {
-            const url = new URL(imageUrl);
-            fileName = url.pathname.split('/').pop()?.split('.')[0] || imageUrl;
-        } catch (error) {
-            fileName = image;
-        }
-        const editorInstance = editorRef.current.getInstance();
-        const data = editorInstance.toDataURL();
-        const byteString = atob(data.split(",")[1]);
-        const mimeString = data.split(",")[0].split(":")[1].split(";")[0];
+        console.log("image", image)
+        const url = new URL(imageUrl);
+        const fileName = url.pathname.split('/').pop()?.split('.')[0] || imageUrl;
+        const byteString = atob(image.split(",")[1]);
+        const mimeString = image.split(",")[0].split(":")[1].split(";")[0];
         const ab = new ArrayBuffer(byteString.length);
         const ia = new Uint8Array(ab);
         for (let i = 0; i < byteString.length; i++) {
@@ -170,7 +151,6 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
 
     const updateMediaMutation = useMutation({
         mutationFn: async ({ formData, userId, imageId, mediaType }: { formData: FormData, userId: string | null, imageId: string, mediaType: string }) => {
-            console.log("upload mutation")
             if (userId) {
                 return updateMedia(formData, userId, imageId, mediaType);
             }
@@ -253,6 +233,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
                             <Dialog open={open} onOpenChange={setOpen}>
                                 <DialogTrigger asChild>
                                     <img
+                                        onClick={openImgEditor}
                                         src={imageDetails?.secure_url || imageDetails?.url}
                                         alt={imageDetails?.title || imageDetails?.asset_id}
                                         className="object-cover w-full rounded-md"
@@ -266,38 +247,74 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="flex justify-center gap-4 py-4">
-                                        <ImageEditor
-                                            ref={editorRef}
-                                            includeUI={{
-                                                loadImage: {
-                                                    path: `${imageDetails?.url}`,
-                                                    name: `${imageDetails?.title ? imageDetails?.title : imageDetails?.url}`,
-                                                },
-                                                theme: myTheme,
-                                                menu: ['crop', 'flip', 'rotate', 'shape', 'filter', 'icon', 'text', 'draw', 'mask', 'resize'],
-                                                initMenu: 'filter',
-                                                uiSize: {
-                                                    width: '1050px',
-                                                    height: '700px',
-                                                },
-                                                menuBarPosition: 'bottom',
-                                            }}
-                                            cssMaxHeight={600}
-                                            cssMaxWidth={800}
+                                        {isImgEditorShown && (
+                                            <FilerobotImageEditor
+                                                source={imageDetails?.secure_url || imageDetails?.url}
+                                                onSave={(editedImageObject, designState) => {
+                                                    console.log('saved', editedImageObject, designState)
+                                                    handleClickButton(editedImageObject?.imageBase64).then(() => setChangesMade(false))
+                                                }
+                                                }
+                                                onClose={closeImgEditor}
+                                                annotationsCommon={{
+                                                    fill: '#ff0000',
+                                                }}
+                                                Text={{ text: 'Filerobot...' }}
+                                                Rotate={{ angle: 90, componentType: 'slider' }}
+                                                Crop={{
+                                                    presetsItems: [
+                                                        {
+                                                            titleKey: 'classicTv',
+                                                            descriptionKey: '4:3',
+                                                            ratio: 4 / 3,
+                                                            // icon: CropClassicTv, // optional, CropClassicTv is a React Function component. Possible (React Function component, string or HTML Element)
+                                                        },
+                                                        {
+                                                            titleKey: 'cinemascope',
+                                                            descriptionKey: '21:9',
+                                                            ratio: 21 / 9,
+                                                            // icon: CropCinemaScope, // optional, CropCinemaScope is a React Function component.  Possible (React Function component, string or HTML Element)
+                                                        },
+                                                    ],
+                                                    presetsFolders: [
+                                                        {
+                                                            titleKey: 'socialMedia', // will be translated into Social Media as backend contains this translation key
+                                                            // icon: Social, // optional, Social is a React Function component. Possible (React Function component, string or HTML Element)
+                                                            groups: [
+                                                                {
+                                                                    titleKey: 'facebook',
+                                                                    items: [
+                                                                        {
+                                                                            titleKey: 'profile',
+                                                                            width: 180,
+                                                                            height: 180,
+                                                                            descriptionKey: 'fbProfileSize',
+                                                                        },
+                                                                        {
+                                                                            titleKey: 'coverPhoto',
+                                                                            width: 820,
+                                                                            height: 312,
+                                                                            descriptionKey: 'fbCoverPhotoSize',
+                                                                        },
+                                                                    ],
+                                                                },
+                                                            ],
+                                                        },
+                                                    ],
+                                                }}
+                                                tabsIds={[TABS.ADJUST, TABS.ANNOTATE, TABS.WATERMARK]} // or {['Adjust', 'Annotate', 'Watermark']}
+                                                defaultTabId={TABS.ANNOTATE} // or 'Annotate'
+                                                defaultToolId={TOOLS.TEXT} // or 'Text'
+                                            />
+                                        )}
 
-                                            selectionStyle={{
-                                                cornerSize: 20,
-                                                rotatingPointOffset: 70,
-                                            }}
-                                            usageStatistics={true}
-                                        />
                                     </div>
                                     <DialogFooter>
-                                        <Button onClick={() => {
+                                        {/* <Button onClick={() => {
                                             handleClickButton(imageDetails?.title ? imageDetails?.title : imageDetails?.url).then(() => setChangesMade(false));
                                         }}
                                             disabled={!changesMade}
-                                        >Save changes</Button>
+                                        >Save changes</Button> */}
                                         <Button onClick={() => {
                                             handleUploadChange()
                                                 .then(() => setOpen(false));
@@ -405,7 +422,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
 export default ImageDetail;
 
 
-const myTheme = {
-    "header.display": "none"
-};
+// const myTheme = {
+//     "header.display": "none"
+// };
 

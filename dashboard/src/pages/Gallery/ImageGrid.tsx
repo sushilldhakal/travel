@@ -14,10 +14,11 @@ interface ImageGridProps {
     hasNextPage: boolean;
     fetchNextPage: () => void;
     uploadingFiles: File[];
+    setSelectedMediaUrls: React.Dispatch<React.SetStateAction<string[]>>;
     uploadMutation: UseMutationResult<any, Error, FormData, void>; // Update type here
 }
 
-const ImageGrid: React.FC<ImageGridProps> = ({ uploadingFiles, uploadMutation, images, onImageSelect, onDelete, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage }) => {
+const ImageGrid: React.FC<ImageGridProps> = ({ uploadingFiles, setSelectedMediaUrls, uploadMutation, images, onImageSelect, onDelete, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage }) => {
     const observer = useRef<IntersectionObserver>();
 
     const lastImageElementRef = useCallback(
@@ -60,6 +61,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ uploadingFiles, uploadMutation, i
                         image={image}
                         onDelete={onDelete}
                         onSelect={onImageSelect}
+                        setSelectedMediaUrls={setSelectedMediaUrls}
                         ref={index === images.length - 1 ? lastImageElementRef : null}
                     />
                 ))}

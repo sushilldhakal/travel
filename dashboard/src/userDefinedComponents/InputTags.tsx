@@ -4,7 +4,6 @@
 
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PencilIcon, XIcon } from "lucide-react";
 import { Input, InputProps } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -70,35 +69,40 @@ const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
                         ref={ref}
                     />
                 </div>
-                <div className="border rounded-md min-h-[2.5rem] overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
-                    {value.map((item, idx) => (
-                        <Badge key={idx} variant="secondary">
-                            {item}
-                            <button
-                                type="button"
-                                className="w-3 ml-2"
-                                onClick={() => {
-                                    onChange(value.filter((i) => i !== item));
-                                }}
-                            >
-                                <XIcon className="w-3" />
-                            </button>
-                            <button
-                                type="button"
-                                className="w-3 ml-2"
-                                onClick={() => {
-                                    setPendingDataPoint(item);
-                                    onChange(value.filter((i) => i !== item));
-                                    if (inputRef.current) {
-                                        inputRef.current.focus();
-                                    }
-                                }}
-                            >
-                                <PencilIcon className="w-3" />
-                            </button>
-                        </Badge>
-                    ))}
-                </div>
+                {
+                    value && value.length > 0 && (
+                        <div className="border rounded-md min-h-[2.5rem] overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
+                            {value.map((item, idx) => (
+                                <Badge key={idx} variant="secondary">
+                                    {item}
+                                    <button
+                                        type="button"
+                                        className="w-3 ml-2"
+                                        onClick={() => {
+                                            onChange(value.filter((i) => i !== item));
+                                        }}
+                                    >
+                                        <XIcon className="w-3" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="w-3 ml-2"
+                                        onClick={() => {
+                                            setPendingDataPoint(item);
+                                            onChange(value.filter((i) => i !== item));
+                                            if (inputRef.current) {
+                                                inputRef.current.focus();
+                                            }
+                                        }}
+                                    >
+                                        <PencilIcon className="w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+
+                    )
+                }
 
 
             </div>

@@ -14,6 +14,8 @@ const routePaths = {
     editUser: "/dashboard/users/:userId",
     tourSetting: "/dashboard/tours/tour_setting",
     tourCategory: "/dashboard/tours/tour_category",
+    tourFacts: "/dashboard/tours/tour_facts",
+    tourFaq: "/dashboard/tours/tour_faq",
     subscribers: "/dashboard/subscribers",
     setting: "/dashboard/setting",
   },

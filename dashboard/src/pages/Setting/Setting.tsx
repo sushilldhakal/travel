@@ -18,6 +18,7 @@ const formSchema = z.object({
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
+    GOOGLE_API_KEY: z.string().optional(),
 });
 
 
@@ -37,6 +38,7 @@ const Setting = () => {
             CLOUDINARY_API_KEY: '',
             CLOUDINARY_API_SECRET: '',
             OPENAI_API_KEY: '',
+            GOOGLE_API_KEY: '',
         },
     });
     // Populate form with fetched data
@@ -47,6 +49,7 @@ const Setting = () => {
                 CLOUDINARY_API_KEY: data?.data.cloudinaryApiKey || '',
                 CLOUDINARY_API_SECRET: data?.data.cloudinaryApiSecret || '',
                 OPENAI_API_KEY: data?.data.openaiApiKey || '',
+                GOOGLE_API_KEY: data?.data.googleApiKey || '',
             });
         }
     }, [data, form]);
@@ -80,6 +83,9 @@ const Setting = () => {
         }
         if (values.OPENAI_API_KEY) {
             formData.append('OPENAI_API_KEY', values.OPENAI_API_KEY);
+        }
+        if (values.GOOGLE_API_KEY) {
+            formData.append('GOOGLE_API_KEY', values.GOOGLE_API_KEY);
         }
         if (userId) {
             userSettingUpdate.mutate({ userId, formData });
@@ -125,6 +131,13 @@ const Setting = () => {
                                     className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
                                 >
                                     OpenAI{''}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
+                                >
+                                    Google Map{''}
                                 </Button>
 
                                 <Button size="sm">
@@ -272,6 +285,55 @@ const Setting = () => {
                                     </div>
                                 </CardContent>
                             </Card>
+
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Google Map API</CardTitle>
+                                    <CardDescription>Add your Google Map API Key here. This enable auto complete locations and also lets you add google maps.
+
+
+                                        Navigate to the  <Link to="https://developers.google.com/maps/documentation/javascript/get-api-key" target={"_blank"} className="text-primary">
+                                            Google console
+                                        </Link> and create a free account. It gives 20$ credit every month free to use, which you can use at least 100,000 times in dashboard each month free.
+                                        After creating a account follow the steps to get a
+                                        <Link to='https://developers.google.com/maps/documentation/javascript/get-api-key' className="text-primary"> {' '}API key{' '}</Link>
+                                        copy a new API key and Copy your API key from there and paste it here
+
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid gap-4">
+                                    <div className="grid gap-2 relative">
+                                        <FormField
+                                            control={form.control}
+                                            name="GOOGLE_API_KEY"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Google Map API Key.
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type={visibleKeys.GOOGLE_API_KEY ? "text" : "password"}
+                                                            className="w-full" {...field}
+                                                            placeholder="your google api key..."
+                                                        />
+
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button
+                                            type="button"
+                                            className="absolute right-1 top-10 p-2 h-6"
+                                            onClick={() => toggleVisibility('GOOGLE_API_KEY')}
+                                        >
+                                            {visibleKeys.GOOGLE_API_KEY ? <EyeOff width="18" height="18" size="20" /> : <Eye width="18" height="18" size="20" />}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
                         </div>
                     </div>
                 </form>

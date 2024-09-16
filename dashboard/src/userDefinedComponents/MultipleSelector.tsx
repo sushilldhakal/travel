@@ -403,7 +403,6 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
             () => removePickedOption(options, selected),
             [options, selected],
         );
-
         /** Avoid Creatable Selector freezing or lagging when paste a long string. */
         const commandFilter = React.useCallback(() => {
             if (commandProps?.filter) {
@@ -448,40 +447,47 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                     }}
                 >
                     <div className="relative flex flex-wrap gap-1">
-                        {selected.map((option) => {
-                            return (
-                                <Badge
-                                    key={option.value}
-                                    className={cn(
-                                        'data-[disabled]:bg-muted-foreground data-[disabled]:text-muted data-[disabled]:hover:bg-muted-foreground',
-                                        'data-[fixed]:bg-muted-foreground data-[fixed]:text-muted data-[fixed]:hover:bg-muted-foreground',
-                                        badgeClassName,
-                                    )}
-                                    data-fixed={option.fixed}
-                                    data-disabled={disabled || undefined}
-                                >
-                                    {option.label}
-                                    <button
+                        {selected.filter((option) => {
+                            // Ensure option is a valid object and has a non-empty label
+                            return option && typeof option === 'object' && option.label && option.label.trim() !== '';
+                        })
+                            .map((option) => {
+                                return (
+                                    <Badge
+                                        key={option.value}
                                         className={cn(
-                                            'ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                                            (disabled || option.fixed) && 'hidden',
+                                            'data-[disabled]:bg-muted-foreground data-[disabled]:text-muted data-[disabled]:hover:bg-muted-foreground',
+                                            'data-[fixed]:bg-muted-foreground data-[fixed]:text-muted data-[fixed]:hover:bg-muted-foreground',
+                                            badgeClassName,
                                         )}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleUnselect(option);
-                                            }
-                                        }}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                        }}
-                                        onClick={() => handleUnselect(option)}
+                                        data-fixed={option.fixed}
+                                        data-disabled={disabled || undefined}
                                     >
-                                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                    </button>
-                                </Badge>
-                            );
-                        })}
+                                        {option.label}
+
+                                        <button
+                                            className={cn(
+                                                'ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                                                (disabled || option.fixed) && 'hidden',
+                                            )}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleUnselect(option);
+                                                }
+                                            }}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            }}
+                                            onClick={() => handleUnselect(option)}
+                                        >
+                                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                        </button>
+
+
+                                    </Badge>
+                                );
+                            })}
                         {/* Avoid having the "Search" Icon */}
                         <CommandPrimitive.Input
                             {...inputProps}
@@ -533,6 +539,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                         </button>
                     </div>
                 </div>
+
                 <div className="relative">
                     {open && (
                         <CommandList

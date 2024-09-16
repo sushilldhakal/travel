@@ -1,14 +1,13 @@
 import { UserMenuItems } from "@/lib/MenuItems";
 // import MenuItem from "../MenuItem";
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ModeToggle } from "../../ModeToggle";
 import { Link, useNavigate } from "react-router-dom";
 import { isValidToken } from "@/util/AuthLayout";
 import { useEffect, useState } from "react";
 import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";
-import { Search } from "lucide-react";
+import { Bell, Search, Menu as Bars3Icon, X } from "lucide-react";
 
 const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
     const { setToken } = useTokenStore((state) => state);
@@ -67,7 +66,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                             <span className="absolute -inset-0.5" />
                             <span className="sr-only">Open main menu</span>
                             <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-[open]:hidden" />
-                            <XMarkIcon aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
+                            <X aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
                         </DisclosureButton>
                     </div>
                     <div className="flex hidden sm:block flex-shrink-0 items-center text-primary">
@@ -102,7 +101,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                                     >
                                         <span className="absolute -inset-1.5" />
                                         <span className="sr-only">View notifications</span>
-                                        <BellIcon aria-hidden="true" className="h-6 w-6" />
+                                        <Bell className="h-6 w-6" />
                                     </button>
                                     <Menu as="div" className="relative ml-3">
                                         <div>

@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import makeid from './Components/randomId';
 import { getUserId } from '@/util/AuthLayout';
 import { useCategories } from './Components/useCategories';
+import { useFacts } from './Components/useFacts';
+import { useFaq } from './Components/useFaq';
 
 const AddTour: React.FC = () => {
   const [tripCode, setTripCode] = useState<string>('');
@@ -22,9 +24,21 @@ const AddTour: React.FC = () => {
   const userId = getUserId();
   const { mutate: createTour, isPending } = useTourMutation();
 
-  const { form, onSubmit, fields, append, remove } = useFormHandlers(editorContent);
+  const { form,
+    onSubmit,
+    itineraryFields,
+    itineraryAppend,
+    itineraryRemove,
+    factsFields,
+    factsAppend,
+    factsRemove,
+    faqFields,
+    faqAppend,
+    faqRemove
+  } = useFormHandlers(editorContent);
   const { data: categories } = useCategories(userId);
-
+  const { data: facts } = useFacts(userId);
+  const { data: faq } = useFaq(userId);
 
   const location = useLocation();
 
@@ -65,7 +79,15 @@ const AddTour: React.FC = () => {
       <Form {...form}>
         <form onSubmit={(e) => {
           e.preventDefault();
-          form.handleSubmit((values) => onSubmit(values, createTour))();
+          console.log("form", form.getValues());
+          form.handleSubmit(
+            (values) => {
+              onSubmit(values, createTour); // your submit logic
+            },
+            (errors) => {
+              console.log("Form Errors:", errors); // log errors
+            }
+          )();
         }}>
           <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
             <Link to="/dashboard/tours">
@@ -103,10 +125,18 @@ const AddTour: React.FC = () => {
                 }}
                 editorContent={editorContent}
                 onEditorContentChange={setEditorContent}
-                fields={fields}
-                append={append}
-                remove={remove}
+                itineraryFields={itineraryFields}
+                itineraryAppend={itineraryAppend}
+                itineraryRemove={itineraryRemove}
+                factsFields={factsFields}
+                factsAppend={factsAppend}
+                factsRemove={factsRemove}
+                faqFields={faqFields}
+                faqAppend={faqAppend}
+                faqRemove={faqRemove}
                 categories={categories}
+                facts={facts}
+                faq={faq}
               />
             </div>
           </div>

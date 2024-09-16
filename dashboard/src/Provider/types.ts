@@ -21,14 +21,32 @@ export interface Tour {
     category: Category[],
     itinerary: Itinerary[] | undefined,
     price: number,
-    incExc: string[],
+    include: string,
+    exclude: string,
     facts: string[],
     gallery: string[],
-    locations: string[],
+    location: location,
     faqs: string[],
     downloads: string[],
     tabsDisplay: string[],
-    enquiry: string[],
+    enquiry: boolean,
+    dates: TourDates,
+    map: string,
+}
+
+export interface location {
+    lat: string;
+    lng: string;
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+}
+
+export interface TourDates {
+    tripDuration: string;
+    startDate: Date | undefined;
+    endDate: Date | undefined;
 }
 export interface User {
     _id: string;
@@ -114,5 +132,24 @@ export interface CategoryData {
   description: string;
   imageUrl: string;
   isActive: boolean;
+  userId: string;
+}
+
+
+export interface FactData {
+  _id: string;
+  id: string | null;
+  name: string;
+  field_type: string;
+  value?: string[] | string;
+  icon: string;
+  userId: string;
+}
+
+export interface FaqData {
+  _id: string;
+  id: string | null;
+  question: string;
+  answer: string;
   userId: string;
 }

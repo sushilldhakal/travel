@@ -25,7 +25,7 @@ const TourCategory = () => {
                 description: 'The category has been removed.',
             });
             queryClient.invalidateQueries({
-                queryKey: ['categories'], // Match the query key used in useQuery
+                queryKey: ['categories', userId], // Match the query key used in useQuery
             });
         } catch (error) {
             toast({
@@ -38,7 +38,11 @@ const TourCategory = () => {
 
     return (
         <div>
-            <AddCategory />
+            <AddCategory onCategoryAdded={() => {
+                if (userId) {
+                    queryClient.invalidateQueries(['categories', userId]);
+                }
+            }} />
 
             <div className="mx-auto w-full max-w-6xl mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (

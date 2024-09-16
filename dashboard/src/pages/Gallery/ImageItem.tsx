@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ImageResource } from "@/Provider/types";
-import { ChevronLeft, ChevronRight, XIcon } from "lucide-react";
-import { forwardRef, memo, useState } from "react";
+import { ChevronLeft, ChevronRight, Circle, CircleCheckBig, XIcon } from "lucide-react";
+import { forwardRef, memo, useEffect, useState } from "react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -10,6 +10,7 @@ interface ImageItemProps {
     image: ImageResource;
     onDelete: (imageId: string, mediaType: 'images' | 'videos' | 'PDF') => void;
     onSelect: (imageUrl: string) => void;
+    setSelectedMediaUrls: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 
@@ -18,19 +19,16 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     import.meta.url,
 ).toString();
 
-const options = {
-    cMapUrl: '/cmaps/',
-    standardFontDataUrl: '/standard_fonts/',
-};
 
 
 const ImageItem = memo(
     forwardRef<HTMLDivElement, ImageItemProps>(
-        ({ image, onDelete, onSelect, ...props }, ref) => {
+        ({ image, onDelete, setSelectedMediaUrls, onSelect, ...props }, ref) => {
 
             const [numPages, setNumPages] = useState<number>(1);
             const [pageNumber, setPageNumber] = useState<number>(1);
-
+            const [isSelected, setIsSelected] = useState(false);
+            const [selectedImages, setSelectedImages] = useState<string[]>([]);
             function onDocumentLoadSuccess({ numPages }: PDFDocumentProxy): void {
                 setNumPages(numPages);
                 setPageNumber(1);
@@ -48,13 +46,31 @@ const ImageItem = memo(
                 changePage(-1);
             };
 
+            const handleSelect = (imageUrl: string, mediaType: 'images' | 'videos' | 'PDF', public_id: string) => {
+                setSelectedMediaUrls((prevselectedMediaUrls) => {
+                    const updatedSelectedImages = prevselectedMediaUrls.filter((item) => item.imageUrl !== imageUrl);
+                    if (prevselectedMediaUrls.some((item) => item.imageUrl === imageUrl)) {
+                        onSelect(updatedSelectedImages.map((item) => item.imageUrl));
+                    } else {
+                        updatedSelectedImages.push({ imageUrl, mediaType, public_id });
+                        onSelect(updatedSelectedImages.map((item) => item.imageUrl));
+                    }
+                    return updatedSelectedImages;
+                });
+            };
+
 
             return (
                 <div
                     className="relative group break-inside-avoid mb-2 cursor-pointer"
                     ref={ref}
                     {...props}
-                    onClick={() => image.resource_type === "image" && onSelect(image.url)}
+                    onClick={(e) => {
+                        // Prevent div click if a button is clicked
+                        if (!e.defaultPrevented && image.resource_type === "image") {
+                            onSelect(image.url);
+                        }
+                    }}
                 >{
                         image.resource_type === "image" && (
                             <img
@@ -92,7 +108,20 @@ const ImageItem = memo(
                         )
                     }
 
-
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute z-10 w-8 h-8 bg-transparent border-0 transition ease-in-out delay-150 top-2 left-2 bg-transparent hover:bg-transparent"
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering the div's onClick
+                            e.preventDefault();
+                            setIsSelected(!isSelected);
+                            handleSelect(image.url, image.resource_type, image.public_id);
+                        }}
+                    >
+                        {isSelected ? <CircleCheckBig className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
+                        <span className="sr-only">select</span>
+                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"

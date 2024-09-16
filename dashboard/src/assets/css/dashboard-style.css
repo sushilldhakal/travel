@@ -46,6 +46,16 @@ input[type=file]{
     height: auto !important;
   }
 
+  .tab-content-gallery .break-inside-avoid button {
+    display: none;
+}
+.tab-content-gallery .break-inside-avoid img:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease-in-out;
+  -moz-animation: alternate-animation 1s infinite;
+  -webkit-animation: alternate-animation 1s infinite;
+  animation: alternate-animation 1s infinite;
+}
 /* div[class=menu-item] {
 
     border-bottom: 1px solid hsl(var(--foreground))
