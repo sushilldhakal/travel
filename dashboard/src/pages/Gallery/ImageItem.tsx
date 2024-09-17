@@ -114,7 +114,6 @@ const ImageItem = memo(
                         className="absolute z-10 w-8 h-8 bg-transparent border-0 transition ease-in-out delay-150 top-2 left-2 bg-transparent hover:bg-transparent"
                         onClick={(e) => {
                             e.stopPropagation(); // Prevent triggering the div's onClick
-                            e.preventDefault();
                             setIsSelected(!isSelected);
                             handleSelect(image.url, image.resource_type, image.public_id);
                         }}

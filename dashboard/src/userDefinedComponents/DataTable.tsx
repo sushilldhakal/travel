@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useEffect } from "react"
-import { Select } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 //@ts-expect-error
@@ -63,6 +63,7 @@ export function DataTable({ data, columns, place, colum }: { data: Array<any>, c
     },
   })
 
+  const currentPageSize = table.getState().pagination.pageSize.toString();
 
   useEffect(() => {
     table.setSorting((sortingState) => {
@@ -172,34 +173,38 @@ export function DataTable({ data, columns, place, colum }: { data: Array<any>, c
       <div className="flex items-center justify-end space-x-2 py-4">
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             className="border rounded p-1"
+            variant="outline"
             onClick={() => table.firstPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            {'<<'}
-          </button>
-          <button
+            <ChevronsLeft />
+          </Button>
+          <Button
             className="border rounded p-1"
+            variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            {'<'}
-          </button>
-          <button
+            <ChevronLeft />
+          </Button>
+          <Button
             className="border rounded p-1"
+            variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            {'>'}
-          </button>
-          <button
+            <ChevronRight />
+          </Button>
+          <Button
             className="border rounded p-1"
+            variant="outline"
             onClick={() => table.lastPage()}
             disabled={!table.getCanNextPage()}
           >
-            {'>>'}
-          </button>
+            <ChevronsRight />
+          </Button>
           <span className="flex items-center gap-1">
             <div>Page</div>
             <strong>
@@ -221,23 +226,29 @@ export function DataTable({ data, columns, place, colum }: { data: Array<any>, c
               className="border p-1 rounded w-16"
             />
           </span>
-          <select
-            value={table.getState().pagination.pageSize}
-            onChange={e => {
-              table.setPageSize(Number(e.target.value))
+          <Select
+            value={currentPageSize}
+            onValueChange={value => {
+              // Convert the selected value back to a number
+              table.setPageSize(Number(value));
             }}
           >
-            {[10, 20, 30, 40, 50].map(pageSize => (
-              <option key={pageSize} value={pageSize}>
-                Show {pageSize}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select number" />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 30, 40, 50].map(pageSize => (
+                <SelectItem key={pageSize} value={pageSize.toString()}>
+                  Show {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {/* {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected. */}
         </div>
         <div className="space-x-2">
           <Button

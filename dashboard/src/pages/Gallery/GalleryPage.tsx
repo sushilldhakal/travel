@@ -63,12 +63,14 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         isFetchingNextPage,
     } = useInfiniteQuery({
         queryKey: ["media", tab], // Dynamic media type based on tab
-        queryFn: ({ pageParam = null, queryKey }) => {
+        queryFn: ({ pageParam = 1, queryKey }) => {
             const MediaType: string = queryKey[1]; // This will be either 'image', 'video', or 'pdf'
             return getAllMedia({ pageParam, mediaType: MediaType });
         },
-        getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
-        initialPageParam: null,
+        getNextPageParam: (lastPage) => {
+            return lastPage.nextCursor ?? null;  // Ensure `nextCursor` is returned properly
+        },
+        initialPageParam: 1,
     });
     const allMedia = useMemo(() => {
         const mediaUrls = new Set<string>();
@@ -148,9 +150,17 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
     };
 
     const deleteMutation = useMutation({
-        mutationFn: ({ imageIds, mediaType }: { imageIds: string | string[], mediaType: string }) => deleteMedia(userId!, imageIds, mediaType),
-        onSuccess: ({ data, mediaType }) => {
-            queryClient.invalidateQueries({ queryKey: [mediaType] });
+        mutationFn: async ({ imageIds, mediaType }: { imageIds: string | string[], mediaType: string }) => {
+            return await deleteMedia(userId!, imageIds, mediaType);
+        },
+        onSuccess: (data, { imageIds, mediaType }) => { // Use the second parameter for `mediaType`
+            // Query key based on media type
+            queryClient.invalidateQueries({
+                queryKey: ['media']
+            });
+            setSelectedMediaUrls((prevMedia) =>
+                prevMedia.filter((media) => !imageIds.includes(media.public_id)) // Remove deleted media
+            );
             toast({
                 title: 'Deletion Successful',
                 description: 'The selected image/file has been deleted.',
@@ -188,8 +198,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
     const handleMediaDeleteArray = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         const imageIds = selectedMediaUrls.map((item) => item.public_id);
-        const mediaType = selectedMediaUrls[0].mediaType;
-        console.log("imageIds", imageIds, "mediaType", mediaType);
+        const mediaType = selectedMediaUrls[0]?.mediaType === "image" ? 'images' : selectedMediaUrls[0]?.mediaType === "video" ? 'videos' : 'PDF'
         deleteMutation.mutate({ imageIds, mediaType });
     };
 
@@ -261,7 +270,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                 />
             </div>
             {
-                isGalleryPage && selectedImage ? <ImageDetail files={files}
+                isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length == 0 ? <ImageDetail files={files}
                     setFiles={setFiles}
                     setSelectedImage={setSelectedImage}
                     onDelete={handleDelete}
@@ -272,39 +281,23 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                 /> : null
 
             }
-            {/* {isGalleryPage && selectedImage && (
+            {isGalleryPage && selectedImage && (
                 <>
                     {
                         selectedMediaUrls && selectedMediaUrls.length > 0 && (
                             <div className="grid grid-cols-1 relative">
                                 <Button
                                     className="sticky top-3"
+                                    variant={"destructive"}
                                     onClick={(e) => handleMediaDeleteArray(e)}
                                 >Delete All</Button>
                             </div>
                         )
 
                     }
-                    {
-                        !selectedMediaUrls && selectedMediaUrls.length == 0 &&
-                        <ImageDetail
-                            files={files}
-                            setFiles={setFiles}
-                            setSelectedImage={setSelectedImage}
-                            onDelete={handleDelete}
-                            handleUpload={handleUpload}
-                            handleClose={handleClose}
-                            imageUrl={selectedImage}
-                            userId={userId}
-                        />
-                    }
-
-
-
-
                 </>
 
-            )} */}
+            )}
         </div>
     );
 

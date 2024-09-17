@@ -17,7 +17,7 @@ const UserPage = () => {
   const { token } = useTokenStore(state => state);
   const decodedToken = jwtDecode(token!);
   const userId = decodedToken.sub; // Assuming JWT has 'sub' field for user ID
-  const userRole = decodedToken.roles; // Assuming JWT has 'roles' field
+  const userRole = decodedToken?.roles ? decodedToken?.roles : ''; // Assuming JWT has 'roles' field
 
   const [tableData, setTableData] = useState([]);
 
@@ -72,23 +72,7 @@ const UserPage = () => {
         <div className="capitalize">{row.getValue("email")}</div>
       ),
     },
-    {
-      accessorKey: "password",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Password
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => {
-        return <div className="text-left font-medium">{row.getValue("password")}</div>
-      },
-    },
+
     {
       accessorKey: "roles",
       header: ({ column }) => {
