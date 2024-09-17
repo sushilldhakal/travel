@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getLatestTours } from "@/http/api";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 const jsonToHtml = (json: any) => {
     const createHtml = (node: any) => {
@@ -63,7 +64,23 @@ const HomeSlider = () => {
         touchThreshold: 1000,
         cssEase: "ease"
     };
-    const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 2);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const parallaxContainers = document.querySelectorAll('.parallax-container');
+            parallaxContainers.forEach((container) => {
+                // Cast 'container' to 'HTMLElement' so TypeScript knows it has a 'style' property
+                const htmlElement = container as HTMLElement;
+                const scrollPosition = window.pageYOffset;
+                htmlElement.style.backgroundPositionY = `${scrollPosition * 0.5}px`; // Adjust this value for stronger/weaker effect
+            });
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    console.log(data)
+    const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
 
     return (
         <div className="overflow-hidden main-slider pattern-2">
@@ -73,12 +90,11 @@ const HomeSlider = () => {
 
                     return (<div key={tour._id} className="w-full">
                         <div
-                            className="banner-content"
+                            className="banner-content parallax-container h-screen relative bg-fixed bg-center bg-cover bg-no-repeat"
                             style={{
                                 backgroundImage: `url(${tour.coverImage})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
                                 height: 'calc(100vh - 104px)',
+                                backgroundAttachment: 'fixed',
                             }}
                         >
                             <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">

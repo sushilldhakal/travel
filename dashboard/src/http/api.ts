@@ -141,12 +141,13 @@ export const getAllSubscribers = async () => {
 
 
 //gallery 
-export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: string | null; mediaType: string }) => {
+export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: number | null; mediaType: string }) => {
     try {
       // Fetch images without cursor parameter
       const response = await api.get(`/api/gallery/media`, {
         params: {
             mediaType,
+            page: pageParam, 
             nextCursor: pageParam,
             pageSize: 10,
         },

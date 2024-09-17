@@ -75,7 +75,6 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
         setIsImgEditorShown(false);
     };
     const handleClickButton = async (image: string) => {
-        console.log("image", image)
         const url = new URL(imageUrl);
         const fileName = url.pathname.split('/').pop()?.split('.')[0] || imageUrl;
         const byteString = atob(image.split(",")[1]);
@@ -147,7 +146,6 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
             form.reset(defaultValues);
         }
     }, [imageDetails, form]);
-    console.log("form", form);
 
     const updateMediaMutation = useMutation({
         mutationFn: async ({ formData, userId, imageId, mediaType }: { formData: FormData, userId: string | null, imageId: string, mediaType: string }) => {
@@ -162,7 +160,6 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
             console.error('Error updating media:', error);
         }
     });
-    console.log("imageDetails", imageDetails)
     const handleFormSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         if (isEditing) {
@@ -173,11 +170,9 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
         formData.append('title', title);
         formData.append('description', description);
         formData.append('tags', JSON.stringify(tags)); // Adjust this based on your backend implementation
-        console.log("handlesubmit function");
 
         const imageId = imageDetails?.id; // Get imageId from imageDetails
         const mediaType = imageDetails?.resource_type;
-        console.log("imageId", imageDetails?.id)
         if (imageId && mediaType) {
             updateMediaMutation.mutate({ formData, userId, imageId, mediaType });
         } else {
@@ -196,225 +191,226 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
     }
     // Display the image details
     return (
-        <div className="grid grid-cols-1 sticky top-3">
-            <Card className="w-full max-w-md ">
-                <CardHeader>
-                    <CardTitle className="text-md break-words">{imageDetails?.title || 'No title'} <Button className="float-right" onClick={handleClose} variant="destructive" size="icon"><X /></Button></CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="relative aspect-video overflow-hidden rounded-md">
+        <div className="grid grid-cols-1 relative ">
+            <div className="relative">
+                <Card className="w-full  sticky top-3">
+                    <CardHeader>
+                        <CardTitle className="text-md break-words">{imageDetails?.title || 'No title'} <Button className="float-right" onClick={handleClose} variant="destructive" size="icon"><X /></Button></CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="relative aspect-video overflow-hidden rounded-md">
 
-                        {
-                            imageDetails?.resource_type === 'raw' &&
-                            <div className="relative group pdf-container">
-                                <Document file={imageDetails.url} onLoadSuccess={onDocumentLoadSuccess}>
-                                    <Page
-                                        pageNumber={pageNumber}
-                                        height={400}
-                                        width={300}
-                                        className="w-full" />
-                                </Document>
-                                <div className="absolute flex justify-center min-w-[155px] leading-10 bottom-5 right-0 left-[50%] transform translate-x-[-50%] z-10 text-center p-2 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity transition-250">
-                                    <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={prevPage} disabled={pageNumber <= 1}><ChevronLeft /></Button>
-                                    <span className="bg-white rounded-md px-2">{` ${pageNumber} of ${numPages} `}</span>
-                                    <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={nextPage} disabled={pageNumber >= numPages}><ChevronRight /></Button>
-                                </div>
-                            </div>
-
-                        }
-                        {
-                            imageDetails?.resource_type === 'video' &&
-                            <div className="relative group pdf-container">
-                                <video src={imageDetails.secure_url ? imageDetails.secure_url : imageDetails.url} width="750" height="500" controls />
-                            </div>
-                        }
-                        {
-                            imageDetails?.resource_type === 'image' &&
-                            <Dialog open={open} onOpenChange={setOpen}>
-                                <DialogTrigger asChild>
-                                    <img
-                                        onClick={openImgEditor}
-                                        src={imageDetails?.secure_url || imageDetails?.url}
-                                        alt={imageDetails?.title || imageDetails?.asset_id}
-                                        className="object-cover w-full rounded-md"
-                                    />
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[1100px]">
-                                    <DialogHeader>
-                                        <DialogTitle className="break-words">Edit Image</DialogTitle>
-                                        <DialogDescription>
-                                            Make changes to your Image here. Click save when you're done.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="flex justify-center gap-4 py-4">
-                                        {isImgEditorShown && (
-                                            <FilerobotImageEditor
-                                                source={imageDetails?.secure_url || imageDetails?.url}
-                                                onSave={(editedImageObject, designState) => {
-                                                    console.log('saved', editedImageObject, designState)
-                                                    handleClickButton(editedImageObject?.imageBase64).then(() => setChangesMade(false))
-                                                }
-                                                }
-                                                onClose={closeImgEditor}
-                                                annotationsCommon={{
-                                                    fill: '#ff0000',
-                                                }}
-                                                Text={{ text: 'Filerobot...' }}
-                                                Rotate={{ angle: 90, componentType: 'slider' }}
-                                                Crop={{
-                                                    presetsItems: [
-                                                        {
-                                                            titleKey: 'classicTv',
-                                                            descriptionKey: '4:3',
-                                                            ratio: 4 / 3,
-                                                            // icon: CropClassicTv, // optional, CropClassicTv is a React Function component. Possible (React Function component, string or HTML Element)
-                                                        },
-                                                        {
-                                                            titleKey: 'cinemascope',
-                                                            descriptionKey: '21:9',
-                                                            ratio: 21 / 9,
-                                                            // icon: CropCinemaScope, // optional, CropCinemaScope is a React Function component.  Possible (React Function component, string or HTML Element)
-                                                        },
-                                                    ],
-                                                    presetsFolders: [
-                                                        {
-                                                            titleKey: 'socialMedia', // will be translated into Social Media as backend contains this translation key
-                                                            // icon: Social, // optional, Social is a React Function component. Possible (React Function component, string or HTML Element)
-                                                            groups: [
-                                                                {
-                                                                    titleKey: 'facebook',
-                                                                    items: [
-                                                                        {
-                                                                            titleKey: 'profile',
-                                                                            width: 180,
-                                                                            height: 180,
-                                                                            descriptionKey: 'fbProfileSize',
-                                                                        },
-                                                                        {
-                                                                            titleKey: 'coverPhoto',
-                                                                            width: 820,
-                                                                            height: 312,
-                                                                            descriptionKey: 'fbCoverPhotoSize',
-                                                                        },
-                                                                    ],
-                                                                },
-                                                            ],
-                                                        },
-                                                    ],
-                                                }}
-                                                tabsIds={[TABS.ADJUST, TABS.ANNOTATE, TABS.WATERMARK]} // or {['Adjust', 'Annotate', 'Watermark']}
-                                                defaultTabId={TABS.ANNOTATE} // or 'Annotate'
-                                                defaultToolId={TOOLS.TEXT} // or 'Text'
-                                            />
-                                        )}
-
+                            {
+                                imageDetails?.resource_type === 'raw' &&
+                                <div className="relative group pdf-container">
+                                    <Document file={imageDetails.url} onLoadSuccess={onDocumentLoadSuccess}>
+                                        <Page
+                                            pageNumber={pageNumber}
+                                            height={400}
+                                            width={300}
+                                            className="w-full" />
+                                    </Document>
+                                    <div className="absolute flex justify-center min-w-[155px] leading-10 bottom-5 right-0 left-[50%] transform translate-x-[-50%] z-10 text-center p-2 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity transition-250">
+                                        <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={prevPage} disabled={pageNumber <= 1}><ChevronLeft /></Button>
+                                        <span className="bg-white rounded-md px-2">{` ${pageNumber} of ${numPages} `}</span>
+                                        <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={nextPage} disabled={pageNumber >= numPages}><ChevronRight /></Button>
                                     </div>
-                                    <DialogFooter>
-                                        {/* <Button onClick={() => {
+                                </div>
+
+                            }
+                            {
+                                imageDetails?.resource_type === 'video' &&
+                                <div className="relative group pdf-container">
+                                    <video src={imageDetails.secure_url ? imageDetails.secure_url : imageDetails.url} width="750" height="500" controls />
+                                </div>
+                            }
+                            {
+                                imageDetails?.resource_type === 'image' &&
+                                <Dialog open={open} onOpenChange={setOpen}>
+                                    <DialogTrigger asChild>
+                                        <img
+                                            onClick={openImgEditor}
+                                            src={imageDetails?.secure_url || imageDetails?.url}
+                                            alt={imageDetails?.title || imageDetails?.asset_id}
+                                            className="object-cover w-full rounded-md"
+                                        />
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[1100px]">
+                                        <DialogHeader>
+                                            <DialogTitle className="break-words">Edit Image</DialogTitle>
+                                            <DialogDescription>
+                                                Make changes to your Image here. Click save when you're done.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex justify-center gap-4 py-4">
+                                            {isImgEditorShown && (
+                                                <FilerobotImageEditor
+                                                    source={imageDetails?.secure_url || imageDetails?.url}
+                                                    onSave={(editedImageObject, designState) => {
+                                                        handleClickButton(editedImageObject?.imageBase64).then(() => setChangesMade(false))
+                                                    }
+                                                    }
+                                                    onClose={closeImgEditor}
+                                                    annotationsCommon={{
+                                                        fill: '#ff0000',
+                                                    }}
+                                                    Text={{ text: 'Filerobot...' }}
+                                                    Rotate={{ angle: 90, componentType: 'slider' }}
+                                                    Crop={{
+                                                        presetsItems: [
+                                                            {
+                                                                titleKey: 'classicTv',
+                                                                descriptionKey: '4:3',
+                                                                ratio: 4 / 3,
+                                                                // icon: CropClassicTv, // optional, CropClassicTv is a React Function component. Possible (React Function component, string or HTML Element)
+                                                            },
+                                                            {
+                                                                titleKey: 'cinemascope',
+                                                                descriptionKey: '21:9',
+                                                                ratio: 21 / 9,
+                                                                // icon: CropCinemaScope, // optional, CropCinemaScope is a React Function component.  Possible (React Function component, string or HTML Element)
+                                                            },
+                                                        ],
+                                                        presetsFolders: [
+                                                            {
+                                                                titleKey: 'socialMedia', // will be translated into Social Media as backend contains this translation key
+                                                                // icon: Social, // optional, Social is a React Function component. Possible (React Function component, string or HTML Element)
+                                                                groups: [
+                                                                    {
+                                                                        titleKey: 'facebook',
+                                                                        items: [
+                                                                            {
+                                                                                titleKey: 'profile',
+                                                                                width: 180,
+                                                                                height: 180,
+                                                                                descriptionKey: 'fbProfileSize',
+                                                                            },
+                                                                            {
+                                                                                titleKey: 'coverPhoto',
+                                                                                width: 820,
+                                                                                height: 312,
+                                                                                descriptionKey: 'fbCoverPhotoSize',
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ],
+                                                    }}
+                                                    tabsIds={[TABS.ADJUST, TABS.ANNOTATE, TABS.WATERMARK]} // or {['Adjust', 'Annotate', 'Watermark']}
+                                                    defaultTabId={TABS.ANNOTATE} // or 'Annotate'
+                                                    defaultToolId={TOOLS.TEXT} // or 'Text'
+                                                />
+                                            )}
+
+                                        </div>
+                                        <DialogFooter>
+                                            {/* <Button onClick={() => {
                                             handleClickButton(imageDetails?.title ? imageDetails?.title : imageDetails?.url).then(() => setChangesMade(false));
                                         }}
                                             disabled={!changesMade}
                                         >Save changes</Button> */}
-                                        <Button onClick={() => {
-                                            handleUploadChange()
-                                                .then(() => setOpen(false));
-                                            setChangesMade(true);
-                                        }}
-                                            disabled={changesMade}
-                                        >Upload changes</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        }
-                    </div>
-                    <div className="space-y-2">
-                        <Form {...form}>
-                            <form onSubmit={handleFormSubmit}>
-                                {isEditing ? (
-                                    <FormField
-                                        control={form.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Title</FormLabel>
-                                                <FormControl>
-                                                    <Input type="text" className="w-full" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                            <Button onClick={() => {
+                                                handleUploadChange()
+                                                    .then(() => setOpen(false));
+                                                setChangesMade(true);
+                                            }}
+                                                disabled={changesMade}
+                                            >Upload changes</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            }
+                        </div>
+                        <div className="space-y-2">
+                            <Form {...form}>
+                                <form onSubmit={handleFormSubmit}>
+                                    {isEditing ? (
+                                        <FormField
+                                            control={form.control}
+                                            name="title"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Title</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="text" className="w-full" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                ) : (
-                                    <p className="text-sm text-muted-foreground break-words"><span className="text-sm font-medium">Title:</span> {imageDetails?.title || ''}</p>
-                                )}
-
-                                {isEditing ? (
-                                    <FormField
-                                        control={form.control}
-                                        name="description"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Description</FormLabel>
-                                                <FormControl>
-                                                    <Input type="text" className="w-full" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ) : (
-                                    <p className="text-sm text-muted-foreground break-words"><span className="text-sm font-medium">Description:</span> {imageDetails?.description || ''}</p>
-                                )}
-                                <FormField
-                                    control={form.control}
-                                    name="tags"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Tags</FormLabel>
-                                            <FormControl>
-                                                <InputTags
-                                                    value={valuesTag}
-                                                    placeholder="Enter your image tags"
-                                                    onChange={(newTags) => {
-                                                        setValuesTag(newTags); // Update the state with new tags
-                                                        field.onChange(newTags); // Update the form field value
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground break-words"><span className="text-sm font-medium">Title:</span> {imageDetails?.title || ''}</p>
                                     )}
-                                />
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium">Image Information:</p>
-                                    <p className="text-xs text-muted-foreground">Size: {imageDetails?.bytes ? (imageDetails.bytes / (1024 * 1024)).toFixed(2) : 'Unknown'} MB</p>
-                                    <p className="text-xs text-muted-foreground">Resolution: {imageDetails?.width}x{imageDetails?.height}</p>
-                                </div>
-                                <CardFooter className="justify-between">
 
                                     {isEditing ? (
-                                        <Button variant="outline" size="icon" type="submit" onClick={handleFormSubmit}>
-                                            <CheckIcon className="h-4 w-4" />
-                                        </Button>
+                                        <FormField
+                                            control={form.control}
+                                            name="description"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Description</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="text" className="w-full" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     ) : (
-                                        <Button variant="outline" size="icon" onClick={handleEdit}><PencilIcon className="h-4 w-4" /></Button>
-                                    )
-                                    }
+                                        <p className="text-sm text-muted-foreground break-words"><span className="text-sm font-medium">Description:</span> {imageDetails?.description || ''}</p>
+                                    )}
+                                    <FormField
+                                        control={form.control}
+                                        name="tags"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Tags</FormLabel>
+                                                <FormControl>
+                                                    <InputTags
+                                                        value={valuesTag}
+                                                        placeholder="Enter your image tags"
+                                                        onChange={(newTags) => {
+                                                            setValuesTag(newTags); // Update the state with new tags
+                                                            field.onChange(newTags); // Update the form field value
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium">Image Information:</p>
+                                        <p className="text-xs text-muted-foreground">Size: {imageDetails?.bytes ? (imageDetails.bytes / (1024 * 1024)).toFixed(2) : 'Unknown'} MB</p>
+                                        <p className="text-xs text-muted-foreground">Resolution: {imageDetails?.width}x{imageDetails?.height}</p>
+                                    </div>
+                                    <CardFooter className="justify-between">
 
-                                    <Button variant="destructive" size="icon" onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(imageDetails?.public_id, imageDetails?.resource_type === "image" ? 'images' : imageDetails?.resource_type === "video" ? 'videos' : 'PDF');
-                                    }}>
-                                        <Trash2Icon className="h-4 w-4" />
-                                        <span className="sr-only">Delete image</span>
-                                    </Button>
-                                </CardFooter>
-                            </form>
-                        </Form>
-                    </div>
-                </CardContent>
-            </Card>
+                                        {isEditing ? (
+                                            <Button variant="outline" size="icon" type="submit" onClick={handleFormSubmit}>
+                                                <CheckIcon className="h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <Button variant="outline" size="icon" onClick={handleEdit}><PencilIcon className="h-4 w-4" /></Button>
+                                        )
+                                        }
+
+                                        <Button variant="destructive" size="icon" onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(imageDetails?.public_id, imageDetails?.resource_type === "image" ? 'images' : imageDetails?.resource_type === "video" ? 'videos' : 'PDF');
+                                        }}>
+                                            <Trash2Icon className="h-4 w-4" />
+                                            <span className="sr-only">Delete image</span>
+                                        </Button>
+                                    </CardFooter>
+                                </form>
+                            </Form>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 };
