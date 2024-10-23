@@ -27,7 +27,7 @@ import TourFaq from '@/pages/Dashboard/Tours/FAQ/Faq';
 import HomePage from '@/pages/Dashboard/HomePage';
 import Post from '@/pages/Dashboard/Post/Post';
 import EditPost from '@/pages/Dashboard/Post/EditPost';
-import AddPost from '@/pages/Dashboard/Post/Addpost';
+import AddPost from '@/pages/Dashboard/Post/AddPost';
 import Comments from '@/pages/Dashboard/Post/Comments';
 
 const router = createBrowserRouter([
