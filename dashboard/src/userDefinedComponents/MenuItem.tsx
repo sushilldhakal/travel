@@ -129,7 +129,7 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
                   <span className="menu-title child">{!navCollapse ? item.title : ''}
 
                     {
-                      item.id === 'comments' && <Badge className="ml-2">{commentNumber?.data?.unapprovedCount}</Badge>
+                      item.id === 'comments' && commentNumber?.data?.unapprovedCount > 0 && <Badge className="ml-2">{commentNumber?.data?.unapprovedCount}</Badge>
                     }
 
 

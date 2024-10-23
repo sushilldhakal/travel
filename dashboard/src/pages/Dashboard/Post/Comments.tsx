@@ -222,14 +222,16 @@ export default function Comments() {
 
 
     const handleBulkAccept = () => {
-        const selectedIds = Object.keys(rowSelection)
+        const selectedRows = table.getFilteredSelectedRowModel().rows
+        const selectedIds = selectedRows.map(row => row.original._id)
         console.log(`Accepting comments with ids: ${selectedIds.join(", ")}`)
         // Implement the logic for bulk accept
     }
 
     const handleBulkDelete = () => {
-        const selectedIds = Object.keys(rowSelection)
-        console.log(`Deleting comments with ids: ${selectedIds.join(", ")}`)
+        const selectedRows = table.getFilteredSelectedRowModel().rows
+        const selectedIds = selectedRows.map(row => row.original._id)
+        deleteMutation.mutate(selectedIds.join(", "));
         // Implement the logic for bulk delete
     }
 
