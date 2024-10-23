@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { getUnapprovedCommentsCount } from '@/http/api';
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
 
 const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: boolean }) => {
   const location = useLocation(); // Hook to get current location
@@ -19,8 +22,11 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
   // Function to determine if NavLink is active
   const isActive = (url: string) => location.pathname === url;
 
-
-
+  const { data: commentNumber, isLoading, isError } = useQuery({
+    queryKey: ['commentsUnapproved'],
+    queryFn: getUnapprovedCommentsCount,
+    staleTime: 10000, // in Milliseconds
+  });
   return (
     <div className={`menu-item`}>
 
@@ -121,7 +127,14 @@ const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: bool
                 {<item.icon />}
                 {
                   <span className="menu-title child">{!navCollapse ? item.title : ''}
+
+                    {
+                      item.id === 'comments' && <Badge className="ml-2">{commentNumber?.data?.unapprovedCount}</Badge>
+                    }
+
+
                   </span>
+
                 }
               </NavLink>
             )

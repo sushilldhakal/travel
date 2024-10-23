@@ -140,7 +140,7 @@ const ImageDetail = ({ userId, files, setFiles, imageUrl, setSelectedImage, onDe
                 title: imageDetails.title || '',
                 description: imageDetails.description || '',
                 tags: imageDetails.tags || '',
-                id: imageDetails?._id || '',
+                id: imageDetails?.id || '',
                 mediaType: imageDetails?.resource_type || '',
             };
             form.reset(defaultValues);

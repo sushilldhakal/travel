@@ -11,13 +11,10 @@ export const useTourMutation = () => {
 
   return useMutation({
     mutationFn: (data: FormData) => {
-
-      console.log("this is a test", data)
       if (tourId) {
         // If tourId is present, update the existing tour
         return updateTour(tourId, data);
       } else {
-
         // If no tourId, create a new tour
         return createTour(data);
       }

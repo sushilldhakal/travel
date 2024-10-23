@@ -18,17 +18,17 @@ import {
   UpdatedImage,
   Youtube,
   Mathematics,
-  CodeBlockLowlight,
-  TiptapImage,
+  // CodeBlockLowlight,
+  // TiptapImage,
 
 
 } from "novel/extensions";
 
-import { UploadImagesPlugin } from "novel/plugins";
+// import { UploadImagesPlugin } from "novel/plugins";
 
 import AutoJoiner from 'tiptap-extension-auto-joiner' // optional
 import { cx } from "class-variance-authority";
-import { common, createLowlight } from "lowlight";
+// import { common, createLowlight } from "lowlight";
 
 //TODO I am using cx here to get tailwind autocomplete working, idk if someone else can write a regex to just capture the class key in objects
 const aiHighlight = AIHighlight;
@@ -52,20 +52,20 @@ const tiptapLink = TiptapLink.configure({
 });
 
 
-const tiptapImage = TiptapImage.extend({
-  addProseMirrorPlugins() {
-    return [
-      UploadImagesPlugin({
-        imageClass: cx("opacity-40 rounded-lg border border-stone-200"),
-      }),
-    ];
-  },
-}).configure({
-  allowBase64: true,
-  HTMLAttributes: {
-    class: cx("rounded-lg border border-muted"),
-  },
-});
+// const tiptapImage = TiptapImage.extend({
+//   addProseMirrorPlugins() {
+//     return [
+//       UploadImagesPlugin({
+//         imageClass: cx("opacity-40 rounded-lg border border-stone-200"),
+//       }),
+//     ];
+//   },
+// }).configure({
+//   allowBase64: true,
+//   HTMLAttributes: {
+//     class: cx("rounded-lg border border-muted"),
+//   },
+// });
 
 const updatedImage = UpdatedImage.configure({
   HTMLAttributes: {
@@ -112,11 +112,11 @@ const starterKit = StarterKit.configure({
       class: cx("border-l-4 border-primary"),
     },
   },
-  codeBlock: {
-    HTMLAttributes: {
-      class: cx("rounded-md bg-muted text-muted-foreground border p-5 font-mono font-medium"),
-    },
-  },
+  // codeBlock: {
+  //   HTMLAttributes: {
+  //     class: cx("rounded-md bg-muted text-muted-foreground border p-5 font-mono font-medium"),
+  //   },
+  // },
   code: {
     HTMLAttributes: {
       class: cx("rounded-md bg-muted  px-1.5 py-1 font-mono font-medium"),
@@ -132,11 +132,11 @@ const starterKit = StarterKit.configure({
 });
 
 
-const codeBlockLowlight = CodeBlockLowlight.configure({
-  // configure lowlight: common /  all / use highlightJS in case there is a need to specify certain language grammars only
-  // common: covers 37 language grammars which should be good enough in most cases
-  lowlight: createLowlight(common),
-});
+// const codeBlockLowlight = CodeBlockLowlight.configure({
+//   // configure lowlight: common /  all / use highlightJS in case there is a need to specify certain language grammars only
+//   // common: covers 37 language grammars which should be good enough in most cases
+//   lowlight: createLowlight(common),
+// });
 
 
 const youtube = Youtube.configure({
@@ -168,13 +168,13 @@ export const defaultExtensions = [
   starterKit,
   placeholder,
   tiptapLink,
-  tiptapImage,
+  // tiptapImage,
   updatedImage,
   taskList,
   taskItem,
   horizontalRule,
   aiHighlight,
-  codeBlockLowlight,
+  // codeBlockLowlight,
   youtube,
   twitter,
   mathematics,

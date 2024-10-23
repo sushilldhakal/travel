@@ -9,7 +9,7 @@ html body[data-scroll-locked]{
     top: 0;
     bottom: 0;
     right: 15px;
-    z-index: 11;
+    z-index: 9;
     text-align: right;
     width: auto;
     display: flex !important;
@@ -66,4 +66,25 @@ html body[data-scroll-locked]{
 
     .data-\[disabled\]\:pointer-events-none[data-disabled] {
         pointer-events: auto;
+    }
+
+
+    .latest-tours-slider .slick-prev::before, .latest-tours-slider .slick-next::before{
+       content: none;
+
+    }
+
+    .latest-tours-slider .slick-prev, .latest-tours-slider .slick-next{
+        top:40px;
+        z-index: 10;
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+
+    }
+    .latest-tours-slider .slick-prev{
+        left: calc( 100% - 90px );
+    }
+    .latest-tours-slider .slick-next{
+        right:15px;
     }

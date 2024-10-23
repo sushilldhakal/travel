@@ -11,10 +11,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { cn } from '@/lib/utils';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { JSONContent } from "novel";
-import Editor from '../../../userDefinedComponents/editor/advanced-editor';
+import Editor from '@/userDefinedComponents/editor/advanced-editor';
 import { Controller, useForm } from 'react-hook-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import GalleryPage from '@/pages/Gallery/GalleryPage';
+import GalleryPage from '@/pages/Dashboard/Gallery/GalleryPage';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { tabs } from './tabs';
 import MultipleSelector, { Option } from '@/userDefinedComponents/MultipleSelector';

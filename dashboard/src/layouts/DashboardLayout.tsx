@@ -5,9 +5,9 @@ import {
   Package2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Breadcrumbs from '../userDefinedComponents/Breadcrumb';
+import Breadcrumbs from '@/userDefinedComponents/Breadcrumb';
 import useTokenStore from '@/store/store';
-import Navigation from '../userDefinedComponents/Navigation';
+import Navigation from '@/userDefinedComponents/Navigation';
 import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
 import routePaths from '@/lib/routePath';

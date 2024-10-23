@@ -20,20 +20,24 @@ type AccessTokenType = {
     roles: string;
 };
 
+
 export const getAuthUserRoles = (): string | null => {
     const accessToken = getAccessToken();
     if (!isValidToken(accessToken)) return null;
 
     try {
         const decoded = jwtDecode<AccessTokenType>(accessToken!);
+        const currentTime = Date.now() / 1000; // Convert milliseconds to seconds
+
+        if (decoded?.exp < currentTime) {
+            localStorage.removeItem("token-store");
+        }
         return decoded.roles;
     } catch (e) {
         console.error('Failed to decode token:', e);
         return null;
     }
 };
-
-
 
 interface AdminRouteProps {
     children?: ReactNode;

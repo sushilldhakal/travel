@@ -1,5 +1,5 @@
 import routePaths from "./routePath";
-import { FilePlus, Footprints, Images, Layers3, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
+import { FilePlus, Footprints, Images, Layers3,StickyNote,MessagesSquare, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
   
 
 export const UserMenuItems = {
@@ -45,6 +45,39 @@ export const UserMenuItems = {
         type: "item",
         icon: LayoutDashboard,
         url: routePaths.dashboard.home,
+      },
+      {
+        
+        id: "posts",
+        title: "Posts",
+        type: "item",
+        icon: StickyNote,
+        url: routePaths.dashboard.post,
+        children: [
+          {
+            id: "postList",
+            title: "All Post",
+            type: "item",
+            icon: ListCollapse,
+            url: routePaths.dashboard.post, // Using the same routePath for tours list
+          },
+          {
+            id: "createPost",
+            title: "Add post",
+            type: "item",
+            icon: FilePlus,
+            url: routePaths.dashboard.addPost,
+          },
+         
+     
+        ]
+      },
+      {
+        id: "comments",
+        title: "Comments",
+        type: "item",
+        icon: MessagesSquare,
+        url: routePaths.dashboard.comment,
       },
       {
         id: "tours",

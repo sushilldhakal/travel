@@ -137,7 +137,40 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                         onChange={handleTitleChange}
                         placeholder="Search tours by name"
                     />
-                    <div ref={selectRef} className="cd-select flex absolute right-10 top-[50%] bottom-auto translate-y-[-50%]">
+                    <div className="md:hidden   cd-select 
+                    flex z-10
+                    absolute 
+                    md:max-md:flex
+                    max-md:right-3 
+                    max-md:top-[50%] 
+                    max-md:bottom-auto 
+                    max-md:translate-y-[-50%] ">
+                        <button
+                            type="submit" // Change to submit
+                            className="cd-search-trigger cd-text-replace ml-3 bg-primary text-secondary h-10 w-10 rounded-full flex items-center justify-center"
+                        >
+                            <Search />
+                        </button>
+                        <button
+                            type="button" // Button to close
+                            className="cd-search-trigger cd-text-replace ml-3"
+                            onClick={(e) => {
+                                closeSearch(e);
+                            }}
+                        >
+                            <X />
+                        </button>
+                    </div>
+                    <div ref={selectRef} className="
+                    cd-select 
+                    flex z-10
+                    absolute 
+                    md:right-3 
+                    md:top-[50%] 
+                    md:bottom-auto 
+                    md:translate-y-[-50%] 
+                   max-md:pl-[70px]"
+                    >
                         <span className="mt-2 mr-3">in</span>
                         <Select onValueChange={(value) => handleCategorySelect(value)}>
                             <SelectTrigger className="w-[180px]">
@@ -158,13 +191,13 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                         </Select>
                         <button
                             type="submit" // Change to submit
-                            className="cd-search-trigger cd-text-replace ml-3 bg-primary text-secondary h-10 w-10 rounded-full flex items-center justify-center"
+                            className="cd-search-trigger hidden md:flex cd-text-replace ml-3 bg-primary text-secondary h-10 w-10 rounded-full flex items-center justify-center"
                         >
                             <Search />
                         </button>
                         <button
                             type="button" // Button to close
-                            className="cd-search-trigger cd-text-replace ml-3"
+                            className="cd-search-trigger hidden md:flex justify-center items-center cd-text-replace ml-3"
                             onClick={(e) => {
                                 closeSearch(e);
                             }}
@@ -175,7 +208,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                 </form>
 
                 <div className={`cd-search-suggestions grid grid-flow-col transition-all duration-500 ease-in-out grid-cols-12 px-5 py-2 relative mx-auto max-w-7xl bg-secondary`}>
-                    <div className={`news col-span-10 `}>
+                    <div className={`news col-span-9 `}>
                         <h3 className="mb-5 letter-spacing">Tours</h3>
                         {
                             searchMutation.isPending &&
@@ -206,7 +239,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                         </ul>
                     </div>
 
-                    <div className="quick-links col-span-2 col-end-13 text-right">
+                    <div className="quick-links col-span-3 col-end-13 text-right hidden md:flex flex-row flex-col">
                         <h3 className="mb-3">Quick Links</h3>
                         <ul>
                             <li className="mb-2"><Link to={'#'}>Find a Destination</Link></li>

@@ -34,6 +34,37 @@ export interface Tour {
     map: string,
 }
 
+// Define the type for the Author
+export interface Author {
+  _id: string; // Author ID
+  name: string; // Author name
+}
+
+// Define the type for the Post
+export interface Post {
+  _id: string; // Post ID
+  title: string; // Post title
+  content: string; // Post content
+  author: Author; // Author object
+  tags: string[]; // Array of tags
+  image: string; // URL or path to the image
+  status: 'draft' | 'published' | 'archived'; // Status of the post
+  likes: number; // Number of likes
+  comments: string[]; // Array of comment IDs or comment objects
+  created_at: string; // Post creation date in ISO string format
+  updated_at: string; // Post last updated date in ISO string format
+  __v: number; // Version key for MongoDB
+}
+
+// Define the type for the paginated response
+export interface PaginatedPostsResponse {
+  page: number; // Current page number
+  limit: number; // Number of posts per page
+  totalPages: number; // Total number of pages
+  totalPosts: number; // Total number of posts
+  posts: Post[]; // Array of Post objects
+}
+
 export interface location {
     lat: string;
     lng: string;
@@ -90,6 +121,13 @@ export interface Itinerary {
     breadcrumbs?: Breadcrumb[],
     tours: Tour;
    
+}
+
+export interface PostData {
+  post: Post;
+  breadcrumbs?: Breadcrumb[],
+  posts: Post;
+ 
 }
   export interface TabContentProps {
     initialTourData?: TourData;

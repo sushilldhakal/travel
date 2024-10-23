@@ -4,27 +4,31 @@ import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
 import routePaths from '@/lib/routePath';
 import PrivateRoutes from '@/util/PrivateRoutes';
 import HomeLayout from '@/layouts/HomeLayout';
-import Home from '@/pages/Home/Home';
 import FrontTours from '@/pages/FrontEnd/Tours/FrontTours';
 import FrontSingleTours from '@/pages/FrontEnd/SingleTours/FrontSingleTours';
 import LoginPage from '@/pages/Auth/LoginPage';
 import RegisterPage from '@/pages/Auth/RegisterPage';
 import ErrorPage from '@/pages/Error/ErrorPage';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import TourPage from '@/pages/Tours/TourPage';
-import EditTour from '@/pages/Tours/EditTour';
-import AddTour from '@/pages/Tours/AddTour';
-import TourSetting from '@/pages/Tours/TourSetting';
-import TourCategory from '@/pages/Tours/Category/TourCategory';
+import Setting from '@/pages/Dashboard/Setting/Setting';
+import GalleryPage from '@/pages/Dashboard/Gallery/GalleryPage';
+import UserPage from '@/pages/Dashboard/Users/UserPage';
+import AddUser from '@/pages/Dashboard/Users/AddUser';
+import Subscriber from '@/pages/Dashboard/Subscriber/Subscriber';
+import EditUser from '@/pages/Dashboard/Users/EditUser';
+import Home from '@/pages/FrontEnd/Home/Home';
+import TourPage from '@/pages/Dashboard/Tours/TourPage';
+import EditTour from '@/pages/Dashboard/Tours/EditTour';
+import AddTour from '@/pages/Dashboard/Tours/AddTour';
+import TourSetting from '@/pages/Dashboard/Tours/TourSetting';
+import TourCategory from '@/pages/Dashboard/Tours/Category/TourCategory';
+import TourFacts from '@/pages/Dashboard/Tours/FACTS/Facts';
+import TourFaq from '@/pages/Dashboard/Tours/FAQ/Faq';
 import HomePage from '@/pages/Dashboard/HomePage';
-import Setting from '@/pages/Setting/Setting';
-import GalleryPage from '@/pages/Gallery/GalleryPage';
-import UserPage from '@/pages/Users/UserPage';
-import AddUser from '@/pages/Users/AddUser';
-import Subscriber from '@/pages/Subscriber/Subscriber';
-import EditUser from '@/pages/Users/EditUser';
-import TourFacts from '@/pages/Tours/FACTS/Facts';
-import TourFaq from '@/pages/Tours/FAQ/Faq';
+import Post from '@/pages/Dashboard/Post/Post';
+import EditPost from '@/pages/Dashboard/Post/EditPost';
+import AddPost from '@/pages/Dashboard/Post/Addpost';
+import Comments from '@/pages/Dashboard/Post/Comments';
 
 const router = createBrowserRouter([
   {
@@ -110,6 +114,46 @@ const router = createBrowserRouter([
         path: routePaths.dashboard.base,
         element: <DashboardLayout />,
         children: [
+          {
+            path: routePaths.dashboard.post,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Post />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.addPost,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <AddPost />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.editPost,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <EditPost />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.comment,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Comments />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.singleComment,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Comments />
+              </Suspense>
+            ),
+          },
           {
             path: routePaths.dashboard.tours,
             element: (

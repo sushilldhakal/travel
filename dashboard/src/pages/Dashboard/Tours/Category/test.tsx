@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import GalleryPage from "../../Gallery/GalleryPage";
+import GalleryPage from "../../Dashboard/Gallery/GalleryPage";
 import { addCategory, deleteCategory, getSingleCategory, getUserCategories, updateCategory } from "@/http/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserId } from "@/util/AuthLayout";

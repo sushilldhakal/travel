@@ -251,7 +251,7 @@ const UserFooter = () => {
                                 <form className="flex flex-wrap pb-1 relative" onSubmit={handleSubscribe}>
                                     <Input
                                         type="email"
-                                        className="mb-3 mr-3 h-[50px] w-full max-w-[220px] rounded-md border border-stroke bg-white px-5 text-sm text-body-color outline-none focus:border-primary md:max-w-[315px] lg:max-w-[250px] xl:max-w-[315px] dark:border-dark-3 dark:bg-dark dark:text-dark-6"
+                                        className="mb-3 mr-3 h-[50px] w-full max-w-[220px] rounded-md border border-stroke  px-5 text-sm text-body-color outline-none focus:border-primary md:max-w-[315px] lg:max-w-[250px] xl:max-w-[315px] dark:border-dark-3 dark:bg-dark dark:text-dark-6"
                                         placeholder="Email Address"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -260,7 +260,7 @@ const UserFooter = () => {
                                     <Button
                                         type="submit"
                                         disabled={mutation.isPending}
-                                        className="absolute right-0 mb-3 h-[50px] rounded-md border border-transparent bg-primary px-7 text-base font-medium text-white transition hover:bg-opacity-90"
+                                        className="absolute right-0 mb-3 h-[50px] rounded-md border border-transparent bg-primary px-7 font-medium transition hover:bg-opacity-90"
                                     >
                                         {mutation.isPending ? 'Subscribing...' : 'Subscribe'}
                                     </Button>
@@ -335,8 +335,8 @@ const UserFooter = () => {
                     <div className="text-center">
                         <div className="travel-copyright">
                             <p>© All Rights Reserved. </p>
-                            <p>Proudly powered by <a href="https://reactjs.com/">React Js</a>
-                                <span className="sep"> | </span>{new Date().getFullYear()} eTravel by <a href="https://sushill.com.np" rel="designer">Sus Hill</a>.
+                            <p>Proudly powered by <Link to="https://reactjs.com/">React Js</Link>
+                                <span className="sep"> | </span>{new Date().getFullYear()} eTravel by <Link to="https://sushill.com.np" rel="designer">Sus Hill</Link>.
                             </p>
                         </div>
                     </div></div></div>

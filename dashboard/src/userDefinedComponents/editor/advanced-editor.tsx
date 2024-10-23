@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import hljs from 'highlight.js';
 import '@/assets/css/editor.css';
-import GalleryPage from "@/pages/Gallery/GalleryPage";
+import GalleryPage from "@/pages/Dashboard/Gallery/GalleryPage";
 import CustomEditorCommandItem from "./CustomEditorCommandItem";
 const extensions = [...defaultExtensions, slashCommand];
 interface EditorProps {
@@ -47,7 +47,6 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
   const [openAI, setOpenAI] = useState(false);
   const [editorInstance, setEditorInstance] = useState<EditorInstance | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-
 
 
   const handleImageSelect = (imageUrl: string) => {

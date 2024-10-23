@@ -20,7 +20,7 @@ import { useFaq } from './Components/useFaq';
 const AddTour: React.FC = () => {
   const [tripCode, setTripCode] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
-  const [editorContent, setEditorContent] = useState(defaultValue);
+  const [editorContent, setEditorContent] = useState({});
   const userId = getUserId();
   const { mutate: createTour, isPending } = useTourMutation();
 

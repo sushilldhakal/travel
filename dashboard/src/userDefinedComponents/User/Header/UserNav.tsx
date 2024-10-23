@@ -60,7 +60,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
         <Disclosure id="main-header" as="nav" className={`relative z-2 bg-secondary w-full text-secondary-foreground main-header z-10 top-0 border-t-2 border-primary px-5`}>
             <div className="mx-auto max-w-7xl">
                 <div className="relative flex h-16 items-center justify-between">
-                    <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+                    <div className="absolute inset-y-0 left-0 flex items-center md:hidden">
                         {/* Mobile menu button*/}
                         <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
                             <span className="absolute -inset-0.5" />
@@ -69,12 +69,12 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                             <X aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
                         </DisclosureButton>
                     </div>
-                    <div className="flex hidden sm:block flex-shrink-0 items-center text-primary">
+                    <div className="flex hidden md:block flex-shrink-0 items-center text-primary">
                         <Link to={'/'} className="text-3xl font-bold">eTravel</Link>
                     </div>
-                    <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-end">
+                    <div className="flex flex-1 items-center justify-center md:items-stretch md:justify-end">
 
-                        <div className="hidden sm:ml-6 sm:block">
+                        <div className="hidden md:ml-6 md:block">
                             <div className="flex space-x-4 text-secondary-foreground ">
                                 {UserMenuItems.items.map((item) => (
                                     <Link
@@ -88,7 +88,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 md:static md:inset-auto md:ml-6 md:pr-0">
                         <ModeToggle />
 
                         {
@@ -118,27 +118,28 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
 
                                         <MenuItems
                                             transition
-                                            className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                                            className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-secondary py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none 
+                                            data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
                                         >{dashRight
                                             ?
                                             <MenuItem>
-                                                <Link to={'/dashboard/home'} className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+                                                <Link to={'/dashboard/home'} className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
                                                     Dashboard
                                                 </Link>
                                             </MenuItem> : ''
                                             }
                                             <MenuItem>
-                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+                                                <a href="#" className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
                                                     Your Profile
                                                 </a>
                                             </MenuItem>
                                             <MenuItem>
-                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+                                                <a href="#" className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
                                                     Settings
                                                 </a>
                                             </MenuItem>
                                             <MenuItem>
-                                                <Link to="/" onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+                                                <Link to="/" onClick={handleLogout} className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
                                                     Sign out
                                                 </Link>
                                             </MenuItem>
@@ -157,7 +158,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                 </div>
             </div>
 
-            <DisclosurePanel className="sm:hidden">
+            <DisclosurePanel className="md:hidden">
                 <div className="space-y-1 px-2 pb-3 pt-2">
                     {UserMenuItems.items.map((item) => (
                         <DisclosureButton

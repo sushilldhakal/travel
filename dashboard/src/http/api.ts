@@ -439,3 +439,72 @@ export const updateFaq = async (faqData: FormData, faqId: string) => {
 export const deleteFaq = async (faqId: string) => {
     return api.delete(`/api/faqs/${faqId}`);
 };
+
+
+
+
+
+//posts
+export const getPost = async () => api.get('/api/posts');
+
+
+export const getAllUserPosts = async () => api.get('/api/posts/user');
+
+export const getSinglePost = async (postId: string) => {
+    try {
+        const response = await api.get(`/api/posts/${postId}`);
+        
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching post: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching post: ${String(error)}`);
+        }
+    }
+};
+
+export const addPost = async (postData: FormData) => {
+    return api.post('/api/posts/add', postData);
+};
+
+export const updatePost = async (postData: FormData, postId: string) => {
+    return api.patch(`/api/posts/${postId}`, postData);
+};
+
+export const deletePost = async (postId: string) => {
+    return api.delete(`/api/posts/${postId}`);
+};
+
+//comment
+export const addComment = async (commentData: FormData, postId: string) => {
+    return api.post(`/api/posts/comment/${postId}`, commentData);
+};
+
+export const getAllComments = async () => api.get('/api/posts/comment/post');
+
+export const editComment = async (commentData: FormData, commentId: string) => {
+    return api.patch(`/api/posts/comment/${commentId}`, commentData);
+};
+
+
+export const getCommentsByPost = async (postId: string) => {
+    try {
+        const response = await api.get(`/api/posts/comment/post/${postId}`);
+        return response.data;
+    } catch (error: unknown) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching post: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching post: ${String(error)}`);
+        }
+    }
+};
+
+export const deleteComment = async (commentId: string) => {
+    return api.delete(`/api/posts/comment/${commentId}`);
+};
+
+export const getUnapprovedCommentsCount = async () => {
+    return api.get(`/api/posts/comment/unapproved/count`);
+};

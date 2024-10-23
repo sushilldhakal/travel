@@ -1,91 +1,51 @@
-import { UserMenuItems } from "@/lib/MenuItems";
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
+import { Disclosure } from '@headlessui/react';
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Twitter, Youtube, X, Menu, PhoneCall, Clock } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Youtube, PhoneCall, Clock } from 'lucide-react';
 
 const UserHeader = () => {
     return (
-        <Disclosure as="nav" className="h-10 bg-secondary z-10 relative hidden sm:block px-5">
-            <div className="mx-auto max-w-7xl">
-                <div className="relative flex items-center justify-between">
-                    <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                        {/* Mobile menu button*/}
-                        <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                            <span className="absolute -inset-0.5" />
-                            <span className="sr-only">Open main menu</span>
-                            <Menu aria-hidden="true" className="block h-6 w-6 group-data-[open]:hidden" />
-                            <X aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
-                        </DisclosureButton>
-
-                    </div>
-                    <div className="flex flex-row hidden sm:flex items-center text-secondary-foreground  text-sm">
-
-                        <span className='flex flex-initial w-64 pr-3 text-xs basis-1/2 items-center'>
-                            <PhoneCall className='pr-2 text-xs' />
+        <Disclosure as="nav" className="h-10 bg-secondary z-10 relative px-5">
+            <div className="mx-auto max-w-7xl w-full h-full">
+                <div className="relative flex items-center justify-between h-full">
+                    {/* Left Section - Phone Number & Opening Times */}
+                    <div className="hidden md:flex items-center text-secondary-foreground text-xs space-x-8">
+                        <span className='flex items-center'>
+                            <PhoneCall className='mr-2' size="18px" />
                             +61 0433 926 079
                         </span>
-
-                        <span className='flex flex-initial w-64 text-xs basis-1/2 items-center'>
-                            <Clock className='pr-2 text-xs' />
+                        <span className='flex items-center'>
+                            <Clock className='mr-2' size="18px" />
                             Mon – Fri 8.00 – 18.00. Weekend CLOSED
                         </span>
                     </div>
-                    <div className="flex hidden sm:block items-center sm:hidden">
-                        Welcome To eTravel
 
+                    {/* Welcome to Etravel for small screens */}
+                    <div className="md:hidden flex justify-center w-full">
+                        <span className="text-secondary-foreground text-sm">Welcome to Etravel</span>
                     </div>
 
-                    <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-end">
-
-                        <div className="hidden sm:ml-6 sm:block">
-                            <div className="flex space-x-4">
-
-                            </div>
-                        </div>
-                    </div>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                        <Link
-                            className="mr-2 pt-1 pb-1 pl-2 pr-2 mt-1 text-primary bg-secondary-foreground rounded-md " to={""}>
-                            <Facebook />
+                    {/* Right Section - Social Icons */}
+                    <div className="hidden md:flex items-center space-x-2">
+                        <Link className="p-1.5 text-primary bg-secondary-foreground rounded-md" to={""}>
+                            <Facebook size="18px" />
                         </Link>
-                        <Link
-                            className="mr-2 pt-1 pb-1 pl-2 pr-2 mt-1 text-primary bg-secondary-foreground rounded-md" to={""}>
-                            <Instagram />
+                        <Link className="p-1.5 text-primary bg-secondary-foreground rounded-md" to={""}>
+                            <Instagram size="18px" />
                         </Link>
-                        <Link
-                            className="mr-2 pt-1 pb-1 pl-2 pr-2 mt-1 text-primary bg-secondary-foreground rounded-md" to={""}>
-                            <Youtube />
+                        <Link className="p-1.5 text-primary bg-secondary-foreground rounded-md" to={""}>
+                            <Youtube size="18px" />
                         </Link>
-                        <Link
-                            className="mr-2 pt-1 pb-1 pl-2 pr-2 mt-1 text-primary bg-secondary-foreground rounded-md" to={""}>
-                            <Twitter />
+                        <Link className="p-1.5 text-primary bg-secondary-foreground rounded-md" to={""}>
+                            <Twitter size="18px" />
                         </Link>
-                        <Link
-                            className="mr-2 pt-1 pb-1 pl-2 pr-2 mt-1 text-primary bg-secondary-foreground rounded-md" to={""}>
-                            <Linkedin />
+                        <Link className="p-1.5 text-primary bg-secondary-foreground rounded-md" to={""}>
+                            <Linkedin size="18px" />
                         </Link>
-
                     </div>
                 </div>
             </div>
-
-            <DisclosurePanel className="sm:hidden">
-                <div className="space-y-1 px-2 pb-3 pt-2">
-                    {UserMenuItems.items.map((item) => (
-                        <DisclosureButton
-                            key={item.id}
-                            as="a"
-                            href={item.url}
-                            className='text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium'>
-                            {item.title}
-                        </DisclosureButton>
-                    ))}
-                </div>
-            </DisclosurePanel>
         </Disclosure>
-    )
-}
-export default UserHeader
+    );
+};
 
-
-
+export default UserHeader;

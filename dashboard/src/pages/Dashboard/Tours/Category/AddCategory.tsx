@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Paperclip, Trash2 } from "lucide-react";
-import GalleryPage from "../../Gallery/GalleryPage";
 import { addCategory } from "@/http/api";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -15,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { getUserId } from "@/util/AuthLayout";
+import GalleryPage from "../../Gallery/GalleryPage";
 
 
 interface CategoryFormData {

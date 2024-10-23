@@ -6,6 +6,7 @@ import { getLatestTours } from "@/http/api";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
+import { Dot } from "lucide-react";
 
 const jsonToHtml = (json: any) => {
     const createHtml = (node: any) => {
@@ -62,8 +63,10 @@ const HomeSlider = () => {
         draggable: true,
         slidesToScroll: 1,
         touchThreshold: 1000,
-        cssEase: "ease"
+        cssEase: "ease",
+
     };
+
 
     useEffect(() => {
         const handleScroll = () => {
@@ -84,42 +87,39 @@ const HomeSlider = () => {
 
     return (
         <div className="overflow-hidden main-slider pattern-2">
-            <Slider className="banner-slider" {...settings}>
+            <Slider className="banner-slider w-full" {...settings}>
                 {sortedTours?.map((tour: any) => {
-                    const descriptionHtml = tour.description ? jsonToHtml(JSON.parse(tour.description)) : "No description available.";
+                    const descriptionHtml = tour.description
+                        ? jsonToHtml(JSON.parse(tour.description))
+                        : "No description available.";
 
-                    return (<div key={tour._id} className="w-full">
-                        <div
-                            className="banner-content parallax-container h-screen relative bg-fixed bg-center bg-cover bg-no-repeat"
-                            style={{
-                                backgroundImage: `url(${tour.coverImage})`,
-                                height: 'calc(100vh - 104px)',
-                                backgroundAttachment: 'fixed',
-                            }}
-                        >
-                            <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
-                                <div className="overlay relative z-10 p-5 text-white w-1/2">
-                                    <h2 className="text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
-
-                                    <p
-                                        className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide"
-                                        dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                                    />
-
-                                    <div className="mt-5 relative z-10">
-                                        <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5">
-                                            <Button>View Tour</Button>
-                                        </Link>
-                                        <Link to={`/tours/${tour._id}`} className="btn btn-primary">
-                                            <Button>Book Tour</Button>
-                                        </Link>
+                    return (
+                        <div key={tour._id} className="w-full">
+                            <div
+                                className="banner-content parallax-container h-screen relative bg-fixed bg-center bg-cover bg-no-repeat w-full"
+                                style={{
+                                    backgroundImage: `url(${tour.coverImage})`,
+                                    height: 'calc(100vh - 104px)',
+                                    backgroundAttachment: 'fixed',
+                                }}
+                            >
+                                <div className="mx-auto max-w-[1280px] px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
+                                    <div className="overlay relative z-10 p-5 text-white w-1/2">
+                                        <h2 className="text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
+                                        <p className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                                        <div className="mt-5 relative z-10">
+                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5">
+                                                <Button>View Tour</Button>
+                                            </Link>
+                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary">
+                                                <Button>Book Tour</Button>
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="showPattern"></div>
                             </div>
-
-                            <div className="showPattern"></div>
                         </div>
-                    </div>
                     );
                 })}
             </Slider>

@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import { Paperclip, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import GalleryPage from "@/pages/Gallery/GalleryPage";
+import GalleryPage from "@/pages/Dashboard/Gallery/GalleryPage";
 
 interface SingleCategoryProps {
     category?: CategoryData;

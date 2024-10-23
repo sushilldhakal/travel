@@ -4,6 +4,11 @@ const routePaths = {
   dashboard: {
     base: "/dashboard",
     home: "/dashboard/home",
+    post: '/dashboard/posts',
+    editPost: '/dashboard/posts/edit_posts/:postId',
+    addPost: '/dashboard/posts/add_post',
+    comment: '/dashboard/comments',
+    singleComment: '/dashboard/comments/:commentId',
     tours: "/dashboard/tours",
     singleTours: "/dashboard/tours/:tourId",
     addTour: "/dashboard/tours/add_tour",
