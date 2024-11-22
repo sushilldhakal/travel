@@ -432,7 +432,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#EA5C54 ', en
           display: none !important;
       }
       .login-page .container .container-form,.container.signup .container-form{
-          left: 7.5px;
+          left: 7.5px !important;
       }
       .login-page .form-item .mobile-signup.sign-up-form {
           background-color: transparent;

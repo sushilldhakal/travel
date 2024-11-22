@@ -155,6 +155,7 @@ export default function Comments() {
 
     const { toast } = useToast();
 
+    console.log("initialCommentData", initialCommentData)
 
     // Mutation for accepting comments
     const acceptMutation = useMutation({
@@ -196,7 +197,7 @@ export default function Comments() {
     }
 
     const table = useReactTable({
-        data: initialCommentData?.data || [],
+        data: initialCommentData?.data.data.comments || [],
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,

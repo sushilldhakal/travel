@@ -29,16 +29,16 @@ const Post = () => {
 
     console.log("data", data)
 
-    useEffect(() => {
-        if (data) {
-            if (currentUserRole === "admin") {
-                setFilterPost(data.data.posts);
-            } else {
-                const userPost = data?.data?.posts?.filter(post => post.author.some(author => author._id === currentUserId));
-                setFilterPost(userPost);
-            }
-        }
-    }, [data, currentUserRole, currentUserId]);
+    // useEffect(() => {
+    //     if (data) {
+    //         if (currentUserRole === "admin") {
+    //             setFilterPost(data.data.posts);
+    //         } else {
+    //             const userPost = data?.data?.posts?.filter(post => post.author.some(author => author._id === currentUserId));
+    //             setFilterPost(userPost);
+    //         }
+    //     }
+    // }, [data, currentUserRole, currentUserId]);
 
     console.log(data?.data?.posts)
 
@@ -68,7 +68,7 @@ const Post = () => {
         }
     };
 
-    const tableData = filterPost;
+    const tableData = data?.data?.posts;
     const columns: ColumnDef<Post>[] = [
         {
             accessorKey: "image",

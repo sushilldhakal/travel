@@ -52,6 +52,8 @@ export const userSetting = async (userId: string, data: FormData) =>
 //tours
 export const getTours = async () => api.get('/api/tours');
 
+export const getUsersTours = async (userId:string) => api.get(`/api/tours/${userId}`);
+
 export const getLatestTours = async () => api.get('/api/tour/search/latest');
 
 export const getSingleTour = async (tourId: string) => {

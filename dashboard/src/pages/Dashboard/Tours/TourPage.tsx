@@ -1,4 +1,4 @@
-import { getTours, deleteTour } from '@/http/api';
+import { getUsersTours, deleteTour } from '@/http/api';
 import { Tour } from '@/Provider/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
@@ -25,24 +25,26 @@ const TourPage = () => {
   const currentUserId = decodedToken.sub;
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['tours'],
-    queryFn: getTours,
+    queryKey: ['tours', currentUserId],
+    queryFn: () => getUsersTours(currentUserId),
   });
+
+  console.log("data", data?.data?.data?.tours);
 
   const queryClient = useQueryClient();
 
-  const [filteredTours, setFilteredTours] = useState([]);
+  // const [filteredTours, setFilteredTours] = useState([]);
 
-  useEffect(() => {
-    if (data) {
-      if (currentUserRole === "admin") {
-        setFilteredTours(data.data.tours);
-      } else {
-        const userTours = data.data.tours.filter(tour => tour.author.some(author => author._id === currentUserId));
-        setFilteredTours(userTours);
-      }
-    }
-  }, [data, currentUserRole, currentUserId]);
+  // useEffect(() => {
+  //   if (data) {
+  //     if (currentUserRole === "admin") {
+  //       setFilteredTours(data.data.tours);
+  //     } else {
+  //       const userTours = data.data.tours.filter(tour => tour.author.some(author => author._id === currentUserId));
+  //       setFilteredTours(userTours);
+  //     }
+  //   }
+  // }, [data, currentUserRole, currentUserId]);
 
 
 
@@ -72,7 +74,7 @@ const TourPage = () => {
       });
     }
   };
-  const tableData = filteredTours;
+  const tableData = data?.data?.data?.tours;
   const columns: ColumnDef<Tour>[] = [
     {
       accessorKey: "coverImage",
@@ -216,7 +218,7 @@ const TourPage = () => {
     content = <div>{createTour}<Skeleton /></div>;
   } else if (isError) {
     content = <div>{createTour}Error fetching tours. Please try again later.</div>;
-  } else if (data && data?.data.tours.length > 0) {
+  } else if (data && data?.data?.data?.tours.length > 0) {
     content = <div>{createTour}<DataTable data={tableData} columns={columns} place="Filter Tours..." colum="title" /></div>;
   } else {
     content = <div>{createTour}"Please add tours to your database";</div>
