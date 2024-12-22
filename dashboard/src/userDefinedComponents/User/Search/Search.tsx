@@ -9,6 +9,7 @@ import { addDays, format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
+import { motion } from "framer-motion";
 
 const OPTIONS: Option[] = [
     { label: 'nextjs', value: 'Nextjs' },
@@ -34,8 +35,17 @@ const Search = () => {
     }
 
     return (
-
-        <div className="search-advance w-full dark-layout p-5 [background-color:rgb(37_41_41_/_80%)]  text-white rounded-lg">
+        <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+                duration: 0.8,
+                type: "spring",
+                stiffness: 100,
+                damping: 15
+            }}
+            className="search-advance w-full dark-layout p-5 [background-color:rgb(37_41_41_/_80%)]  text-white rounded-lg"
+        >
             <div className="mx-auto">
                 <div className="ws-advance-form text-left" id="ws-advance-form">
                     <form action="">
@@ -177,10 +187,8 @@ const Search = () => {
                     </form>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
 export default Search;
-
-

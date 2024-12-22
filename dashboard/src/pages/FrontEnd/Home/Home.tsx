@@ -1,9 +1,9 @@
+import RecentBlog from '@/userDefinedComponents/User/Blog/RecentBlog';
 import Search from '@/userDefinedComponents/User/Search/Search'
 import HomeSlider from '@/userDefinedComponents/User/Slider/HomeSlider'
 import LatestTour from '@/userDefinedComponents/User/Slider/LatestTour';
 import TourByPricing from '@/userDefinedComponents/User/Slider/TourByPricing';
 import WhyUs from '@/userDefinedComponents/User/WhyUs/WhyUs';
-
 const Home = () => {
     return (
         <>
@@ -30,6 +30,8 @@ const Home = () => {
                 </div>
             </div>
             <WhyUs />
+            <RecentBlog />
+
         </>
     )
 }
