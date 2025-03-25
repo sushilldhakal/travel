@@ -5,6 +5,20 @@ import BreadCrumbTourList from "./BreadCrumbTourList";
 import Filter from "./Filter";
 import Search from "@/userDefinedComponents/User/Search/Search";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, ChevronDown, Grid, List, SlidersHorizontal } from "lucide-react"
+import { useState } from "react";
+
+
 const FrontTours = () => {
 
 
@@ -13,19 +27,154 @@ const FrontTours = () => {
     queryFn: getTours,
   });
 
+  const [viewMode, setViewMode] = useState("grid");
+  const [sortOption, setSortOption] = useState("featured");
+
   console.log("data", data)
 
   return (
     <>
 
-      <div className="banner pattern-2 relative" style={{ backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1721751420/tour-covers/s99i5i9r2fwbrjyyfjbm.jpg")`, backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "cover" }} >
+
+
+
+
+      <div className="banner pattern-2 relative" style={{
+        backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1721751420/tour-covers/s99i5i9r2fwbrjyyfjbm.jpg")`,
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+        zIndex: 0
+      }} >
         <div className="showPattern"></div>
-        <div className="mx-auto max-w-screen-xl px-4 2xl:px-0">
+        <div className="absolute inset-0 bg-black/30" style={{ zIndex: 1 }}></div>
+        <div className="relative mx-auto max-w-screen-xl px-4 2xl:px-0" style={{ zIndex: 2 }}>
           <BreadCrumbTourList />
         </div>
       </div >
 
+
+      <div className="w-full bg-background border-b sticky top-[65px] z-[1]">
+        <div className="container max-w-7xl px-2 py-3 mx-auto">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left side - Filters */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-9">
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                Filters
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    Category
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuLabel>Select Category</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>All Categories</DropdownMenuItem>
+                    <DropdownMenuItem>Electronics</DropdownMenuItem>
+                    <DropdownMenuItem>Clothing</DropdownMenuItem>
+                    <DropdownMenuItem>Home & Garden</DropdownMenuItem>
+                    <DropdownMenuItem>Sports & Outdoors</DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    Price Range
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuLabel>Select Price Range</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>All Prices</DropdownMenuItem>
+                    <DropdownMenuItem>Under $25</DropdownMenuItem>
+                    <DropdownMenuItem>$25 to $50</DropdownMenuItem>
+                    <DropdownMenuItem>$50 to $100</DropdownMenuItem>
+                    <DropdownMenuItem>$100 to $200</DropdownMenuItem>
+                    <DropdownMenuItem>$200 & Above</DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    Sort by: {sortOption}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => setSortOption("featured")}>Featured</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOption("newest")}>Newest</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
+                      <ArrowDownAZ className="w-4 h-4 mr-2" />
+                      Name (A to Z)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
+                      <ArrowUpAZ className="w-4 h-4 mr-2" />
+                      Name (Z to A)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOption("price-asc")}>Price (Low to High)</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOption("price-desc")}>Price (High to Low)</DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Right side - View toggle and Sort */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center border rounded-md overflow-hidden">
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-9 rounded-none px-3"
+                  onClick={() => setViewMode("list")}
+                >
+                  <List className="w-4 h-4" />
+                  <span className="sr-only">List view</span>
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-9 rounded-none px-3"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid className="w-4 h-4" />
+                  <span className="sr-only">Grid view</span>
+                </Button>
+              </div>
+
+
+
+              <div className="text-sm text-muted-foreground ml-2 hidden md:block">
+                Showing <span className="font-medium">24</span> of <span className="font-medium">256</span> products
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <section className="bg-gray-50 grid gap-4 grid-cols-3 mx-auto max-w-screen-xl py-8 antialiased dark:bg-gray-900 md:py-12">
+
+
+
+
+
+
+
+
+
         <div className="col-span-2 mx-auto max-w-screen-xl px-4 2xl:px-0">
           {/* Search bar */}
           {/* <div className="mb-6">
@@ -38,16 +187,16 @@ const FrontTours = () => {
             {data?.data.tours.map((tour) => (
               <div
                 key={tour._id}
-                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:scale-[1.02]"
               >
-                <div className="w-full">
-                  <Link to={`/tours/${tour._id}`} className="block">
+                <div className="w-full h-[300px] overflow-hidden rounded-lg">
+                  <Link to={`/tours/${tour._id}`} className="block h-full">
                     <img
-                      className="mx-auto h-full"
+                      className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
                       src={tour.coverImage}
                       alt={tour.title}
+                      loading="lazy"
                     />
-
                   </Link>
                 </div>
                 <div className="pt-6">
@@ -67,8 +216,6 @@ const FrontTours = () => {
                           className="h-5 w-5"
                           aria-hidden="true"
                           xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
                           fill="none"
                           viewBox="0 0 24 24"
                         >
@@ -229,7 +376,7 @@ const FrontTours = () => {
 
         </div>
         <div className="col-span-1 sticky top-4 h-full px-4">
-          <div className=" sticky top-20">
+          <div className=" sticky top-[145px]">
             <Search />
 
           </div>

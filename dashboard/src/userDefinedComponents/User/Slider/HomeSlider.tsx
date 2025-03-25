@@ -82,7 +82,7 @@ const HomeSlider = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    console.log(data)
+    //console.log(data)
     const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
 
     return (
@@ -104,15 +104,15 @@ const HomeSlider = () => {
                                 }}
                             >
                                 <div className="mx-auto max-w-[1280px] px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
-                                    <div className="overlay relative z-10 p-5 text-white w-1/2">
-                                        <h2 className="text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
-                                        <p className="text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
-                                        <div className="mt-5 relative z-10">
-                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5">
-                                                <Button>View Tour</Button>
+                                    <div className="overlay relative z-10 p-5 text-white w-full md:w-1/2 text-center md:text-left">
+                                        <h2 className="text-2xl md:text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
+                                        <p className="text-base md:text-lg capitalize mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                                        <div className="mt-5 relative z-10 flex flex-col sm:flex-row justify-center md:justify-start gap-4 sm:gap-5">
+                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary">
+                                                <Button className="w-full sm:w-auto">View Tour</Button>
                                             </Link>
                                             <Link to={`/tours/${tour._id}`} className="btn btn-primary">
-                                                <Button>Book Tour</Button>
+                                                <Button className="w-full sm:w-auto">Book Tour</Button>
                                             </Link>
                                         </div>
                                     </div>

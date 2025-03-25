@@ -12,24 +12,24 @@ import { DateRange } from "react-day-picker";
 import { motion } from "framer-motion";
 
 const OPTIONS: Option[] = [
-    { label: 'nextjs', value: 'Nextjs' },
-    { label: 'React', value: 'react' },
-    { label: 'Remix', value: 'remix' },
-    { label: 'Vite', value: 'vite' },
-    { label: 'Nuxt', value: 'nuxt' },
-    { label: 'Vue', value: 'vue' },
-    { label: 'Svelte', value: 'svelte' },
-    { label: 'Angular', value: 'angular' },
-    { label: 'Ember', value: 'ember' },
-    { label: 'Gatsby', value: 'gatsby' },
-    { label: 'Astro', value: 'astro' },
+    { label: 'Adventure', value: 'adventure' },
+    { label: 'Cultural', value: 'cultural' },
+    { label: 'Beach', value: 'beach' },
+    { label: 'Mountain', value: 'mountain' },
+    { label: 'Wildlife', value: 'wildlife' },
+    { label: 'Historical', value: 'historical' },
+    { label: 'Food', value: 'food' },
+    { label: 'Luxury', value: 'luxury' },
+    { label: 'Budget', value: 'budget' },
+    { label: 'Family', value: 'family' },
+    { label: 'Romantic', value: 'romantic' },
 ];
 const Search = () => {
     const [date, setDate] = useState<DateRange | undefined>({
         from: new Date(2024, 0, 20),
         to: addDays(new Date(2024, 0, 20), 20),
     })
-    const [localValues, setLocalValues] = useState([0, 3000])
+    const [localValues, setLocalValues] = useState([0, 5000])
     const handleValueChange = (newValues: number[]) => {
         setLocalValues(newValues)
     }
@@ -164,7 +164,7 @@ const Search = () => {
                                     value={localValues}
                                     onValueChange={handleValueChange}
                                     min={0}
-                                    max={100}
+                                    max={5000}
                                     step={1}
                                     className={cn("w-full mt-5 text-xs")}
                                 />

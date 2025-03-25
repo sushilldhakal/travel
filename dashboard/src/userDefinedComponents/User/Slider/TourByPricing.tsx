@@ -49,7 +49,7 @@ const TourByPricing = () => {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 10);
 
-    console.log("sortedTours", sortedTours)
+    //console.log("sortedTours", sortedTours)
 
     return (
         <div className="pattern-1 pt-16 relative">

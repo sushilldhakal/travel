@@ -39,7 +39,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         queryKey: ['tours'],
         queryFn: getLatestTours,
     });
-    console.log("latestTours", latestTours)
+    //console.log("latestTours", latestTours)
     useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
@@ -64,7 +64,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
             // Invalidate and refetch
             setSortedTours(data);
             setShowSearchResults(true);
-            console.log("data", data);
+            //console.log("data", data);
         },
         onError: (error) => {
             console.error("Error getting tour:", error.message);
@@ -125,7 +125,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
     const sortedToursByDate = showSearchResults
         ? sortedTours?.data.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3)
         : latestTours?.data.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3);
-    console.log("sortedTours", sortedTours)
+    //console.log("sortedTours", sortedTours)
     return (
         <>
             <div ref={searchRef} id="search" className={`cd-main-search fixed h-[76px] left-0 right-0 w-full bg-secondary transition-all duration-500 ease-in-out ${headerSearch ? 'visibilty-visible opacity-100 z-10 top-0' : 'visibilty-hidden opacity-0 h-0 z-0 top-[-400px]'} `}>

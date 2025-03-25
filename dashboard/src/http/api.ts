@@ -208,8 +208,6 @@ export const getAllMedia = async ({ pageParam = null, mediaType }: { pageParam: 
 };
 
 export const updateMedia = async (formData: FormData, userId: string, imageId: string, mediaType: string) => {
-    console.log(`/api/gallery/${userId}/${imageId}?mediaType=${mediaType}`)
-    console.log("formData in api",formData)
     try {
         const response = await api.patch(`/api/gallery/${userId}/${imageId}?mediaType=${mediaType}`, formData, {
             headers: {
@@ -226,7 +224,6 @@ export const updateMedia = async (formData: FormData, userId: string, imageId: s
 
 
 export const deleteMedia = async (userId: string, imageIds: string | string[], mediaType: string) => {
-    console.log("imageIds",userId, imageIds)
     try {
         const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
       const response = await api.delete(`/api/gallery/${userId}`, {
@@ -334,7 +331,6 @@ export const updateCategory = async (categoryData: FormData, categoryId: string)
 };
 
 export const deleteCategory = async (categoryId: string) => {
-    console.log("categoryId",categoryId)
     return api.delete(`/api/category/${categoryId}`);
 };
 
@@ -393,7 +389,6 @@ export const updateFacts = async (factData: FormData, factId: string) => {
 };
 
 export const deleteFacts = async (factId: string) => {
-    console.log("factId",factId)
     return api.delete(`/api/facts/${factId}`);
 };
 

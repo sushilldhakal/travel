@@ -12,32 +12,6 @@ import {
 import { useEffect, useState } from "react";
 
 
-// function SampleNextArrow(props) {
-//     const { className, style, onClick } = props;
-//     return (
-//         <div
-//             className={` ${className} border-rounded-5 !bg-primary !flex items-center justify-center`}
-//             style={{ ...style, display: "block" }}
-//             onClick={onClick}
-//         >
-//             <ChevronRight size="24px" className="text-secondary" />
-//         </div>
-//     );
-// }
-
-// function SamplePrevArrow(props) {
-//     const { className, style, onClick } = props;
-//     return (
-//         <div
-//             className={` ${className} border-rounded-5 !bg-primary !flex items-center justify-center !left-[calc(100%-100px)]`}
-//             style={{ ...style, display: "block" }}
-//             onClick={onClick}
-//         >
-//             <ChevronLeft size="24px" className="text-secondary" />
-//         </div>
-//     );
-// }
-
 const jsonToHtml = (json: any) => {
     const createHtml = (node: any) => {
         if (!node) return "";
@@ -96,50 +70,11 @@ const LatestTour = () => {
         queryFn: getLatestTours,
     });
 
-    // const settings = {
-    //     dots: false,
-    //     infinite: true,
-    //     slidesToShow: 3,
-    //     slidesToScroll: 1,
-    //     autoplay: true,
-    //     speed: 2000,
-    //     autoplaySpeed: 8000,
-    //     cssEase: "linear",
-    //     centerPadding: '60px',
-    //     nextArrow: <SampleNextArrow />,
-    //     prevArrow: <SamplePrevArrow />,
-    //     responsive: [
-    //         {
-    //             breakpoint: 1024,
-    //             settings: {
-    //                 slidesToShow: 2,
-    //                 slidesToScroll: 2,
-    //                 infinite: true,
-    //                 dots: true
-    //             }
-    //         },
-    //         {
-    //             breakpoint: 768,
-    //             settings: {
-    //                 slidesToShow: 1,
-    //                 slidesToScroll: 1,
-    //                 initialSlide: 2
-    //             }
-    //         },
-    //         {
-    //             breakpoint: 480,
-    //             settings: {
-    //                 slidesToShow: 1,
-    //                 slidesToScroll: 1
-    //             }
-    //         }
-    //     ]
-    // };
 
     const sortedTours = data?.data.tours.sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
 
     return (
-        <div className="pattern-2 pt-10 relative">
+        <div className="pattern-2 pt-10 mb-20 relative">
             <div className="flex items-center justify-between mt-4">
                 <div className="flex space-x-1">
                     <div className="flex items-center mb-4">
@@ -181,38 +116,32 @@ const LatestTour = () => {
                             <CarouselItem key={index} className="pl-0 md:basis-1/2 lg:basis-1/2">
                                 <div className="p-0">
                                     <Card key={tour._id}
-                                        className="mr-5 banner-content parallax-container relative bg-fixed bg-center bg-cover bg-no-repeat"
-
+                                        className="mr-5 h-full relative overflow-hidden"
                                     >
-                                        <div className="relative">
-                                            <div className="showPattern">
-
-                                                <img src={tour.coverImage} alt={tour.coverImage} className="w-full h-full object-cover" />
-                                            </div>
-
+                                        <div className="relative h-[400px]">
+                                            <img src={tour.coverImage} alt={tour.coverImage} className="w-full h-full object-cover" />
+                                            <div className="showPattern absolute inset-0" />
                                         </div>
 
-                                        <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
-                                            <div className="overlay relative z-10 p-5 w-full">
-                                                <h2 className="text-3xl capitalize">{tour.title}</h2>
-
+                                        <div className="px-6 py-8">
+                                            <div className="max-w-7xl mx-auto">
+                                                <h2 className="text-3xl capitalize mb-4">{tour.title}</h2>
                                                 <p
-                                                    className="text-lg capitalize mt-4 mb-4 tracking-wide"
+                                                    className="text-lg capitalize mb-4 tracking-wide"
                                                     dangerouslySetInnerHTML={{ __html: descriptionHtml }}
                                                 />
-                                                <p>$ {tour.price}</p>
+                                                <p className="text-xl font-bold mb-6">${tour.price}</p>
 
-                                                <div className="mt-5 relative z-10 grid grid-cols-2 gap-4">
-                                                    <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5 ">
-                                                        <Button>View Tour</Button>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Link to={`/tours/${tour._id}`} className="btn btn-primary">
+                                                        <Button>View More</Button>
                                                     </Link>
-                                                    <Link to={`/tours/${tour._id}`} className="btn btn-primary ml-5">
-                                                        <Button>Book Tour</Button>
+                                                    <Link to={`/tours/${tour._id}`} className="btn btn-primary">
+                                                        <Button>Book Now</Button>
                                                     </Link>
                                                 </div>
                                             </div>
                                         </div>
-
                                     </Card>
                                 </div>
                             </CarouselItem>
@@ -220,50 +149,7 @@ const LatestTour = () => {
                     })}
                 </CarouselContent>
             </Carousel>
-            {/* <Slider className="gap-5 latest-tours-slider overflow-hidden" {...settings}>
-                {sortedTours?.map((tour: any) => {
-                    const descriptionHtml = tour.description ? jsonToHtml(JSON.parse(tour.description)) : "No description available.";
 
-                    return (
-                        <div className="mt-20" key={tour._id}>
-                            <Card key={tour._id}
-                                className="m-2 banner-content parallax-container relative bg-fixed bg-center bg-cover bg-no-repeat"
-
-                            >
-                                <div className="relative">
-                                    <div className="showPattern">
-
-                                        <img src={tour.coverImage} alt={tour.coverImage} className="w-full h-full object-cover" />
-                                    </div>
-
-                                </div>
-
-                                <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative flex items-center h-full">
-                                    <div className="overlay relative z-10 p-5 w-full">
-                                        <h2 className="text-3xl capitalize">{tour.title}</h2>
-
-                                        <p
-                                            className="text-lg capitalize mt-4 mb-4 tracking-wide"
-                                            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                                        />
-                                        <p>$ {tour.price}</p>
-
-                                        <div className="mt-5 relative z-10 grid grid-cols-2 gap-4">
-                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary mr-5 ">
-                                                <Button>View Tour</Button>
-                                            </Link>
-                                            <Link to={`/tours/${tour._id}`} className="btn btn-primary ml-5">
-                                                <Button>Book Tour</Button>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </Card>
-                        </div>
-                    );
-                })}
-            </Slider> */}
         </div>
     )
 }

@@ -2,27 +2,21 @@ import React from 'react';
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardFooter,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useQuery, useQueries } from "@tanstack/react-query";
-import { getPost, getUserById } from "@/http/api";
+import { useQuery } from "@tanstack/react-query";
+import { getPost } from "@/http/api";
 import { format } from "date-fns";
-
-interface User {
-    _id: string;
-    name: string;
-    email: string;
-}
 
 interface Post {
     _id: string;
     title: string;
     content: string;
-    author: string;
+    author: {
+        _id: string;
+        name: string;
+    };
     tags: string[];
     image: string;
     status: 'Published' | 'Draft';
@@ -43,23 +37,11 @@ interface PostResponse {
 }
 
 const RecentBlog: React.FC = () => {
-    const { data: response, isLoading: postsLoading, error: postsError } = useQuery<{ data: PostResponse }>({
+    const { data: response, isLoading, error } = useQuery<{ data: PostResponse }>({
         queryKey: ['posts'],
         queryFn: getPost,
-        select: (response) => response.data
+        select: (response) => response
     });
-
-    // Fetch authors for all posts
-    const authorQueries = useQueries({
-        queries: (response?.posts ?? []).map(post => ({
-            queryKey: ['user', post.author],
-            queryFn: () => getUserById(post.author),
-            select: (response: { data: User }) => response.data
-        }))
-    });
-
-    const isLoading = postsLoading || authorQueries.some(query => query.isLoading);
-    const error = postsError || authorQueries.some(query => query.error);
 
     if (isLoading) {
         return (
@@ -100,8 +82,16 @@ const RecentBlog: React.FC = () => {
         <div className="container mx-auto py-8">
             <h2 className="text-3xl font-bold mb-8">Recent Blogs</h2>
             <div className="space-y-6">
-                {response?.posts?.map((post, index) => {
-                    const authorData = authorQueries[index]?.data;
+                {response?.data?.posts?.map((post) => {
+                    // Safely extract content text with error handling
+                    let contentText = '';
+                    try {
+                        const parsedContent = JSON.parse(post.content);
+                        contentText = parsedContent?.content?.[0]?.content?.[0]?.text || 'No content available';
+                    } catch (e) {
+                        contentText = 'Content unavailable';
+                    }
+
                     return (
                         <Card key={post._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                             <div className="flex flex-col md:flex-row">
@@ -117,14 +107,16 @@ const RecentBlog: React.FC = () => {
                                         <div>
                                             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                                                 <p className="flex items-center gap-2">
-                                                    <span className="font-medium text-foreground">By {authorData?.name || 'Unknown Author'}</span>
+                                                    <span className="font-medium text-foreground">
+                                                        By {post.author?.name || 'Unknown Author'}
+                                                    </span>
                                                 </p>
                                                 <span>•</span>
                                                 <p>{format(new Date(post.createdAt), 'MMM d, yyyy')}</p>
                                             </div>
                                             <h3 className="text-2xl font-bold mb-3 line-clamp-2">{post.title}</h3>
                                             <p className="text-muted-foreground mb-4 line-clamp-2">
-                                                {JSON.parse(post.content).content[0].content[0].text}
+                                                {contentText}
                                             </p>
                                         </div>
 

@@ -53,7 +53,7 @@ html body[data-scroll-locked]{
 .pattern-2 .showPattern::after {
 
     content:'';
-    background: url('https://raw.githubusercontent.com/sushilldhakal/lordbuddha/master/assets/img/pattern-2.png');
+    background: url('https://raw.githubusercontent.com/sushilldhakal/lordbuddha/master/assets/img/pattern-1.png');
     background-repeat: repeat;
       position: absolute;
       width: 100%;
