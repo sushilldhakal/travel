@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { deletePost, getAllUserPosts } from "@/http/api";
+import { deletePost, getAllUserPosts } from "@/http";
 import { DataTable } from "@/userDefinedComponents/DataTable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";

@@ -1,5 +1,5 @@
 import routePaths from "./routePath";
-import { FilePlus, Footprints, Images, Layers3,StickyNote,MessagesSquare, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
+import { FilePlus, Footprints, Images,MapPinned, Layers3,StickyNote,MessagesSquare, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
   
 
 export const UserMenuItems = {
@@ -101,6 +101,13 @@ export const UserMenuItems = {
             url: routePaths.dashboard.addTour,
           },
           {
+            id: "destination",
+            title: "Destination",
+            type: "item",
+            icon: MapPinned,
+            url:routePaths.dashboard.tourDestination, // This routePath should be added to routePaths if exists
+          },
+          {
             id: "category",
             title: "Category",
             type: "item",
@@ -120,6 +127,13 @@ export const UserMenuItems = {
             type: "item",
             icon: MessageCircleMore,
             url:routePaths.dashboard.tourFaq, // This routePath should be added to routePaths if exists
+          },
+          {
+            id: "reviews",
+            title: "Reviews",
+            type: "item",
+            icon: MessageCircleMore,
+            url:routePaths.dashboard.tourReviews, // This routePath should be added to routePaths if exists
           },
           {
             id: "tripsetting",

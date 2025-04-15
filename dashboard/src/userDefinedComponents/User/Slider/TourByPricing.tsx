@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getLatestTours } from "@/http/api";
+import { getLatestTours } from "@/http";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,7 +52,7 @@ const TourByPricing = () => {
     //console.log("sortedTours", sortedTours)
 
     return (
-        <div className="pattern-1 pt-16 relative">
+        <div className="pattern-1 py-16 relative">
             {/* <Progress className="
             absolute top-[50%] right-[-50%] rotate-90 h-1 transition-all duration-300 ease-in-out" value={progress} max={100} /> */}
             <div className="mb-4">
@@ -82,9 +82,9 @@ const TourByPricing = () => {
                     className="w-full"
                 >
 
-                    <CarouselContent className="-mt-1 h-[500px]">
+                    <CarouselContent className="-mt-1 h-[600px]">
                         {sortedTours?.map((tour, index) => (
-                            <CarouselItem key={index} className="pt-1 md:basis-1/4 lg:basis-1/5">
+                            <CarouselItem key={index} className="pt-1 sm:basis-1/5 md:basis-1/5 lg:basis-1/6">
                                 <div className="flex flex-col overflow-auto z-10" key={tour._id}>
                                     <Card className="flex items-center gap-3 rounded-md p-2 hover:bg-muted transition">
 

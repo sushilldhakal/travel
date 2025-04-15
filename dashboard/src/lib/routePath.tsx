@@ -1,4 +1,3 @@
-
 const routePaths = {
   webHome: "/",
   dashboard: {
@@ -13,6 +12,7 @@ const routePaths = {
     singleTours: "/dashboard/tours/:tourId",
     addTour: "/dashboard/tours/add_tour",
     editTour: "/dashboard/tours/edit_tour/:tourId",
+    tourReviews: "/dashboard/tours/reviews",
     users: "/dashboard/users",
     gallery: "/dashboard/gallery",
     addUser: "/dashboard/users/add_user",
@@ -21,6 +21,7 @@ const routePaths = {
     tourCategory: "/dashboard/tours/tour_category",
     tourFacts: "/dashboard/tours/tour_facts",
     tourFaq: "/dashboard/tours/tour_faq",
+    tourDestination: "/dashboard/tours/tour_destination",
     subscribers: "/dashboard/subscribers",
     setting: "/dashboard/setting",
   },
@@ -29,6 +30,8 @@ const routePaths = {
     home: "/",
     tours: "/tours",
     singleTours: "/tours/:tourId",
+    blog: "/blog",
+    singleBlog: "/blog/:id",
     about: "/about",
     contact: "/contact",
   },

@@ -3,10 +3,19 @@ import backgroundImage from '@/assets/img/travel-moment.jpg';
 const WhyUs = () => {
     return (
         <div
-            className="w-full px-5 py-28 bg-cover"
-            style={{ backgroundImage: `url(${backgroundImage})`, backgroundPosition: 'center', backgroundSize: 'cover', backgroundAttachment: 'fixed', }}
+            className="w-full px-5 py-28 bg-cover relative overflow-hidden pattern-2 pt-20"
+            style={{
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundPosition: 'center',
+                backgroundSize: 'cover',
+                zIndex: 0,
+                backgroundAttachment: 'fixed'
+            }}
         >
-            <div className="max-w-[1280px] mx-auto">
+            {/* Pattern overlay */}
+            <div className="absolute inset-0 bg-black/50 showPattern mix-blend-multiply" style={{ zIndex: -1 }} />
+
+            <div className="max-w-[1280px] mx-auto relative" style={{ zIndex: 20 }}>
                 <h2 className="text-white text-3xl text-center mb-8">Why Book with Us?</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">

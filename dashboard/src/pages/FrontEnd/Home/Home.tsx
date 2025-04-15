@@ -4,43 +4,73 @@ import HomeSlider from '@/userDefinedComponents/User/Slider/HomeSlider';
 import LatestTour from '@/userDefinedComponents/User/Slider/LatestTour';
 import TourByPricing from '@/userDefinedComponents/User/Slider/TourByPricing';
 import WhyUs from '@/userDefinedComponents/User/WhyUs/WhyUs';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 
 const Home = () => {
     return (
         <>
-            {/* Banner with search on desktop */}
-            <div className="relative w-full">
+            {/* Hero Section with Slider and Search */}
+            <div className="relative">
+                {/* Slider Component */}
                 <HomeSlider />
-                
-                {/* Desktop search - positioned inside banner on right */}
-                <div className="hidden md:block absolute top-1/2 right-0 transform -translate-y-1/2 z-10 px-4 max-w-[1280px] w-full mx-auto pointer-events-none">
-                    <div className="flex justify-end pointer-events-none">
-                        <div className="w-[420px] pointer-events-auto">
-                            <Search />
+
+                {/* Search Box Overlay */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="container mx-auto max-w-7xl px-4 h-full relative">
+                        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-[400px] z-10 hidden md:block pointer-events-auto">
+                            <div className="bg-secondary/70 rounded-lg p-5">
+                                <h2 className="text-primary text-xl font-bold mb-4 uppercase">SEARCH TOURS</h2>
+                                <Search />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Search (shown below slider on mobile) */}
+                <div className="md:hidden py-6 px-4 bg-gray-900">
+                    <div className="container mx-auto">
+                        <h2 className="text-primary text-xl font-bold mb-4 uppercase">SEARCH TOURS</h2>
+                        <Search />
+                    </div>
+                </div>
+            </div>
+
+            {/* Featured Tours Section */}
+            <div className="py-16">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-between items-center mb-10">
+                        <h2 className="text-3xl font-bold">Featured Tours</h2>
+                        <Link to="/tours" className="flex items-center text-red-600 hover:text-red-700">
+                            View All Tours <ChevronRight size={16} />
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="col-span-2">
+                            <LatestTour />
+                        </div>
+                        <div className="col-span-1">
+                            <TourByPricing />
                         </div>
                     </div>
                 </div>
             </div>
-            
-            {/* Mobile search - positioned below banner */}
-            <div className="md:hidden w-full bg-gray-100 py-4 px-4">
-                <div className="max-w-[1280px] mx-auto">
-                    <Search />
-                </div>
-            </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-10 gap-4 px-4 md:px-5 max-w-[1280px] mx-auto w-full'>
-                <div className="md:col-span-1 lg:col-span-7">
-                    <LatestTour />
-                </div>
-
-                <div className="md:col-span-1 lg:col-span-3 mt-8 lg:mt-0">
-                    <TourByPricing />
-                </div>
-            </div>
-
+            {/* Why Choose Us Section */}
             <WhyUs />
-            <RecentBlog />
+
+            {/* Recent Blog Posts */}
+            <div className="py-16">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-between items-center mb-10">
+                        <h2 className="text-3xl font-bold">Latest Travel Stories</h2>
+                        <Link to="/blogs" className="flex items-center text-red-600 hover:text-red-700">
+                            View All Stories <ChevronRight size={16} />
+                        </Link>
+                    </div>
+                    <RecentBlog />
+                </div>
+            </div>
         </>
     );
 };

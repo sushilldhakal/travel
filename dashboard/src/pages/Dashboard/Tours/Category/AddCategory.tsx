@@ -3,33 +3,33 @@ import { useMutation } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Paperclip, Trash2 } from "lucide-react";
-import { addCategory } from "@/http/api";
+import { FileText, FolderPlus, Image as ImageIcon, Save, Trash2, X } from "lucide-react";
+import { addCategory } from "@/http";
 import { toast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import { Link } from "react-router-dom";
 import { useState } from "react";
 import { getUserId } from "@/util/AuthLayout";
 import GalleryPage from "../../Gallery/GalleryPage";
-
+import { Badge } from "@/components/ui/badge";
+import Editor from "@/userDefinedComponents/editor/advanced-editor";
+import { JSONContent } from "novel";
 
 interface CategoryFormData {
     name: string;
-    description: string;
     imageUrl: string;
     isActive: boolean;
-    userId: string | null;
+    description: string;
 }
-
 
 const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
     const userId = getUserId();
     const [dialogOpen, setDialogOpen] = useState(false);
-
+    const [descriptionContent, setDescriptionContent] = useState<JSONContent>({
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
+    });
     const form = useForm({
         defaultValues: {
             name: '',
@@ -45,17 +45,19 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
         onSuccess: () => {
             toast({
                 title: 'Category added successfully',
-                description: 'Category has been added successfully.',
+                description: 'Your category has been created.',
+                variant: 'default',
             });
             onCategoryAdded();
             form.reset();
-
         },
-        onError: () => {
+        onError: (error) => {
             toast({
-                title: 'Failed to create Category',
-                description: 'An error occurred while creating the Category.',
+                title: 'Failed to create category',
+                description: 'An error occurred while creating the category.',
+                variant: 'destructive',
             });
+            console.error('Error creating category:', error);
         },
     });
 
@@ -71,8 +73,9 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
             await categoryMutation.mutate(formData);
         } catch (error) {
             toast({
-                title: 'Failed to create Category',
+                title: 'Failed to create category',
                 description: 'Please try again later.',
+                variant: 'destructive',
             });
         }
     };
@@ -92,62 +95,95 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
                 e.preventDefault();
                 form.handleSubmit(handleCreateCategory)();
             }}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Create Category</CardTitle>
-                        <CardDescription>Add a new category to your store.</CardDescription>
+                <Card className="shadow-sm border-primary/30 bg-primary/5">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary">
+                                New Category
+                            </Badge>
+                        </div>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                            <FolderPlus className="h-5 w-5 text-primary" />
+                            Create Category
+                        </CardTitle>
+                        <CardDescription>
+                            Add a new category to organize your tours
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-5 gap-4">
-                            <div className="col-span-2 p-4 border border-dashed border-gray-300 p-4 rounded-md">
-                                <FormField
-                                    control={form.control}
-                                    name="imageUrl"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Category Image <br /></FormLabel>
-                                            {field.value ? (
-                                                <div className="mt-2 relative ">
-                                                    <Link to={field.value} target="_blank" rel="noopener noreferrer">
-                                                        <img
-                                                            src={field.value}
-                                                            alt="Selected Category Image"
-                                                            className="rounded-md w-full "
 
-                                                        />
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveImage(field.onChange)}
-                                                        className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
-                                                    >
-                                                        <Trash2 />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                                                    <DialogTrigger >
-                                                        <div
-                                                            className={cn(
-                                                                buttonVariants({
-                                                                    size: "icon",
-                                                                }),
-                                                                "size-8 "
+                    <CardContent className="space-y-4">
+                        <div className="relative">
+                            <FormField
+                                control={form.control}
+                                name="imageUrl"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center gap-1.5">
+                                            <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                                            Cover Image
+                                        </FormLabel>
+                                        <div className="relative mt-1">
+                                            <div className="flex items-center space-x-2 p-4 border border-dashed rounded-md bg-muted/50">
+                                                {field.value ? (
+                                                    <>
 
-                                                            )}
-                                                        >
-                                                            <Paperclip className="size-4" />
-                                                            <span className="sr-only">Select your files</span>
+                                                        <div className="relative mt-1 rounded-md overflow-hidden">
+                                                            <img
+                                                                src={field.value as string}
+                                                                alt="Category cover"
+                                                                className="w-full h-[200px] object-cover"
+                                                            />
+                                                            <div className="absolute top-2 right-2 flex gap-2">
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="secondary"
+                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                                    onClick={() => window.open(field.value as string, '_blank')}
+                                                                >
+                                                                    <ImageIcon className="h-4 w-4" />
+                                                                    <span className="sr-only">View image</span>
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="icon"
+                                                                    variant="destructive"
+                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                                    onClick={() => handleRemoveImage(field.onChange)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <span className="sr-only">Remove image</span>
+                                                                </Button>
+                                                            </div>
                                                         </div>
-                                                        <span className="pl-2">Choose Image</span></DialogTrigger>
-                                                    <DialogContent
-                                                        className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
-                                                        onInteractOutside={(e) => {
-                                                            e.preventDefault();
-                                                        }}
-                                                    >
-                                                        <DialogHeader>
-                                                            <DialogTitle className="mb-3 text-left">Choose Image From Gallery</DialogTitle>
+                                                    </>
+                                                ) : (
+                                                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="w-full h-[100px] flex flex-col items-center justify-center gap-2 border-dashed mt-1"
+                                                            >
+                                                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                                                <span className="text-muted-foreground">
+                                                                    Select a cover image
+                                                                </span>
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent
+                                                            className="max-w-[90%] max-h-[90%] overflow-auto"
+                                                            onInteractOutside={(e) => {
+                                                                e.preventDefault();
+                                                            }}
+                                                        >
+                                                            <DialogHeader>
+                                                                <DialogTitle className="mb-3 text-left">
+                                                                    Select Cover Image
+                                                                </DialogTitle>
+                                                                <DialogDescription>
+                                                                    Choose an image from your gallery to use as the category cover.
+                                                                </DialogDescription>
+                                                            </DialogHeader>
                                                             <div className="upload dialog">
                                                                 <GalleryPage
                                                                     isGalleryPage={false}
@@ -156,62 +192,122 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
                                                                     }
                                                                 />
                                                             </div>
-                                                        </DialogHeader>
-                                                        <DialogDescription>
-                                                            Select a Image.
-                                                        </DialogDescription>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            )}
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="col-span-3 grid gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Category Name</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} placeholder="Category Name" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormControl>
-                                                <Textarea {...field} placeholder="Category Description" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="isActive"
-                                    render={({ field }) => (
-                                        <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                                            <FormLabel>Active</FormLabel>
-                                            <FormControl>
-                                                <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-1.5">
+                                        <FolderPlus className="h-3.5 w-3.5 text-primary" />
+                                        Category Name
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            {...field}
+                                            placeholder="Enter category name"
+                                            className="focus-visible:ring-primary"
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-primary" />
+                                        Description
+                                    </FormLabel>
+                                    <FormControl>
+                                        <div className="border rounded-md">
+                                            <Editor
+                                                initialValue={descriptionContent}
+                                                onContentChange={(content) => {
+                                                    setDescriptionContent(content);
+                                                    // Extract text content for form submission
+                                                    let textContent = "";
+                                                    if (content.content) {
+                                                        content.content.forEach(node => {
+                                                            if (node.type === 'paragraph' && node.content) {
+                                                                node.content.forEach(textNode => {
+                                                                    if (textNode.type === 'text') {
+                                                                        textContent += textNode.text + " ";
+                                                                    }
+                                                                });
+                                                                textContent += "\n";
+                                                            }
+                                                        });
+                                                    }
+                                                    field.onChange(textContent.trim());
+                                                }}
+                                            />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="isActive"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Active Status</FormLabel>
+                                        <p className="text-sm text-muted-foreground">
+                                            Enable this category to make it visible to users
+                                        </p>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                     </CardContent>
-                    <CardFooter>
-                        <Button type="submit">Create Category</Button>
+
+                    <CardFooter className="flex justify-between border-t px-6 py-4 bg-secondary/50">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                form.reset();
+                                onCategoryAdded(); // This will hide the form
+                            }}
+                            className="gap-1.5"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={categoryMutation.isPending}
+                            className="gap-1.5"
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            Create Category
+                        </Button>
                     </CardFooter>
                 </Card>
             </form>

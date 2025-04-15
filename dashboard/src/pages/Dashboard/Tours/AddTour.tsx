@@ -34,7 +34,10 @@ const AddTour: React.FC = () => {
     factsRemove,
     faqFields,
     faqAppend,
-    faqRemove
+    faqRemove,
+    pricingFields,
+    pricingAppend,
+    pricingRemove
   } = useFormHandlers(editorContent);
   const { data: categories } = useCategories(userId);
   const { data: facts } = useFacts(userId);
@@ -42,23 +45,23 @@ const AddTour: React.FC = () => {
 
   const location = useLocation();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      let foundTab = tabs[0].id;
-      for (const tab of tabs) {
-        const element = document.getElementById(tab.id);
-        if (element && element.getBoundingClientRect().top <= window.innerHeight / 2) {
-          foundTab = tab.id;
-        }
-      }
-      setActiveTab(foundTab);
-    };
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     let foundTab = tabs[0].id;
+  //     for (const tab of tabs) {
+  //       const element = document.getElementById(tab.id);
+  //       if (element && element.getBoundingClientRect().top <= window.innerHeight / 2) {
+  //         foundTab = tab.id;
+  //       }
+  //     }
+  //     setActiveTab(foundTab);
+  //   };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  //   window.addEventListener('scroll', handleScroll);
+  //   return () => {
+  //     window.removeEventListener('scroll', handleScroll);
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (location.hash) {
@@ -137,6 +140,9 @@ const AddTour: React.FC = () => {
                 categories={categories}
                 facts={facts}
                 faq={faq}
+                pricingFields={pricingFields}
+                pricingAppend={pricingAppend}
+                pricingRemove={pricingRemove}
               />
             </div>
           </div>

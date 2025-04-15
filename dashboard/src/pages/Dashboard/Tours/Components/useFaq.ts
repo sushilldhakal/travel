@@ -1,6 +1,6 @@
 // src/hooks/useCategories.ts
 import { useQuery } from '@tanstack/react-query';
-import { getUserFaq } from '@/http/api'; // Adjust the import path as needed
+import { getUserFaq } from '@/http'; // Adjust the import path as needed
 import { FaqData } from '@/Provider/types'; // Adjust the import path as needed
 
 export const useFaq = (userId: string | null) => {

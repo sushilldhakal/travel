@@ -11,7 +11,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button";
-import { addFacts } from "@/http/api";
+import { addFacts } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { getUserId } from "@/util/AuthLayout";
@@ -27,6 +27,8 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import Icon from "@/userDefinedComponents/Icon";
+import { Badge } from "@/components/ui/badge";
+import { FolderPlus, Save, X } from "lucide-react";
 
 interface FactFormData {
     name: string;
@@ -109,9 +111,17 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
                 e.preventDefault();
                 form.handleSubmit(handleCreateFact)();
             }}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Create Facts</CardTitle>
+                <Card className="shadow-sm border-primary/30 bg-primary/5">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary">
+                                New Fact
+                            </Badge>
+                        </div>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                            <FolderPlus className="h-5 w-5 text-primary" />
+                            Create Facts
+                        </CardTitle>
                         <CardDescription>Add a new Fact to your store.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -215,8 +225,31 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter>
-                        <Button type="submit">Create Fact</Button>
+                    <CardFooter className="flex justify-between border-t px-6 py-4 bg-secondary/50">
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                form.reset();
+                                onFactAdded();
+                            }}
+                            className="gap-1.5"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            size="sm"
+                            className="gap-1.5"
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            Create Category
+                        </Button>
+
+
                     </CardFooter>
                 </Card>
             </form>

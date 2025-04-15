@@ -1,390 +1,640 @@
-import { getTours } from "@/http/api";
-import { useQuery } from "@tanstack/react-query";
+import { getTours } from "@/http/tourApi";
+import { getCategories } from "@/http/categoryApi";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import BreadCrumbTourList from "./BreadCrumbTourList";
-import Filter from "./Filter";
+import RichTextRenderer from "@/components/RichTextRenderer";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Grid, List, Home } from "lucide-react";
 import Search from "@/userDefinedComponents/User/Search/Search";
+import BreadCrumbTourList from "./BreadCrumbTourList";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, ChevronDown, Grid, List, SlidersHorizontal } from "lucide-react"
-import { useState } from "react";
+interface Category {
+  _id: string;
+  name: string;
+}
 
+interface Discount {
+  percentage: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  description: string;
+  discountCode: string;
+  minPurchaseAmount: number;
+  maxDiscountAmount: number;
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Tour {
+  _id: string;
+  title: string;
+  description?: string;
+  price: number;
+  originalPrice?: number;
+  coverImage: string;
+  category?: string;
+  discount?: Discount;
+  duration?: string;
+  createdAt: string;
+  updatedAt: string;
+  tourStatus: string;
+  dates?: {
+    startDate: string;
+    endDate: string;
+    tripDuration: string;
+  };
+  reviews?: {
+    _id: string;
+    rating: number;
+    comment: string;
+    user: string;
+    createdAt: string;
+  }[];
+  averageRating?: number;
+  reviewCount?: number;
+}
+
+interface TourResponse {
+  items: Tour[];
+  nextCursor?: number;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalTours: number;
+    hasNextPage: boolean;
+    hasPrevPage?: boolean;
+  };
+}
 
 const FrontTours = () => {
 
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['tours'],
-    queryFn: getTours,
+  const {
+    data: toursData,
+    isLoading: isToursLoading,
+    isError: isToursError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery<TourResponse, Error>({
+    queryKey: ['tour'],
+    queryFn: ({ pageParam = 0 }) => {
+      console.log(`Executing queryFn with pageParam: ${pageParam}`);
+      return getTours({ pageParam });
+    },
+    getNextPageParam: (lastPage) => {
+      console.log("getNextPageParam received:", lastPage);
+      // Only return next cursor if there are actually more pages and items
+      if (lastPage.pagination.hasNextPage && lastPage.items.length > 0) {
+        return lastPage.nextCursor !== undefined ? Number(lastPage.nextCursor) : undefined;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 2 // Retry failed requests twice
   });
 
-  const [viewMode, setViewMode] = useState("grid");
-  const [sortOption, setSortOption] = useState("featured");
+  // Log query state for debugging
+  useEffect(() => {
+    console.log("Tours query state:", {
+      isLoading: isToursLoading,
+      isError: isToursError,
+      hasData: !!toursData,
+      hasNextPage
+    });
 
-  console.log("data", data)
+    if (isToursError) {
+      console.error("Tour query error:", error);
+    }
+
+    if (toursData) {
+      console.log("Tour data pages:", toursData.pages.length);
+      toursData.pages.forEach((page, i) => {
+        if (page && typeof page === 'object') {
+          const itemsLength = Array.isArray(page.items) ? page.items.length : 'not an array';
+          console.log(`Page ${i} items:`, itemsLength);
+        } else {
+          console.log(`Page ${i} is not properly structured:`, page);
+        }
+      });
+    }
+  }, [toursData, isToursLoading, isToursError, hasNextPage, error]);
+
+  const { data: categoriesData, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  });
+
+  // State for filtering and sorting
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [priceRange, setPriceRange] = useState<string>("all");
+  const [sortOption, setSortOption] = useState<string>("featured");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Reference for infinite scroll
+  const observerRef = useRef(null);
+
+  // Load more tours when scrolling to the bottom
+  const handleObserver = useCallback((entries: Array<IntersectionObserverEntry>) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && !isFetchingNextPage && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+
+    const currentObserverRef = observerRef.current;
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef);
+    }
+
+    return () => {
+      if (currentObserverRef) {
+        observer.unobserve(currentObserverRef);
+      }
+    };
+  }, [handleObserver]);
+
+  const getPriceRangeValues = (range: string) => {
+    switch (range) {
+      case "under-25":
+        return { min: 0, max: 25 };
+      case "25-50":
+        return { min: 25, max: 50 };
+      case "50-100":
+        return { min: 50, max: 100 };
+      case "100-200":
+        return { min: 100, max: 200 };
+      case "200-plus":
+        return { min: 200, max: Infinity };
+      default:
+        return { min: 0, max: Infinity };
+    }
+  };
+
+  // Flatten the pages data for filtering
+  const tours = useMemo(() => {
+    if (!toursData?.pages) {
+      return [];
+    }
+
+    // Flatten the pages and extract the items array from each page
+    const flattenedTours = toursData.pages.flatMap(page => {
+      if (!page || typeof page !== 'object') {
+        console.log("Invalid page structure:", page);
+        return [];
+      }
+
+      if (!Array.isArray(page.items)) {
+        console.log("Items is not an array:", page);
+        return [];
+      }
+
+      // Get the current page number from pagination
+      const currentPage = page.pagination?.currentPage || 'unknown';
+      console.log(`Found ${page.items.length} tours in page ${currentPage}`);
+      return page.items;
+    });
+
+    return flattenedTours;
+  }, [toursData]);
+
+  console.log("Flattened tours:", tours);
+
+  const filteredTours = useMemo(() => {
+    let filtered = [...tours] as Tour[];
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(tour => tour.category === selectedCategory);
+    }
+
+    if (priceRange !== "all") {
+      const { min, max } = getPriceRangeValues(priceRange);
+      filtered = filtered.filter(tour => tour.price >= min && tour.price <= max);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortOption) {
+        case "name-asc":
+          return a.title.localeCompare(b.title);
+        case "name-desc":
+          return b.title.localeCompare(a.title);
+        case "price-asc":
+          return a.price - b.price;
+        case "price-desc":
+          return b.price - a.price;
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [tours, selectedCategory, priceRange, sortOption]);
 
   return (
-    <>
-
-
-
-
-
-      <div className="banner pattern-2 relative" style={{
+    <div className="bg-background text-foreground min-h-screen">
+      {/* Page header with title */}
+      <div className="banner pattern-2 relative h-[200px] flex flex-wrap w-full" style={{
         backgroundImage: `url("https://res.cloudinary.com/dmokg80lf/image/upload/v1721751420/tour-covers/s99i5i9r2fwbrjyyfjbm.jpg")`,
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         backgroundSize: "cover",
         zIndex: 0
       }} >
+        <div className="container relative mx-auto text-center flex justify-center items-center" style={{ zIndex: 2 }}>
+          <h1 className="text-3xl font-bold text-center">Tour Listing</h1>
+        </div>
         <div className="showPattern"></div>
         <div className="absolute inset-0 bg-black/30" style={{ zIndex: 1 }}></div>
-        <div className="relative mx-auto max-w-screen-xl px-4 2xl:px-0" style={{ zIndex: 2 }}>
-          <BreadCrumbTourList />
-        </div>
+
       </div >
+      {/* Breadcrumb */}
+      <div className="border-b border-border">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex items-center text-sm">
+            <BreadCrumbTourList />
+          </div>
+        </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main content */}
+          <div className="lg:w-3/4">
+            {/* Filter section */}
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 rounded-md border border-border">
+              <div className="font-medium text-card-foreground">Filter By</div>
 
-      <div className="w-full bg-background border-b sticky top-[65px] z-[1]">
-        <div className="container max-w-7xl px-2 py-3 mx-auto">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left side - Filters */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-9">
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
+              <div className="flex-1 flex flex-wrap gap-2">
+                <div className="relative min-w-[120px]">
+                  <Select
+                    value={priceRange}
+                    onValueChange={(value) => setPriceRange(value)}
+                  >
+                    <SelectTrigger className="bg-background border-border text-foreground h-10">
+                      <SelectValue placeholder="Price" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      <SelectItem value="all">All Prices</SelectItem>
+                      <SelectItem value="under-25">Under $25</SelectItem>
+                      <SelectItem value="25-50">$25 to $50</SelectItem>
+                      <SelectItem value="50-100">$50 to $100</SelectItem>
+                      <SelectItem value="100-200">$100 to $200</SelectItem>
+                      <SelectItem value="200-plus">$200 & Above</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9">
-                    Category
-                    <ChevronDown className="w-4 h-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48">
-                  <DropdownMenuLabel>Select Category</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem>All Categories</DropdownMenuItem>
-                    <DropdownMenuItem>Electronics</DropdownMenuItem>
-                    <DropdownMenuItem>Clothing</DropdownMenuItem>
-                    <DropdownMenuItem>Home & Garden</DropdownMenuItem>
-                    <DropdownMenuItem>Sports & Outdoors</DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <div className="relative min-w-[120px]">
+                  <Select
+                    value={sortOption}
+                    onValueChange={(value) => setSortOption(value)}
+                  >
+                    <SelectTrigger className="bg-background border-border text-foreground h-10">
+                      <SelectValue placeholder="Trip Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      <SelectItem value="featured">All Types</SelectItem>
+                      <SelectItem value="newest">Adventure</SelectItem>
+                      <SelectItem value="name-asc">Sightseeing</SelectItem>
+                      <SelectItem value="name-desc">Cultural</SelectItem>
+                      <SelectItem value="price-asc">Beach</SelectItem>
+                      <SelectItem value="price-desc">Mountain</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9">
-                    Price Range
-                    <ChevronDown className="w-4 h-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48">
-                  <DropdownMenuLabel>Select Price Range</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem>All Prices</DropdownMenuItem>
-                    <DropdownMenuItem>Under $25</DropdownMenuItem>
-                    <DropdownMenuItem>$25 to $50</DropdownMenuItem>
-                    <DropdownMenuItem>$50 to $100</DropdownMenuItem>
-                    <DropdownMenuItem>$100 to $200</DropdownMenuItem>
-                    <DropdownMenuItem>$200 & Above</DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <div className="relative min-w-[120px]">
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(value) => setSelectedCategory(value)}
+                  >
+                    <SelectTrigger className="bg-background border-border text-foreground h-10">
+                      <SelectValue placeholder="Location" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      <SelectItem value="all">All Locations</SelectItem>
+                      {!isCategoriesLoading && categoriesData?.data?.categories?.map((category: Category) => (
+                        <SelectItem key={category._id} value={category._id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9">
-                    <ArrowUpDown className="w-4 h-4 mr-2" />
-                    Sort by: {sortOption}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={() => setSortOption("featured")}>Featured</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption("newest")}>Newest</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
-                      <ArrowDownAZ className="w-4 h-4 mr-2" />
-                      Name (A to Z)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
-                      <ArrowUpAZ className="w-4 h-4 mr-2" />
-                      Name (Z to A)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption("price-asc")}>Price (Low to High)</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption("price-desc")}>Price (High to Low)</DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Right side - View toggle and Sort */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border rounded-md overflow-hidden">
                 <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-9 rounded-none px-3"
+                  variant="outline"
+                  className="border-border bg-muted text-foreground h-10"
+                  onClick={() => {
+                    setSelectedCategory("all");
+                    setPriceRange("all");
+                    setSortOption("featured");
+                  }}
+                >
+                  Show
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === "list" ? "primary" : "outline"}
+                  size="icon"
+                  className={viewMode === "list" ? "" : "text-foreground border-border"}
                   onClick={() => setViewMode("list")}
                 >
-                  <List className="w-4 h-4" />
-                  <span className="sr-only">List view</span>
+                  <List className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-9 rounded-none px-3"
+                  variant={viewMode === "grid" ? "primary" : "outline"}
+                  size="icon"
+                  className={viewMode === "grid" ? "" : "text-foreground border-border"}
                   onClick={() => setViewMode("grid")}
                 >
-                  <Grid className="w-4 h-4" />
-                  <span className="sr-only">Grid view</span>
+                  <Grid className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+
+            {/* Tour listings */}
+            <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
+              {isToursLoading && <p className="col-span-full text-center py-8 text-muted-foreground">Loading tours...</p>}
+              {isToursError && <p className="col-span-full text-center py-8 text-primary">Error loading tours</p>}
+
+              {filteredTours.length === 0 && !isToursLoading && (
+                <p className="col-span-full text-center py-8 text-muted-foreground">No tours found matching your filters. Try adjusting your criteria.</p>
+              )}
+
+              {filteredTours.map((tour) => (
+                <div
+                  key={tour._id}
+                  className={`bg-card border border-border overflow-hidden ${viewMode === "grid" ? "rounded-md" : "flex"}`}
+                >
+                  {viewMode === "grid" ? (
+                    <>
+                      {/* Grid view layout */}
+                      <div className="relative">
+                        <Link to={`/tours/${tour._id}`}>
+                          <img
+                            className="w-full h-[200px] object-cover"
+                            src={tour.coverImage}
+                            alt={tour.title}
+                            loading="lazy"
+                          />
+                        </Link>
+
+                        {/* Offer label - only show for tours with active discounts */}
+                        {tour.discount && tour.discount.isActive ? (
+                          <div className="absolute top-0 left-0 bg-primary text-primary-foreground px-3 py-1 font-bold text-sm">
+                            {tour.discount.percentage}% OFF
+                          </div>
+                        ) : (
+                          <div className="absolute top-0 left-0 bg-primary text-primary-foreground px-3 py-1 font-bold text-sm">
+                            OFFER
+                          </div>
+                        )}
+
+                        {/* Duration label */}
+                        {tour.duration && (
+                          <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground px-3 py-1 font-medium text-sm">
+                            {tour.duration.toLowerCase().includes('day') ? tour.duration : `${tour.duration} Days ${Math.floor(Math.random() * 4) + 7} Nights`}
+                          </div>
+                        )}
+
+                        {!tour.duration && tour.dates?.tripDuration && (
+                          <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground px-3 py-1 font-medium text-sm">
+                            {tour.dates.tripDuration.toLowerCase().includes('day') ? tour.dates.tripDuration : `${tour.dates.tripDuration} Days ${Math.floor(Math.random() * 4) + 7} Nights`}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tour details - Grid view */}
+                      <div className="p-4">
+                        <div>
+                          <h3 className="font-bold text-lg mb-2 text-card-foreground">
+                            <Link to={`/tours/${tour._id}`} className="hover:text-primary">
+                              {tour.title}
+                            </Link>
+                          </h3>
+
+                          {/* Availability */}
+                          {tour.dates && (
+                            <div className="flex items-center gap-1 text-sm mb-2">
+                              <span className="text-muted-foreground">Availability:</span>
+                              <span className="text-foreground">
+                                Jan 18' - Dec 16'
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Description */}
+                          <div className="text-muted-foreground text-sm mb-4">
+                            {tour.description && (
+                              <RichTextRenderer
+                                content={tour.description}
+                                className="line-clamp-2"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Price and action */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div>
+                            <div className="flex items-center mb-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-4 h-4 ${star <= (tour.averageRating || 0) ? 'text-yellow-400' : 'text-muted'} fill-current`}
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                </svg>
+                              ))}
+                              <span className="ml-1 text-xs text-muted-foreground">({tour.reviewCount || 0})</span>
+                            </div>
+                            <div className="flex items-center">
+                              {/* Show original price if there's a discount, otherwise don't show "From" price */}
+                              {tour.discount && tour.discount.isActive ? (
+                                <>
+                                  <div className="text-muted-foreground text-sm line-through mr-2">
+                                    From ${tour.originalPrice || Math.round(tour.price / (1 - tour.discount.percentage / 100))}
+                                  </div>
+                                  <div className="font-bold text-xl text-primary">${tour.price}</div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="text-muted-foreground text-sm mr-2">
+                                    From
+                                  </div>
+                                  <div className="font-bold text-xl text-primary">${tour.price}</div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <Link
+                            to={`/tours/${tour._id}`}
+                            className="bg-primary text-primary-foreground px-4 py-2 font-bold hover:bg-primary/90"
+                          >
+                            MORE INFO
+                          </Link>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* List view layout - Left column with image */}
+                      <div className="relative w-1/3">
+                        <Link to={`/tours/${tour._id}`}>
+                          <img
+                            className="w-full h-[200px] object-cover"
+                            src={tour.coverImage}
+                            alt={tour.title}
+                            loading="lazy"
+                          />
+                        </Link>
+
+                        {/* Offer label - only show for tours with active discounts */}
+                        {tour.discount && tour.discount.isActive ? (
+                          <div className="absolute top-0 left-0 bg-primary text-primary-foreground px-3 py-1 font-bold text-sm">
+                            {tour.discount.percentage}% OFF
+                          </div>
+                        ) : (
+                          <div className="absolute top-0 left-0 bg-primary text-primary-foreground px-3 py-1 font-bold text-sm">
+                            OFFER
+                          </div>
+                        )}
 
 
+                      </div>
 
-              <div className="text-sm text-muted-foreground ml-2 hidden md:block">
-                Showing <span className="font-medium">24</span> of <span className="font-medium">256</span> products
+                      {/* Middle column with tour details */}
+                      <div className="p-4 flex-1">
+                        <h3 className="font-bold text-lg mb-1 text-card-foreground">
+                          <Link to={`/tours/${tour._id}`} className="hover:text-primary">
+                            {tour.title}
+                          </Link>
+                        </h3>
+
+                        {/* Duration label */}
+                        {tour.duration && (
+                          <div className="">
+                            {tour.duration.toLowerCase().includes('day') ? tour.duration : `${tour.duration} Days ${Math.floor(Math.random() * 4) + 7} Nights`}
+                          </div>
+                        )}
+
+                        {!tour.duration && tour.dates?.tripDuration && (
+                          <div className="">
+                            {tour.dates.tripDuration.toLowerCase().includes('day') ? tour.dates.tripDuration : `${tour.dates.tripDuration} Days ${Math.floor(Math.random() * 4) + 7} Nights`}
+                          </div>
+                        )}
+
+                        {/* Availability */}
+                        <div className="flex items-center gap-1 text-sm mb-2">
+                          <span className="text-muted-foreground flex items-center">
+                            <svg className="w-4 h-4 me-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm14-7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1Zm0 4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1Zm-5-4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1Zm0 4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1Zm-5-4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1Zm0 4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1ZM20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4Z" />
+                            </svg>
+                            Availability:
+                          </span>
+                          <span className="text-foreground">Jan 18' - Dec 16'</span>
+                        </div>
+
+                        {/* Description */}
+                        <div className="text-muted-foreground text-sm">
+                          {tour.description && (
+                            <RichTextRenderer
+                              content={tour.description}
+                              className="line-clamp-3"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right column with ratings, price and button */}
+                      <div className="p-4 text-center border-l border-border flex flex-col justify-between items-center w-1/4">
+                        <div className="w-full text-center">
+                          {/* Price display */}
+                          {tour.discount && tour.discount.isActive ? (
+                            <>
+                              <div className="text-muted-foreground text-sm line-through mb-1 text-center">
+                                ${tour.originalPrice || Math.round(tour.price / (1 - tour.discount.percentage / 100))}
+                              </div>
+                              <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
+                              <div className="font-bold text-xl text-primary mb-3 text-center">${tour.price}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
+                              <div className="font-bold text-xl text-primary mb-3 text-center">${tour.price}</div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Star ratings */}
+                        <div className="flex items-center justify-center mb-3">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              className={`w-4 h-4 ${star <= (tour.averageRating || 0) ? 'text-yellow-400' : 'text-muted'} fill-current`}
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                            </svg>
+                          ))}
+                          <span className="ml-1 text-xs text-muted-foreground">({tour.reviewCount || 0})</span>
+                        </div>
+
+                        <Link
+                          to={`/tours/${tour._id}`}
+                          className="bg-primary text-primary-foreground px-4 py-2 font-bold hover:bg-primary/90 text-center w-full"
+                        >
+                          MORE INFO
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+              {/* Infinite scroll loading indicator */}
+              <div
+                ref={observerRef}
+                className="col-span-full flex justify-center py-8"
+              >
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center">
+                    <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+                    <span className="ml-2 text-muted-foreground">Loading more tours...</span>
+                  </div>
+                )}
+                {!hasNextPage && filteredTours.length > 0 && (
+                  <div className="text-muted-foreground">No more tours to load</div>
+                )}
               </div>
+            </div>
+          </div>
+
+          {/* Sidebar with search */}
+          <div className="lg:w-1/4">
+            <div className="bg-card sticky top-20 p-6 rounded border border-border">
+              <Search />
             </div>
           </div>
         </div>
       </div>
-      <section className="bg-gray-50 grid gap-4 grid-cols-3 mx-auto max-w-screen-xl py-8 antialiased dark:bg-gray-900 md:py-12">
-
-
-
-
-
-
-
-
-
-        <div className="col-span-2 mx-auto max-w-screen-xl px-4 2xl:px-0">
-          {/* Search bar */}
-          {/* <div className="mb-6">
-            <Filter />
-          </div> */}
-
-          <div className="mb-4 grid gap-4 sm:grid-cols-2 md:mb-8 lg:grid-cols-3 xl:grid-cols-3">
-            {isLoading && <p>Loading...</p>}
-            {isError && <p>Error loading tours</p>}
-            {data?.data.tours.map((tour) => (
-              <div
-                key={tour._id}
-                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:scale-[1.02]"
-              >
-                <div className="w-full h-[300px] overflow-hidden rounded-lg">
-                  <Link to={`/tours/${tour._id}`} className="block h-full">
-                    <img
-                      className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
-                      src={tour.coverImage}
-                      alt={tour.title}
-                      loading="lazy"
-                    />
-                  </Link>
-                </div>
-                <div className="pt-6">
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <span className="me-2 rounded bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-900 dark:text-primary-300">
-                      Up to 35% off
-                    </span>
-
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        data-tooltip-target="tooltip-quick-look"
-                        className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >
-                        <span className="sr-only">Quick look</span>
-                        <svg
-                          className="h-5 w-5"
-                          aria-hidden="true"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6Z"
-                          />
-                          <path
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                          />
-                        </svg>
-                      </button>
-                      <div
-                        id="tooltip-quick-look"
-                        role="tooltip"
-                        className="tooltip invisible absolute z-10 inline-block rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 shadow-sm transition-opacity duration-300 dark:bg-gray-700"
-                        data-popper-placement="top"
-                      >
-                        Quick look
-                        <div className="tooltip-arrow" data-popper-arrow=""></div>
-                      </div>
-
-                      <button
-                        type="button"
-                        data-tooltip-target="tooltip-add-to-favorites"
-                        className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >
-                        <span className="sr-only">Add to Favorites</span>
-                        <svg
-                          className="h-5 w-5"
-                          aria-hidden="true"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 6C6.5 1 1 8 5.8 13l6.2 7 6.2-7C23 8 17.5 1 12 6Z"
-                          />
-                        </svg>
-                      </button>
-                      <div
-                        id="tooltip-add-to-favorites"
-                        role="tooltip"
-                        className="tooltip invisible absolute z-10 inline-block rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 shadow-sm transition-opacity duration-300 dark:bg-gray-700"
-                        data-popper-placement="top"
-                      >
-                        Add to favorites
-                        <div className="tooltip-arrow" data-popper-arrow=""></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Link
-                    to={`/tours/${tour._id}`}
-                    className="text-lg font-semibold leading-tight text-gray-900 hover:underline dark:text-white"
-                  >
-                    {tour.title}
-                  </Link>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="flex items-center">
-                      <svg
-                        className="h-4 w-4 text-yellow-400"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M13.8 4.2a2 2 0 0 0-3.6 0L8.4 8.4l-4.6.3a2 2 0 0 0-1.1 3.5l3.5 3-1 4.4c-.5 1.7 1.4 3 2.9 2.1l3.9-2.3 3.9 2.3c1.5 1 3.4-.4 3-2.1l-1-4.4 3.4-3a2 2 0 0 0-1.1-3.5l-4.6-.3-1.8-4.2Z" />
-                      </svg>
-                      {/* Repeat for additional stars */}
-                    </div>
-
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">5.0</p>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">(455)</p>
-                  </div>
-
-                  <ul className="mt-2 flex items-center gap-4">
-                    <li className="flex items-center gap-2">
-                      <svg
-                        className="h-4 w-4 text-gray-500 dark:text-gray-400"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M13 7h6l2 4m-8-4v8m0-8V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v9h2m8 0H9m4 0h2m4 0h2v-4m0 0h-5m3.5 5h-5m1 0H6M16 3h-6a1 1 0 0 0-1 1v6"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">English</span>
-                    </li>
-
-                    <li className="flex items-center gap-2">
-                      <svg
-                        className="h-4 w-4 text-gray-500 dark:text-gray-400"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M20.6 8.3a4.49 4.49 0 0 0-6.1-6.1A4.49 4.49 0 0 0 8.3 3.4a4.49 4.49 0 0 0-6.1 6.1 4.49 4.49 0 0 0 6.1 6.1A4.49 4.49 0 0 0 14.5 14a4.49 4.49 0 0 0 6.1-6.1Z"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        12h 30m
-                      </span>
-                    </li>
-                  </ul>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      ${tour.price}
-                    </span>
-                    <Link
-                      to={`/tours/${tour._id}`}
-                      className="inline-flex items-center rounded-lg border border-primary-600 bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:border-primary-500 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-600"
-                    >
-                      Book now
-                      <svg
-                        className="ms-2 -me-1 h-4 w-4"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M5 12h14m-7 7l7-7-7-7"
-                        />
-                      </svg>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-          </div>
-
-        </div>
-        <div className="col-span-1 sticky top-4 h-full px-4">
-          <div className=" sticky top-[145px]">
-            <Search />
-
-          </div>
-        </div>
-
-      </section>
-    </>
-
+    </div>
   );
 };
 

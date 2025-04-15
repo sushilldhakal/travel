@@ -1,46 +1,166 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { MessageCircle, ThumbsUp, Share2, Trash2 } from "lucide-react"
+import { MessageCircle, ThumbsUp, Share2, Trash2, Eye } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { useQuery } from "@tanstack/react-query"
-import { getCommentsByPost } from "@/http/api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { addReply, getCommentsByPost, getCommentWithReplies, likeComment, viewComment } from "@/http"
 import { useParams } from "react-router-dom"
 import { timeAgo } from "@/util/timeAgo"
+import { getUserId } from "@/util/AuthLayout"
 
 interface Comment {
-    id: number
-    email: string
+    _id: string
+    post: string
+    user: {
+        _id: string
+        name: string
+        email: string
+    }
+    text: string
     approve: boolean
-    postId: string
-    author: string
-    avatar: string
-    content: string
     likes: number
+    views: number
     timestamp: string
-    replies?: Comment[]
+    replies: Comment[]
+    created_at: string
+    isLiked?: boolean
 }
 
 interface CommentComponentProps {
     comment: Comment
     depth?: number
-    onRemove: (id: number) => void
+    onRemove: (id: string) => void
     isAdmin?: boolean
+    postId: string
 }
 
-const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmin = false }: CommentComponentProps) => {
+const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmin = false, postId }: CommentComponentProps) => {
     const [comment, setComment] = useState(initialComment)
     const [isReplying, setIsReplying] = useState(false)
     const [replyContent, setReplyContent] = useState("")
+    const [isLiked, setIsLiked] = useState(initialComment.isLiked || false)
+    const queryClient = useQueryClient()
+    const userId = getUserId()
+
+    // Track view when comment is rendered
+    useEffect(() => {
+        // Only track view if this is a top-level comment (to avoid counting views for replies)
+        if (depth === 0) {
+            viewComment(comment._id).catch(error => {
+                console.error("Error tracking comment view:", error)
+            })
+        }
+    }, [comment._id, depth])
+
+    // Fetch replies if this comment has any
+    const { data: repliesData } = useQuery({
+        queryKey: ['comment-replies', comment._id],
+        queryFn: () => getCommentWithReplies(comment._id),
+        enabled: comment.replies && comment.replies.length > 0,
+    })
+
+    // Update comment with fetched replies
+    useEffect(() => {
+        if (repliesData) {
+            setComment(prevComment => ({
+                ...prevComment,
+                replies: repliesData.replies || []
+            }))
+        }
+    }, [repliesData])
+
+    // Like mutation
+    const likeMutation = useMutation({
+        mutationFn: () => {
+            // Ensure user is logged in
+            if (!userId) {
+                throw new Error("User ID is required to like a comment");
+            }
+            return likeComment(comment._id, userId);
+        },
+        onSuccess: (data) => {
+            setComment(prevComment => ({
+                ...prevComment,
+                likes: data.likes
+            }))
+            setIsLiked(data.isLiked)
+            toast({
+                title: data.isLiked ? "Liked" : "Unliked",
+                description: data.isLiked ? "You liked this comment" : "You unliked this comment",
+                duration: 2000,
+            })
+        },
+        onError: (error) => {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to toggle like",
+                variant: "destructive",
+            })
+        },
+    })
+
+    // Reply mutation
+    const replyMutation = useMutation({
+        mutationFn: ({ content, commentId }: { content: string, commentId: string }) => {
+            // Ensure userId is not empty
+            if (!userId) {
+                throw new Error("User ID is required to reply to a comment");
+            }
+
+            return addReply({
+                text: content,
+                user: userId,
+                post: postId
+            }, commentId);
+        },
+        onSuccess: (data) => {
+            // Add the new reply to the comment
+            setComment(prevComment => ({
+                ...prevComment,
+                replies: [...(prevComment.replies || []), data]
+            }))
+
+            // Reset reply form
+            setIsReplying(false)
+            setReplyContent("")
+
+            // Show success message
+            toast({
+                title: "Reply added",
+                description: "Your reply has been added successfully",
+                duration: 2000,
+            })
+
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({ queryKey: ['comment-replies', comment._id] })
+            queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+        },
+        onError: (error) => {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to add reply",
+                variant: "destructive",
+            })
+        }
+    })
 
     const handleLike = (event: React.MouseEvent) => {
         event.preventDefault()
-        setComment(prevComment => ({
-            ...prevComment,
-            likes: prevComment.likes + 1
-        }))
+
+        // Check if user is logged in
+        if (!userId) {
+            toast({
+                title: "Authentication required",
+                description: "You must be logged in to like comments",
+                variant: "destructive",
+            })
+            return
+        }
+
+        likeMutation.mutate()
     }
 
     const handleReply = (event: React.MouseEvent) => {
@@ -51,7 +171,7 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
     const handleShare = (event: React.MouseEvent) => {
         event.preventDefault()
         // Implement share functionality
-        const shareText = `Check out this comment by ${comment.author}: "${comment.text}"`
+        const shareText = `Check out this comment by ${comment.user?.name}: "${comment.text}"`
         if (navigator.share) {
             navigator.share({
                 title: 'Shared Comment',
@@ -90,28 +210,34 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
 
     const handleRemove = (event: React.MouseEvent) => {
         event.preventDefault()
-        onRemove(comment.id)
+        onRemove(comment._id)
     }
 
     const handleSubmitReply = (event: React.FormEvent) => {
         event.preventDefault()
-        const newReply: Comment = {
-            id: Date.now(),
-            author: "Current User",
-            approve: true,
-            postId: "post123",
-            email: "currentuser@example.com",
-            avatar: "/placeholder.svg?height=40&width=40",
-            content: replyContent,
-            likes: 0,
-            timestamp: "Just now"
+        if (!replyContent.trim()) {
+            toast({
+                title: "Empty reply",
+                description: "Please enter some text for your reply",
+                variant: "destructive",
+            })
+            return
         }
-        setComment(prevComment => ({
-            ...prevComment,
-            replies: [...(prevComment.replies || []), newReply]
-        }))
-        setIsReplying(false)
-        setReplyContent("")
+
+        // Check if user is logged in
+        if (!userId) {
+            toast({
+                title: "Authentication required",
+                description: "You must be logged in to reply to comments",
+                variant: "destructive",
+            })
+            return
+        }
+
+        replyMutation.mutate({
+            content: replyContent,
+            commentId: comment._id
+        })
     }
 
     return (
@@ -119,11 +245,11 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                 <Avatar>
                     <AvatarImage src="https://res.cloudinary.com/dmokg80lf/image/upload/v1726538695/main/tour-cover/fhuxaelnqttkmouqwvhg.jpg" alt="" />
-                    <AvatarFallback>{comment.text}</AvatarFallback>
+                    <AvatarFallback>{comment.user?.name?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <h3 className="font-semibold">{comment?.user?.name}</h3>
-                    <p className="text-sm text-muted-foreground">{timeAgo(new Date(comment?.created_at))}</p>
+                    <h3 className="font-semibold">{comment.user?.name || "Anonymous"}</h3>
+                    <p className="text-sm text-muted-foreground">{timeAgo(new Date(comment.created_at))}</p>
                 </div>
             </CardHeader>
             <CardContent>
@@ -131,9 +257,14 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
             </CardContent>
             <CardFooter className="flex justify-between">
                 <div className="flex gap-4">
-                    <Button variant="ghost" size="sm" onClick={handleLike}>
-                        <ThumbsUp className="mr-2 h-4 w-4" />
-                        {comment.likes}
+                    <Button
+                        variant={isLiked ? "default" : "ghost"}
+                        size="sm"
+                        onClick={handleLike}
+                        disabled={likeMutation.isPending}
+                    >
+                        <ThumbsUp className={`mr-2 h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+                        {comment.likes || 0}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={handleReply}>
                         <MessageCircle className="mr-2 h-4 w-4" />
@@ -143,6 +274,10 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
                         <Share2 className="mr-2 h-4 w-4" />
                         Share
                     </Button>
+                    <div className="flex items-center text-muted-foreground">
+                        <Eye className="mr-1 h-4 w-4" />
+                        <span className="text-sm">{comment.views || 0}</span>
+                    </div>
                 </div>
                 {isAdmin && (
                     <Button variant="ghost" size="sm" onClick={handleRemove}>
@@ -158,122 +293,76 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
                             placeholder="Write a reply..."
                             value={replyContent}
                             onChange={(e) => setReplyContent(e.target.value)}
+                            disabled={replyMutation.isPending}
                         />
-                        <Button onClick={handleSubmitReply}>Send</Button>
+                        <Button type="submit" disabled={replyMutation.isPending}>
+                            {replyMutation.isPending ? "Sending..." : "Send"}
+                        </Button>
                     </form>
                 </CardFooter>
             )}
-            {comment.replies && comment.replies.map((reply) => (
-                <CommentComponent
-                    key={reply.id}
-                    comment={reply}
-                    depth={depth + 1}
-                    onRemove={onRemove}
-                    isAdmin={isAdmin}
-                />
-            ))}
+            {comment.replies && comment.replies.length > 0 && (
+                <div className="px-4 pb-4">
+                    {comment.replies.map((reply) => (
+                        <CommentComponent
+                            key={reply._id}
+                            comment={reply}
+                            depth={depth + 1}
+                            onRemove={onRemove}
+                            isAdmin={isAdmin}
+                            postId={postId}
+                        />
+                    ))}
+                </div>
+            )}
         </Card>
     )
 }
 
-export default function Component() {
-    const [comments, setComments] = useState<Comment[]>([
-        {
-            id: 1,
-            email: "test@gmail.com",
-            approve: true,
-            postId: "66fb7fbeffb40ccdd1c72408",
-            author: "Alice Johnson",
-            avatar: "/placeholder.svg?height=40&width=40",
-            content: "This is a great post! I learned a lot from it.",
-            likes: 5,
-            timestamp: "2 hours ago",
-            replies: [
-                {
-                    id: 2,
-                    email: "test@gmail.com",
-                    approve: true,
-                    postId: "66fb7fbeffb40ccdd1c72408",
-                    author: "Bob Smith",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                    content: "I agree! The examples were particularly helpful.",
-                    likes: 2,
-                    timestamp: "1 hour ago",
-                    replies: [
-                        {
-                            id: 3,
-                            email: "test@gmail.com",
-                            approve: true,
-                            postId: "66fb7fbeffb40ccdd1c72408",
-                            author: "Charlie Davis",
-                            avatar: "/placeholder.svg?height=40&width=40",
-                            content: "I'd love to see more content like this.",
-                            likes: 1,
-                            timestamp: "30 minutes ago",
-                        },
-                    ],
-                },
-            ],
-        },
-        {
-            id: 4,
-            email: "test@gmail.com",
-            approve: true,
-            postId: "66fb7fbeffb40ccdd1c72408",
-            author: "Diana Wilson",
-            avatar: "/placeholder.svg?height=40&width=40",
-            content: "Great insights! Looking forward to the next post.",
-            likes: 3,
-            timestamp: "3 hours ago",
-        },
-    ])
+export function CommentsSection() {
+    const { postId } = useParams<{ postId: string }>()
+    const actualPostId = postId || ''
 
-    const { postId } = useParams();
+    const { data: commentsData, isLoading } = useQuery({
+        queryKey: ['comments', actualPostId],
+        queryFn: () => getCommentsByPost(actualPostId),
+        enabled: !!actualPostId,
+    })
 
-    const { data: commentByPost } = useQuery<Comment>({
-        queryKey: ['comment', postId],
-        queryFn: () => postId ? getCommentsByPost(postId) : Promise.reject('No tour ID provided'),
-        enabled: !!postId,
-
-    });
-
-
-    console.log("commentByPost", commentByPost);
-
-    const isAdmin = true // This would typically come from your authentication system
-
-    const removeComment = (id: number) => {
-        setComments(prevComments => {
-            const removeRecursively = (comments: Comment[]): Comment[] => {
-                return comments.filter(comment => {
-                    if (comment.id === id) {
-                        return false
-                    }
-                    if (comment.replies) {
-                        comment.replies = removeRecursively(comment.replies)
-                    }
-                    return true
-                })
-            }
-            return removeRecursively(prevComments)
-        })
+    const handleRemoveComment = (commentId: string) => {
+        // This would typically call a delete mutation
         toast({
             title: "Comment removed",
-            description: "The comment has been successfully removed.",
+            description: "The comment has been removed",
         })
+
+        // For now, we'll just show a toast
+        // In a real implementation, you would call the deleteComment API with commentId
+        console.log(`Comment with ID ${commentId} would be deleted`);
+    }
+
+    if (isLoading) {
+        return <div className="text-center py-8">Loading comments...</div>
+    }
+
+    if (!commentsData || commentsData.length === 0) {
+        return <div className="text-center py-8">No comments yet. Be the first to comment!</div>
     }
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Comments</h2>
-            {commentByPost?.map((comment) => (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Comments ({commentsData.length})</h2>
+            {commentsData.map((comment: Comment) => (
                 <CommentComponent
                     key={comment._id}
                     comment={comment}
-                    onRemove={removeComment}
-                    isAdmin={isAdmin}
+                    onRemove={handleRemoveComment}
+                    isAdmin={true}
+                    postId={actualPostId}
                 />
             ))}
         </div>
     )
 }
+
+export default CommentsSection;

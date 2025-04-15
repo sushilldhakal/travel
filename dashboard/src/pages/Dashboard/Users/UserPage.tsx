@@ -1,4 +1,4 @@
-import { getUsers } from '@/http/api';
+import { getUsers } from '@/http';
 import { Tour } from '@/Provider/types';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";

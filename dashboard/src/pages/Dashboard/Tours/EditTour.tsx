@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
-import { getSingleTour, deleteTour } from '@/http/api';
+import { getSingleTour, deleteTour } from '@/http';
 import { useToast } from '@/components/ui/use-toast';
 import { Breadcrumb, Tour, TourData } from '@/Provider/types';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -32,8 +32,8 @@ import { useCategories } from './Components/useCategories';
 import { getUserId } from '@/util/AuthLayout';
 import { useFacts } from './Components/useFacts';
 import { useFaq } from './Components/useFaq';
-
-
+import { TourUserAvatar } from '@/userDefinedComponents/Avatar/TourUserAvatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const EditTour: React.FC = () => {
     const { tourId } = useParams<{ tourId: string }>();
     const { updateBreadcrumbs } = useBreadcrumbs();
@@ -45,7 +45,7 @@ const EditTour: React.FC = () => {
     const { toast } = useToast()
     const [editorContent, setEditorContent] = useState<JSONContent>();
     const userId = getUserId();
-    const { data: initialTourData } = useQuery<TourData, Error>({
+    const { data: initialTourData, isLoading, isError, error } = useQuery<TourData, Error>({
         queryKey: ['tours', tourId],
         queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
         enabled: !!tourId,
@@ -62,11 +62,15 @@ const EditTour: React.FC = () => {
                 { label: breadcrumbLabel, href: `/dashboard/tours/edit_tour${tourId}`, type: 'page' },
             ];
             updateBreadcrumbs(breadcrumbItems);
-            setSingleTourData(initialTourData.tour);
+
+            // Get the tour data from the response
+            const tourData = initialTourData.tour || initialTourData;
+
+            // Set the tour data in state
+            setSingleTourData(tourData);
             setSingleTour(true);
         }
     }, [updateBreadcrumbs, initialTourData, tourId]);
-
 
     const { mutate: tourMutation, isPending } = useTourMutation();
     const { form,
@@ -79,7 +83,10 @@ const EditTour: React.FC = () => {
         factsRemove,
         faqFields,
         faqAppend,
-        faqRemove
+        faqRemove,
+        pricingFields,
+        pricingAppend,
+        pricingRemove
     } = useFormHandlers(editorContent);
 
     const { data: categories } = useCategories(userId);
@@ -102,14 +109,13 @@ const EditTour: React.FC = () => {
         }
     ];
 
-    const defaultDates = [
-        {
-            tripDuration: '',
-            startDate: '',
-            endDate: '',
+    const defaultDates = {
+        tripDuration: '',
+        dateRange: {
+            from: undefined,
+            to: undefined
         }
-    ];
-
+    };
 
     const defaultLocation = [
         {
@@ -122,12 +128,8 @@ const EditTour: React.FC = () => {
         }
     ]
 
-
-
-    console.log("singleTourData", singleTourData)
-
     useEffect(() => {
-        if (singleTourData) {
+        if (singleTourData && categories) {
             const defaultValues = {
                 title: singleTourData.title || '',
                 description: singleTourData.description || '',
@@ -139,10 +141,35 @@ const EditTour: React.FC = () => {
                 outline: singleTourData.outline || '',
                 include: singleTourData?.include || '',
                 exclude: singleTourData?.exclude || '',
-                category: singleTourData.category?.map(item => ({
-                    label: item.categoryName || '',
-                    value: item.categoryId || '',
-                })) || defaultCategory,
+                category: Array.isArray(singleTourData.category)
+                    ? singleTourData.category.map(item => {
+                        // If item is already in the {label, value} format
+                        if (item && typeof item === 'object' && 'value' in item) {
+                            // Find the matching category to get its proper name
+                            const matchedCategory = categories.find(cat => cat._id === item.value || cat.value === item.value);
+                            return {
+                                label: matchedCategory?.name || 'Category',
+                                value: item.value
+                            };
+                        }
+                        // If item has categoryId and categoryName properties
+                        else if (item && typeof item === 'object' && 'categoryId' in item) {
+                            return {
+                                label: item.categoryName || '',
+                                value: item.categoryId || '',
+                            };
+                        }
+                        // If item is just a string (category ID)
+                        else if (typeof item === 'string') {
+                            const matchedCategory = categories.find(cat => cat._id === item || cat.value === item);
+                            return {
+                                label: matchedCategory?.name || 'Category',
+                                value: item
+                            };
+                        }
+                        return item;
+                    }).filter(Boolean)
+                    : defaultCategory,
                 itinerary: singleTourData.itinerary?.map(item => ({
                     day: item.day || '',
                     title: item.title || '',
@@ -150,11 +177,13 @@ const EditTour: React.FC = () => {
                     dateTime: item.dateTime ? new Date(item.dateTime) : new Date()
                 })) || defaultItinerary,
 
-                dates: {
-                    tripDuration: singleTourData?.dates?.tripDuration || '',
-                    startDate: singleTourData?.dates?.startDate ? new Date(singleTourData.dates.startDate) : '',
-                    endDate: singleTourData?.dates?.endDate ? new Date(singleTourData.dates.endDate) : '',
-                } || defaultDates,
+                dates: singleTourData?.dates ? {
+                    tripDuration: singleTourData.dates.tripDuration || '',
+                    dateRange: {
+                        from: singleTourData.dates.startDate ? new Date(singleTourData.dates.startDate) : undefined,
+                        to: singleTourData.dates.endDate ? new Date(singleTourData.dates.endDate) : undefined,
+                    }
+                } : defaultDates,
 
                 location: {
                     city: singleTourData?.location?.city || '',
@@ -201,7 +230,7 @@ const EditTour: React.FC = () => {
                     };
                 }) || []
             }
-
+            console.log("default value ", defaultValues)
             form.reset(defaultValues);
 
             try {
@@ -213,7 +242,7 @@ const EditTour: React.FC = () => {
             }
 
         }
-    }, [singleTourData, form]);
+    }, [singleTourData, form, categories]);
 
 
 
@@ -253,23 +282,7 @@ const EditTour: React.FC = () => {
     };
 
     const location = useLocation();
-    useEffect(() => {
-        const handleScroll = () => {
-            let foundTab = tabs[0].id;
-            for (const tab of tabs) {
-                const element = document.getElementById(tab.id);
-                if (element && element.getBoundingClientRect().top <= window.innerHeight / 2) {
-                    foundTab = tab.id;
-                }
-            }
-            setActiveTab(foundTab);
-        };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-        };
-    }, []);
 
     useEffect(() => {
         if (location.hash) {
@@ -283,94 +296,147 @@ const EditTour: React.FC = () => {
 
     return (
         <div className="flex min-h-screen w-full flex-col">
+            {/* Show loading state for initial data fetch */}
+            {isLoading && (
+                <div className="flex flex-col space-y-3">
+                    <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
+                    <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <Loader />
+                        <p className="text-center text-muted-foreground">Loading tour data...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Show error state */}
+            {isError && (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] p-6">
+                    <div className="bg-destructive/10 text-destructive p-4 rounded-md max-w-md">
+                        <h3 className="font-bold text-lg mb-2">Error Loading Tour</h3>
+                        <p>{error?.message || "Failed to load tour data. Please try again later."}</p>
+                        <Button
+                            variant="outline"
+                            className="mt-4"
+                            onClick={() => window.location.reload()}
+                        >
+                            Retry
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Show mutation loading state */}
             {isPending && <div className="flex flex-col space-y-3 ">
                 <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
                 <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <Loader />
+                    <p className="text-center text-muted-foreground">Updating tour...</p>
                 </div>
             </div>}
 
-            <Form {...form}>
-                <form onSubmit={(e) => {
-                    e.preventDefault()
-                    console.log("form", form.getValues());
-                    form.handleSubmit(
-                        (values) => {
-                            onSubmit(values, tourMutation); // your submit logic
-                        },
-                        (errors) => {
-                            console.log("Form Errors:", errors); // log errors
-                        }
-                    )();
-                }}>
-                    <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive">Delete</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete your tour
-                                        and remove your data associated to this tour from servers.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteTour} className={buttonVariants({ variant: "destructive" })} > Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        <Button type="submit" size="sm">
-                            {isPending && <LoaderCircle className="animate-spin" />}
-                            <span className="ml-2">Update Tour</span>
-                        </Button>
-                    </div>
-                    <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-                        <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
-                            <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-                            <div className="py-4">
-                                <Button type="submit"
-                                    disabled={isPending}
-                                    className='pr-6 ml-4'
-                                >
-                                    {isPending && <LoaderCircle className="animate-spin" />}
-                                    <span className="ml-2">Save</span>
-                                </Button>
-                            </div>
-                        </aside>
-                        <div className="grid gap-3 lg:col-span-1">
-                            <TabContent
-                                form={form}
-                                activeTab={activeTab}
-                                tabs={tabs}
-                                singleTour={singleTour}
-                                tourMutation={tourMutation}
-                                singleTourData={singleTourData}
-                                editorContent={editorContent} // Pass editor content to TabContent
-                                onEditorContentChange={handleEditorContentChange}
-                                itineraryFields={itineraryFields}
-                                itineraryAppend={itineraryAppend}
-                                itineraryRemove={itineraryRemove}
-                                factsFields={factsFields}
-                                factsAppend={factsAppend}
-                                factsRemove={factsRemove}
-                                faqFields={faqFields}
-                                faqAppend={faqAppend}
-                                faqRemove={faqRemove}
-                                categories={categories}
-                                facts={facts}
-                                faq={faq}
-                                categories={categories}
-                            />
+            {/* Only render the form if we have data and no errors */}
+            {!isLoading && !isError && (
+                <Form {...form}>
+                    <form onSubmit={(e) => {
+                        e.preventDefault()
+                        console.log("Form for API", form.getValues());
+                        form.handleSubmit(
+                            (values) => {
+                                onSubmit(values, tourMutation); // your submit logic
+                                console.log("Form for API", form.getValues());
+                            },
+                            (errors) => {
+                                console.log("Form Errors:", errors); // log errors
+                            }
+                        )();
+                    }}>
+                        <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive">Delete</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete your tour
+                                            and remove your data associated to this tour from servers.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDeleteTour} className={buttonVariants({ variant: "destructive" })} > Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Button type="submit" size="sm">
+                                {isPending && <LoaderCircle className="animate-spin" />}
+                                <span className="ml-2">Update Tour</span>
+                            </Button>
                         </div>
-                    </div>
-                </form>
-            </Form>
+                        <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
+                            <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
+                                {/* Tour Creator Info Card */}
+                                {singleTourData?.user && (
+                                    <Card className="mb-6">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-medium">Tour Creator</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="flex items-center space-x-4">
+                                                <TourUserAvatar
+                                                    userId={singleTourData.user.toString()}
+                                                    size="md"
+                                                    showName={true}
+                                                    userName={singleTourData.userName || 'Tour Creator'}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+                                <div className="py-4">
+                                    <Button type="submit"
+                                        disabled={isPending}
+                                        className='pr-6 ml-4'
+                                    >
+                                        {isPending && <LoaderCircle className="animate-spin" />}
+                                        <span className="ml-2">Save</span>
+                                    </Button>
+                                </div>
+                            </aside>
+                            <div className="grid gap-3 lg:col-span-1">
+                                <TabContent
+                                    form={form}
+                                    activeTab={activeTab}
+                                    tabs={tabs}
+                                    singleTour={singleTour}
+                                    tourMutation={tourMutation}
+                                    singleTourData={singleTourData}
+                                    editorContent={editorContent} // Pass editor content to TabContent
+                                    onEditorContentChange={handleEditorContentChange}
+                                    itineraryFields={itineraryFields}
+                                    itineraryAppend={itineraryAppend}
+                                    itineraryRemove={itineraryRemove}
+                                    factsFields={factsFields}
+                                    factsAppend={factsAppend}
+                                    factsRemove={factsRemove}
+                                    faqFields={faqFields}
+                                    faqAppend={faqAppend}
+                                    faqRemove={faqRemove}
+                                    pricingFields={pricingFields}
+                                    pricingAppend={pricingAppend}
+                                    pricingRemove={pricingRemove}
+                                    categories={categories}
+                                    facts={facts}
+                                    faq={faq}
+                                />
+                            </div>
+                        </div>
+                    </form>
+                </Form>
+            )}
         </div>
     );
 };
 
 export default EditTour;
-

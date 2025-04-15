@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { getUnapprovedCommentsCount } from '@/http/api';
+import { getUnapprovedCommentsCount } from '@/http';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 

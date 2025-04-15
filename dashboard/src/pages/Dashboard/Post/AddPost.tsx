@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { addPost } from "@/http/api";
+import { addPost } from "@/http";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import Loader from "@/userDefinedComponents/Loader";

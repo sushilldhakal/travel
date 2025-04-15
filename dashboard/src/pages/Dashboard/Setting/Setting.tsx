@@ -6,12 +6,13 @@ import { z } from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { getUserSetting, userSetting } from "@/http/api"
+import { getDecryptedApiKey, getUserSetting, userSetting } from "@/http"
 import { useEffect, useState } from "react"
 import { getUserId } from "@/util/AuthLayout"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "@/components/ui/use-toast"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const formSchema = z.object({
     CLOUDINARY_CLOUD: z.string().optional(),
@@ -21,15 +22,19 @@ const formSchema = z.object({
     GOOGLE_API_KEY: z.string().optional(),
 });
 
-
 const Setting = () => {
     const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [decryptedKeys, setDecryptedKeys] = useState<Record<string, string>>({});
+    const [isLoadingKeys, setIsLoadingKeys] = useState<Record<string, boolean>>({});
     const userId = getUserId();
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['userSettings'], // Key used to cache and invalidate the query
         queryFn: () => getUserSetting(`${userId}`), // Replace with actual user ID if needed
     });
+
+    console.log("data", data);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -44,12 +49,15 @@ const Setting = () => {
     // Populate form with fetched data
     useEffect(() => {
         if (data) {
+            // The backend response structure might be data.settings or just data
+            const settingsData = data.settings || data;
+
             form.reset({
-                CLOUDINARY_CLOUD: data?.data.cloudinaryCloud || '',
-                CLOUDINARY_API_KEY: data?.data.cloudinaryApiKey || '',
-                CLOUDINARY_API_SECRET: data?.data.cloudinaryApiSecret || '',
-                OPENAI_API_KEY: data?.data.openaiApiKey || '',
-                GOOGLE_API_KEY: data?.data.googleApiKey || '',
+                CLOUDINARY_CLOUD: settingsData.cloudinaryCloud || '',
+                CLOUDINARY_API_KEY: settingsData.cloudinaryApiKey || '', // Don't show the masked value in the input
+                CLOUDINARY_API_SECRET: settingsData.cloudinaryApiSecret || '', // Don't show the masked value in the input
+                OPENAI_API_KEY: settingsData.openaiApiKey || '', // Don't show the masked value in the input
+                GOOGLE_API_KEY: settingsData.googleApiKey || '', // Don't show the masked value in the input
             });
         }
     }, [data, form]);
@@ -59,18 +67,27 @@ const Setting = () => {
         mutationFn: ({ userId, formData }: { userId: string; formData: FormData }) =>
             userSetting(`${userId}`, formData),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['setting'] });
+            queryClient.invalidateQueries({ queryKey: ['userSettings'] });
             toast({
                 title: 'Success!',
                 description: 'Your keys have been updated.',
                 variant: 'success',
             });
+            setIsSubmitting(false);
         },
         onError: (error) => {
             console.error('Error updating settings:', error);
+            toast({
+                title: 'Error!',
+                description: 'Failed to update settings. Please try again.',
+                variant: 'destructive',
+            });
+            setIsSubmitting(false);
         }
     });
+
     function onSubmit(values: z.infer<typeof formSchema>) {
+        setIsSubmitting(true);
         const formData = new FormData();
         if (values.CLOUDINARY_CLOUD) {
             formData.append('CLOUDINARY_CLOUD', values.CLOUDINARY_CLOUD);
@@ -92,27 +109,111 @@ const Setting = () => {
         }
     }
 
-    const toggleVisibility = (key: string) => {
+    // Function to fetch and show decrypted API key
+    const fetchDecryptedKey = async (keyType: string) => {
+        if (!userId) return;
+
+        try {
+            setIsLoadingKeys(prev => ({ ...prev, [keyType]: true }));
+
+            // Map our form field names to backend key types
+            const keyTypeMap: Record<string, string> = {
+                'CLOUDINARY_API_KEY': 'cloudinary_api_key',
+                'CLOUDINARY_API_SECRET': 'cloudinary_api_secret',
+                'OPENAI_API_KEY': 'openai_api_key',
+                'GOOGLE_API_KEY': 'google_api_key'
+            };
+
+            const response = await getDecryptedApiKey(userId, keyTypeMap[keyType]);
+
+            if (response && response.key) {
+                // If the key is empty, show a message
+                if (response.key === '') {
+                    toast({
+                        title: 'No API Key Found',
+                        description: `There is no ${keyType.toLowerCase().replace('_', ' ')} stored or it could not be decrypted.`,
+                        variant: 'default',
+                    });
+                } else {
+                    setDecryptedKeys(prev => ({ ...prev, [keyType]: response.key }));
+
+                    // Update the form with the decrypted value
+                    form.setValue(keyType as keyof z.infer<typeof formSchema>, response.key);
+
+                    toast({
+                        title: 'API Key Retrieved',
+                        description: `Your ${keyType.toLowerCase().replace('_', ' ')} has been retrieved and is now visible.`,
+                        variant: 'success',
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`Error fetching decrypted ${keyType}:`, error);
+            toast({
+                title: 'Error',
+                description: `Could not retrieve the decrypted ${keyType}. Please try again.`,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoadingKeys(prev => ({ ...prev, [keyType]: false }));
+        }
+    };
+
+    const toggleVisibility = async (key: string) => {
+        // If we're turning visibility on and we don't have the decrypted key yet
+        if (!visibleKeys[key] && isKeySet(key) && !decryptedKeys[key]) {
+            await fetchDecryptedKey(key);
+        }
+
         setVisibleKeys(prev => ({
             ...prev,
             [key]: !prev[key]
         }));
     };
 
+    // Helper to check if a key has been set previously
+    const isKeySet = (key: string): boolean => {
+        if (!data) return false;
+
+        // The backend response structure might be data.settings or just data
+        const settingsData = data.settings || data;
+
+        switch (key) {
+            case 'CLOUDINARY_API_KEY':
+                return !!settingsData.cloudinaryApiKey;
+            case 'CLOUDINARY_API_SECRET':
+                return !!settingsData.cloudinaryApiSecret;
+            case 'OPENAI_API_KEY':
+                return !!settingsData.openaiApiKey;
+            case 'GOOGLE_API_KEY':
+                return !!settingsData.googleApiKey;
+            default:
+                return false;
+        }
+    };
+
+    // Get placeholder text based on whether a key exists
+    const getPlaceholder = (key: string): string => {
+        return isKeySet(key) ? '••••••••••••••••' : 'Enter your API key...';
+    };
+
     return (
         <div className="flex min-h-screen w-full flex-col">
-
-
             <Form {...form}>
                 <form onSubmit={(e) => {
                     e.preventDefault()
                     form.handleSubmit(onSubmit)();
                 }}>
                     <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-                        <Button size="sm">
-                            <span className="ml-2">
-                                <span>Save</span>
-                            </span>
+                        <Button size="sm" type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <span className="ml-2">Save</span>
+                            )}
                         </Button>
                     </div>
                     <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
@@ -140,10 +241,15 @@ const Setting = () => {
                                     Google Map{''}
                                 </Button>
 
-                                <Button size="sm">
-                                    <span className="ml-2">
-                                        <span>Save Change</span>
-                                    </span>
+                                <Button size="sm" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <span className="ml-2">Save Changes</span>
+                                    )}
                                 </Button>
                             </nav>
                         </aside>
@@ -170,13 +276,10 @@ const Setting = () => {
                                         under setting and get the API Keys from there. {' '}
                                         Also to upload PDF file in cloudinary you need to go in setting, then select security go to the bottom and check the PDF and ZIP files delivery option.
                                         Update your Cloudinary information.
-
-
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="grid gap-4">
                                     <div className="grid gap-2 relative">
-
                                         <FormField
                                             control={form.control}
                                             name="CLOUDINARY_CLOUD"
@@ -197,11 +300,34 @@ const Setting = () => {
                                             name="CLOUDINARY_API_KEY"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Cloudinary API Key</FormLabel>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        Cloudinary API Key
+                                                        {isKeySet('CLOUDINARY_API_KEY') && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <KeyRound className="h-4 w-4 text-green-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>API key is set and securely stored</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </FormLabel>
                                                     <FormControl>
-                                                        <Input type={visibleKeys.CLOUDINARY_API_KEY ? "text" : "password"} className="w-full" {...field} />
-
+                                                        <Input
+                                                            type={visibleKeys.CLOUDINARY_API_KEY ? "text" : "password"}
+                                                            className="w-full"
+                                                            placeholder={getPlaceholder('CLOUDINARY_API_KEY')}
+                                                            {...field}
+                                                        />
                                                     </FormControl>
+                                                    {isKeySet('CLOUDINARY_API_KEY') && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Leave blank to keep the existing API key
+                                                        </p>
+                                                    )}
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
@@ -210,8 +336,15 @@ const Setting = () => {
                                             type="button"
                                             className="absolute right-1 top-10 p-2 h-6"
                                             onClick={() => toggleVisibility('CLOUDINARY_API_KEY')}
+                                            disabled={isLoadingKeys['CLOUDINARY_API_KEY']}
                                         >
-                                            {visibleKeys.CLOUDINARY_API_KEY ? <EyeOff width="18" height="18" size="20" /> : <Eye width="18" height="18" size="20" />}
+                                            {isLoadingKeys['CLOUDINARY_API_KEY'] ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : visibleKeys.CLOUDINARY_API_KEY ? (
+                                                <EyeOff width="18" height="18" size="20" />
+                                            ) : (
+                                                <Eye width="18" height="18" size="20" />
+                                            )}
                                         </Button>
                                     </div>
                                     <div className="grid gap-2 relative">
@@ -220,11 +353,34 @@ const Setting = () => {
                                             name="CLOUDINARY_API_SECRET"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Cloudinary API Secret</FormLabel>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        Cloudinary API Secret
+                                                        {isKeySet('CLOUDINARY_API_SECRET') && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <KeyRound className="h-4 w-4 text-green-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>API secret is set and securely stored</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </FormLabel>
                                                     <FormControl>
-                                                        <Input type={visibleKeys.CLOUDINARY_API_SECRET ? "text" : "password"} className="w-full" {...field} />
-
+                                                        <Input
+                                                            type={visibleKeys.CLOUDINARY_API_SECRET ? "text" : "password"}
+                                                            className="w-full"
+                                                            placeholder={getPlaceholder('CLOUDINARY_API_SECRET')}
+                                                            {...field}
+                                                        />
                                                     </FormControl>
+                                                    {isKeySet('CLOUDINARY_API_SECRET') && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Leave blank to keep the existing API secret
+                                                        </p>
+                                                    )}
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
@@ -233,8 +389,15 @@ const Setting = () => {
                                             type="button"
                                             className="absolute right-1 top-10 p-2 h-6"
                                             onClick={() => toggleVisibility('CLOUDINARY_API_SECRET')}
+                                            disabled={isLoadingKeys['CLOUDINARY_API_SECRET']}
                                         >
-                                            {visibleKeys.CLOUDINARY_API_SECRET ? <EyeOff width="18" height="18" size="20" /> : <Eye width="18" height="18" size="20" />}
+                                            {isLoadingKeys['CLOUDINARY_API_SECRET'] ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : visibleKeys.CLOUDINARY_API_SECRET ? (
+                                                <EyeOff width="18" height="18" size="20" />
+                                            ) : (
+                                                <Eye width="18" height="18" size="20" />
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -261,16 +424,34 @@ const Setting = () => {
                                             name="OPENAI_API_KEY"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>OpenAI API Key.
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        OpenAI API Key
+                                                        {isKeySet('OPENAI_API_KEY') && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <KeyRound className="h-4 w-4 text-green-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>API key is set and securely stored</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             type={visibleKeys.OPENAI_API_KEY ? "text" : "password"}
-                                                            className="w-full" {...field}
-                                                            placeholder="your openAI api key..."
+                                                            className="w-full"
+                                                            placeholder={getPlaceholder('OPENAI_API_KEY')}
+                                                            {...field}
                                                         />
-
                                                     </FormControl>
+                                                    {isKeySet('OPENAI_API_KEY') && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Leave blank to keep the existing API key
+                                                        </p>
+                                                    )}
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
@@ -279,8 +460,15 @@ const Setting = () => {
                                             type="button"
                                             className="absolute right-1 top-10 p-2 h-6"
                                             onClick={() => toggleVisibility('OPENAI_API_KEY')}
+                                            disabled={isLoadingKeys['OPENAI_API_KEY']}
                                         >
-                                            {visibleKeys.OPENAI_API_KEY ? <EyeOff width="18" height="18" size="20" /> : <Eye width="18" height="18" size="20" />}
+                                            {isLoadingKeys['OPENAI_API_KEY'] ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : visibleKeys.OPENAI_API_KEY ? (
+                                                <EyeOff width="18" height="18" size="20" />
+                                            ) : (
+                                                <Eye width="18" height="18" size="20" />
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -309,16 +497,34 @@ const Setting = () => {
                                             name="GOOGLE_API_KEY"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Google Map API Key.
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        Google Maps API Key
+                                                        {isKeySet('GOOGLE_API_KEY') && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <KeyRound className="h-4 w-4 text-green-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>API key is set and securely stored</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             type={visibleKeys.GOOGLE_API_KEY ? "text" : "password"}
-                                                            className="w-full" {...field}
-                                                            placeholder="your google api key..."
+                                                            className="w-full"
+                                                            placeholder={getPlaceholder('GOOGLE_API_KEY')}
+                                                            {...field}
                                                         />
-
                                                     </FormControl>
+                                                    {isKeySet('GOOGLE_API_KEY') && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Leave blank to keep the existing API key
+                                                        </p>
+                                                    )}
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
@@ -327,13 +533,19 @@ const Setting = () => {
                                             type="button"
                                             className="absolute right-1 top-10 p-2 h-6"
                                             onClick={() => toggleVisibility('GOOGLE_API_KEY')}
+                                            disabled={isLoadingKeys['GOOGLE_API_KEY']}
                                         >
-                                            {visibleKeys.GOOGLE_API_KEY ? <EyeOff width="18" height="18" size="20" /> : <Eye width="18" height="18" size="20" />}
+                                            {isLoadingKeys['GOOGLE_API_KEY'] ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : visibleKeys.GOOGLE_API_KEY ? (
+                                                <EyeOff width="18" height="18" size="20" />
+                                            ) : (
+                                                <Eye width="18" height="18" size="20" />
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
                             </Card>
-
                         </div>
                     </div>
                 </form>

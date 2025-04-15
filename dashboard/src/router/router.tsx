@@ -24,11 +24,15 @@ import TourSetting from '@/pages/Dashboard/Tours/TourSetting';
 import TourCategory from '@/pages/Dashboard/Tours/Category/TourCategory';
 import TourFacts from '@/pages/Dashboard/Tours/FACTS/Facts';
 import TourFaq from '@/pages/Dashboard/Tours/FAQ/Faq';
+import ReviewsManagement from '@/pages/Dashboard/Tours/Reviews';
 import HomePage from '@/pages/Dashboard/HomePage';
 import Post from '@/pages/Dashboard/Post/Post';
 import EditPost from '@/pages/Dashboard/Post/EditPost';
 import AddPost from '@/pages/Dashboard/Post/AddPost';
 import Comments from '@/pages/Dashboard/Post/Comments';
+import BlogList from '@/pages/FrontEnd/Blog/BlogList';
+import SingleBlog from '@/pages/FrontEnd/Blog/SingleBlog';
+import Destination from '@/pages/Dashboard/Tours/Destination';
 
 const router = createBrowserRouter([
   {
@@ -55,6 +59,20 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<div>Loading...</div>}>
             <FrontSingleTours />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.blog,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <BlogList />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.singleBlog,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <SingleBlog />
           </Suspense>
         ),
       }
@@ -215,6 +233,22 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<div>Loading...</div>}>
                 <TourFaq />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.tourDestination,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Destination />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.tourReviews,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <ReviewsManagement />
               </Suspense>
             ),
           },

@@ -20,7 +20,7 @@ export default defineConfig({
       ],
     }),
     checker({ typescript: false }), react()],
-    
+    assetsInclude: ['**/*.pdf'],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

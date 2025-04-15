@@ -3,15 +3,15 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import './MenuBarSearch.css';
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CategoryData, Tour, TourData } from "@/Provider/types";
-import { getCategories, getLatestTours, searchTours } from "@/http/api"; // Adjust API function
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CategoryData, Tour } from "@/Provider/types";
+import { getCategories, getLatestTours, searchTours } from "@/http"; // Adjust API function
 import { Link } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { debounce } from "lodash";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-GB', {
         day: '2-digit',
@@ -23,12 +23,12 @@ const formatDate = (dateString) => {
 const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => void, headerSearch: boolean }) => {
 
     const searchRef = useRef<HTMLDivElement | null>(null);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [title, setTitle] = useState(''); // State for input title
     const [selectedCategory, setSelectedCategory] = useState(''); // State for selected category
-    const [sortedTours, setSortedTours] = useState<Tour[]>([]);
+    const [sortedTours, setSortedTours] = useState<any>(null);
     const [showSearchResults, setShowSearchResults] = useState(false); // State to manage view
+    const [isHeaderFixed, setIsHeaderFixed] = useState(false);
 
     const { data: categories } = useQuery({
         queryKey: ['categories'],
@@ -39,23 +39,32 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         queryKey: ['tours'],
         queryFn: getLatestTours,
     });
-    //console.log("latestTours", latestTours)
+
     useEffect(() => {
         const handleResize = () => {
-            setWindowWidth(window.innerWidth);
+            // Window resize logic if needed in the future
         };
+
+        const checkHeaderFixed = () => {
+            const header = document.getElementById('main-header');
+            if (header) {
+                setIsHeaderFixed(header.classList.contains('fixed'));
+            }
+        };
+
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        window.addEventListener('scroll', checkHeaderFixed);
+
+        // Initial check
+        checkHeaderFixed();
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', checkHeaderFixed);
+        };
     }, []);
 
-    const closeSearch = (e: MouseEvent) => {
-        e.preventDefault();
-        clearSearch();
-        handleSearch();
-    };
-
     // Handle form submit
-
     const searchMutation = useMutation({
         mutationFn: (query: string) => searchTours(query),
         retry: 3, // Number of retry attempts
@@ -64,9 +73,8 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
             // Invalidate and refetch
             setSortedTours(data);
             setShowSearchResults(true);
-            //console.log("data", data);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             console.error("Error getting tour:", error.message);
             toast({
                 title: "Search Error",
@@ -90,8 +98,8 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
 
     // Handle category selection
     const handleCategorySelect = (category: string) => {
-        setSelectedCategory(category);
-        const query = buildQuery(title, category);
+        setSelectedCategory(category === 'all' ? '' : category);
+        const query = buildQuery(title, category === 'all' ? '' : category);
         searchMutation.mutate(query);
     };
 
@@ -109,10 +117,10 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         const query = buildQuery(title, selectedCategory);
         try {
             await searchMutation.mutateAsync(query);
-        } catch (error) {
+        } catch (error: any) {
             toast({
                 title: "Failed to search tour",
-                description: `An error occurred while searching for the tour. Please try again later.${error}`,
+                description: `An error occurred while searching for the tour. Please try again later.${error.message}`,
             });
         }
     };
@@ -122,22 +130,23 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         setSelectedCategory('');
         setShowSearchResults(false);
     };
+
     const sortedToursByDate = showSearchResults
-        ? sortedTours?.data.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3)
-        : latestTours?.data.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3);
-    //console.log("sortedTours", sortedTours)
+        ? sortedTours?.data?.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3)
+        : latestTours?.data?.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3);
+
     return (
         <>
-            <div ref={searchRef} id="search" className={`cd-main-search fixed h-[76px] left-0 right-0 w-full bg-secondary transition-all duration-500 ease-in-out ${headerSearch ? 'visibilty-visible opacity-100 z-10 top-0' : 'visibilty-hidden opacity-0 h-0 z-0 top-[-400px]'} `}>
-                <form onSubmit={handleSubmit} className="bg-dark h-full mx-auto max-w-7xl relative">
+            <div ref={searchRef} id="search" className={`cd-main-search fixed ${isHeaderFixed ? 'h-[66px]' : 'h-[106px]'} left-0 right-0 w-full bg-secondary shadow-md transition-all duration-500 ease-in-out ${headerSearch ? 'visibilty-visible opacity-100 z-50 top-0' : 'visibilty-hidden opacity-0 h-0 z-0 top-[-400px]'}`}>
+                <form onSubmit={handleSubmit} className="bg-secondary h-full mx-auto max-w-7xl relative">
                     <Input
-                        className="pr-60 text-primary h-full text-xl bg-transparent leading-10 focus-visible:ring--offset-0 focus-visible:ring-0 focus-visible:outline-none box-shadow-none"
+                        className="pr-60 text-primary h-full w-full text-xl bg-transparent leading-10 focus-visible:ring--offset-0 focus-visible:ring-0 focus-visible:outline-none box-shadow-none border-0 text-white placeholder:text-gray-400"
                         type="search"
                         value={title}
                         onChange={handleTitleChange}
                         placeholder="Search tours by name"
                     />
-                    <div className="md:hidden   cd-select 
+                    <div className="md:hidden cd-select 
                     flex z-10
                     absolute 
                     md:max-md:flex
@@ -146,16 +155,17 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                     max-md:bottom-auto 
                     max-md:translate-y-[-50%] ">
                         <button
-                            type="submit" // Change to submit
+                            type="submit"
                             className="cd-search-trigger cd-text-replace ml-3 bg-primary text-secondary h-10 w-10 rounded-full flex items-center justify-center"
                         >
                             <Search />
                         </button>
                         <button
-                            type="button" // Button to close
+                            type="button"
                             className="cd-search-trigger cd-text-replace ml-3"
-                            onClick={(e) => {
-                                closeSearch(e);
+                            onClick={() => {
+                                clearSearch();
+                                handleSearch();
                             }}
                         >
                             <X />
@@ -178,7 +188,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value={null}>
+                                    <SelectItem value="all">
                                         Select all Category
                                     </SelectItem>
                                     {categories?.data.categories && categories?.data.categories.map((category: CategoryData) => (
@@ -190,16 +200,17 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                             </SelectContent>
                         </Select>
                         <button
-                            type="submit" // Change to submit
+                            type="submit"
                             className="cd-search-trigger hidden md:flex cd-text-replace ml-3 bg-primary text-secondary h-10 w-10 rounded-full flex items-center justify-center"
                         >
                             <Search />
                         </button>
                         <button
-                            type="button" // Button to close
+                            type="button"
                             className="cd-search-trigger hidden md:flex justify-center items-center cd-text-replace ml-3"
-                            onClick={(e) => {
-                                closeSearch(e);
+                            onClick={() => {
+                                clearSearch();
+                                handleSearch();
                             }}
                         >
                             <X />
@@ -207,48 +218,50 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                     </div>
                 </form>
 
-                <div className={`cd-search-suggestions grid grid-flow-col transition-all duration-500 ease-in-out grid-cols-12 px-5 py-2 relative mx-auto max-w-7xl bg-secondary`}>
-                    <div className={`news col-span-9 `}>
-                        <h3 className="mb-5 letter-spacing">Tours</h3>
-                        {
-                            searchMutation.isPending &&
-                            <div className="flex items-center space-x-4">
-                                <Skeleton className="h-12 w-12 rounded-full" />
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-[250px]" />
-                                    <Skeleton className="h-4 w-[200px]" />
+                {headerSearch && (
+                    <div className="cd-search-suggestions grid grid-flow-col transition-all duration-500 ease-in-out grid-cols-12 px-5 py-2 relative mx-auto max-w-7xl bg-secondary">
+                        <div className="news col-span-9">
+                            <h3 className="mb-5 letter-spacing">Tours</h3>
+                            {
+                                searchMutation.isPending &&
+                                <div className="flex items-center space-x-4">
+                                    <Skeleton className="h-12 w-12 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-[250px]" />
+                                        <Skeleton className="h-4 w-[200px]" />
+                                    </div>
                                 </div>
-                            </div>
-                        }
-                        <ul>
-                            {sortedToursByDate && sortedToursByDate.length === 0 && <p>No tours found</p>}
+                            }
+                            <ul>
+                                {sortedToursByDate && sortedToursByDate.length === 0 && <p>No tours found</p>}
 
-                            {sortedToursByDate && sortedToursByDate.map((tour: Tour) => (
-                                <li className="flex relative flex-col pl-[100px] mb-5 items-start" key={tour._id}>
-                                    <Link className="image-wrapper pr-5 absolute left-0 top-0" to={`/tours/${tour._id}`}>
-                                        <img className="w-20 h-15" src={tour.coverImage} alt="News image" />
-                                    </Link>
-                                    <h4>
-                                        <Link className="cd-nowrap" to={`/tours/${tour._id}`}>
-                                            {tour.title}
+                                {sortedToursByDate && sortedToursByDate.map((tour: Tour) => (
+                                    <li className="flex relative flex-col pl-[100px] mb-5 items-start" key={tour._id}>
+                                        <Link className="image-wrapper pr-5 absolute left-0 top-0" to={`/tours/${tour._id}`}>
+                                            <img className="w-20 h-15" src={tour.coverImage} alt="News image" />
                                         </Link>
-                                    </h4>
-                                    <time dateTime={tour.updatedAt} className="text-xs mt-1">{formatDate(tour.updatedAt)}</time>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                                        <h4>
+                                            <Link className="cd-nowrap" to={`/tours/${tour._id}`}>
+                                                {tour.title}
+                                            </Link>
+                                        </h4>
+                                        <time dateTime={tour.updatedAt} className="text-xs mt-1">{formatDate(tour.updatedAt)}</time>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
-                    <div className="quick-links col-span-3 col-end-13 text-right hidden md:flex flex-row flex-col">
-                        <h3 className="mb-3">Quick Links</h3>
-                        <ul>
-                            <li className="mb-2"><Link to={'#'}>Find a Destination</Link></li>
-                            <li className="mb-2"><Link to={'#'}>FAQ's</Link></li>
-                            <li className="mb-2"><Link to={'#'}>Support</Link></li>
-                            <li className="mb-2"><Link to={'#'}>Contact Us</Link></li>
-                        </ul>
+                        <div className="quick-links col-span-3 col-end-13 text-right hidden md:flex flex-row flex-col">
+                            <h3 className="mb-3">Quick Links</h3>
+                            <ul>
+                                <li className="mb-2"><Link to={'#'}>Find a Destination</Link></li>
+                                <li className="mb-2"><Link to={'#'}>FAQ's</Link></li>
+                                <li className="mb-2"><Link to={'#'}>Support</Link></li>
+                                <li className="mb-2"><Link to={'#'}>Contact Us</Link></li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </>
     );

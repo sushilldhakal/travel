@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login, register, verifyEmail, forgotPassword, resetPassword } from "@/http/api";
+import { login, register, verifyEmail, forgotPassword, resetPassword } from "@/http";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";

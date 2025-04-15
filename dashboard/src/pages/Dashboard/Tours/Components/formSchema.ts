@@ -17,11 +17,47 @@ const optionSchema = z.object({
     disable: z.boolean().optional(),
   });
 
-  // Schema for dates
+  const recurringTourSchema = z.object({
+    isRecurring: z.boolean().default(false),
+    recurrencePattern: z.enum(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    recurrenceEndDate: z.date().optional(),
+    priceLockedUntil: z.date().optional(),
+  }).superRefine((data, ctx) => {
+    if (data.isRecurring && !data.recurrencePattern) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Recurrence pattern is required',
+        path: ['recurrencePattern']
+      });
+    }
+    
+    if (data.priceLockedUntil && data.priceLockedUntil < new Date()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Lock date must be in the future',
+        path: ['priceLockedUntil']
+      });
+    }
+  });
+
+// Custom validation for DateRange type
+const dateRangeSchema = z.object({
+  from: z.date().optional(),
+  to: z.date().optional(),
+}).optional().refine(data => {
+  // If data exists, both from and to should be present
+  if (data && data.from && data.to) {
+    return data.from <= data.to; // from date should be before or equal to to date
+  }
+  return true; // If we don't have complete data, pass validation
+}, {
+  message: 'End date must be after start date',
+});
+
+// Schema for dates
 const datesSchema = z.object({
     tripDuration: z.string().optional(),
-    startDate: z.date().optional(),
-    endDate: z.date().optional(),
+    dateRange: dateRangeSchema,
 });
 
 // Schema for facts
@@ -38,25 +74,23 @@ const factSchema = z.object({
     icon: z.string().optional(),
 });
 
-
-z.object({
-    label: z.string(),
-    value: z.string(),
-    disable: z.boolean().optional(),
-  });
+// Schema for discount
+const discountSchema = z.object({
+    percentage: z.number().min(0).max(100, 'Percentage must be between 0 and 100').optional(),
+    startDate: z.date().optional(),
+    endDate: z.date().optional(),
+    isActive: z.boolean().optional(),
+    description: z.string().optional(),
+    discountCode: z.string().optional(),
+    maxDiscountAmount: z.number().min(0, 'Maximum discount amount must be positive').optional(),
+    dateRange: dateRangeSchema,
+});
 
 // Schema for FAQs
 const faqSchema = z.object({
     question: z.string().optional(),
     answer: z.string().optional(),
 });
-
-// Schema for reviews
-// const reviewSchema = z.object({
-//     user: z.string().min(1, 'User ID is required'),
-//     rating: z.number().min(1).max(5, 'Rating must be between 1 and 5'),
-//     comment: z.string().min(1, 'Comment is required'),
-// });
 
 // Schema for gallery
 const gallerySchema = z.object({
@@ -71,6 +105,26 @@ const locationSchema = z.object({
     country: z.string().optional(),
     lat: z.string().optional(),
     lng: z.string().optional(),
+});
+
+// Schema for date ranges
+const dateRangeItemSchema = z.object({
+    id: z.string().optional(),
+    label: z.string().optional(),
+    dateRange: dateRangeSchema,
+    selectedPricingOptions: z.array(z.string()).optional(),
+});
+
+// Schema for pricing options
+const pricingOptionSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    category: z.string().optional(),
+    customCategory: z.string().optional(),
+    price: z.number().min(0).optional(),
+    discountEnabled: z.boolean().optional(),
+    discountPrice: z.number().min(0).optional(),
+    paxRange: z.tuple([z.number().min(1), z.number().min(1)]).optional(),
 });
 
 export const formSchema = z.object({
@@ -89,10 +143,33 @@ export const formSchema = z.object({
     exclude: z.string().optional(),
     facts: z.array(factSchema).optional(),
     faqs: z.array(faqSchema).optional(),
-    // reviews: z.array(reviewSchema).optional(),
     gallery: z.array(gallerySchema).optional(),
     map: z.string().optional(),
     location: locationSchema.optional(),
+    discount: discountSchema.optional(),
     enquiry: z.boolean().optional(),
+    isSpecialOffer: z.boolean().optional(),
+    destination: z.string().optional(),
+    // Add new pricing fields
+    pricePerType: z.string().optional(),
+    basePrice: z.number().min(0).optional(),
+    groupSize: z.number().min(1).optional(),
+    discountEnabled: z.boolean().optional(),
+    discountPrice: z.number().min(0).optional(),
+    discountDateRange: dateRangeSchema,
+    pricingOptionsEnabled: z.boolean().optional(),
+    pricingOptions: z.array(pricingOptionSchema).optional(),
+    // Tour dates fields
+    fixedDeparture: z.boolean().optional(),
+    tourDates: z.object({
+        days: z.number().min(1).optional(),
+        nights: z.number().min(0).optional(),
+        dateRange: dateRangeSchema,
+    }).optional(),
+    // Fixed departure fields
+    multipleDates: z.boolean().optional(),
+    fixedDate: z.object({
+        dateRange: dateRangeSchema,
+    }).optional(),
+    dateRanges: z.array(dateRangeItemSchema).optional(),
 });
-

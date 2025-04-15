@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ImageGrid from "./ImageGrid";
 import UploadSheet from "./UploadSheet";
-import { addMedia, deleteMedia, getAllMedia } from "@/http/api";
+import { addMedia, deleteMedia, getAllMedia } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImageResource } from "@/Provider/types";
@@ -9,9 +9,12 @@ import { getUserId } from "@/util/AuthLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDetail from "./ImageDetail";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Image, FileVideo, FileArchive, Upload, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface GalleryPageProps {
     onImageSelect: (image: string | string[] | null) => void; // Adjusted type for the callback
@@ -45,7 +48,6 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         navigate(`?tab=${tabValue}`);
     };
 
-
     useEffect(() => {
         if (location.pathname === '/dashboard/gallery') {
             setIsGalleryPage(true)
@@ -54,6 +56,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
             setIsGalleryPage(false);
         }
     }, [location.pathname]);
+    
     const {
         data,
         isLoading,
@@ -72,6 +75,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         },
         initialPageParam: 1,
     });
+    
     const allMedia = useMemo(() => {
         const mediaUrls = new Set<string>();
         const mergedMedia: ImageResource[] = [];
@@ -88,6 +92,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         });
         return mergedMedia;
     }, [data, tab]);
+    
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
@@ -202,7 +207,6 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         deleteMutation.mutate({ imageIds, mediaType });
     };
 
-
     const dropZoneConfig = {
         accept: {
             'image/jpeg': ['.jpg', '.jpeg'],
@@ -223,39 +227,32 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         // Update the selected image
         setSelectedImage(image);
         onImageSelect(image);
-        // Use the functional version of setSelectedMediaUrls to access the previous state
-        // setSelectedMediaUrls(prevSelectedMediaUrls => {
-        //     let mediaArray = prevSelectedMediaUrls.map(item => item);
-
-        //     if (prevSelectedMediaUrls && prevSelectedMediaUrls.length > 0) {
-        //         mediaArray = prevSelectedMediaUrls.map(item => item);
-        //         onImageSelect(prevSelectedMediaUrls.map(item => item));
-        //     } else {
-        //         onImageSelect(image);
-        //     }
-
-        //     console.log('mediaArray:', mediaArray);
-        //     console.log('Updated selectedMediaUrls:', prevSelectedMediaUrls);
-
-        //     return prevSelectedMediaUrls; // Make sure to return the updated state
-        // });
     };
-
 
     const onTabChange = (value: string) => {
         setTab(value);
         setSelectedMediaUrls([]);
     }
+    
     const handleClose = () => {
         //@ts-expect-error
         setSelectedImage(null);
     };
 
-
     const renderTabContent = () => (
-        <div className={`grid gap-2 ${selectedImage && isGalleryPage ? 'grid-cols-3' : 'grid-cols-1'}`}>
+        <div className={`grid gap-4 ${selectedImage && isGalleryPage ? 'md:grid-cols-3' : 'grid-cols-1'}`}>
             <div className="col-span-2">
-                {isError ? <div className="text-red-600">Error loading media</div> : null}
+                {isError ? (
+                    <Card className="bg-destructive/10 border-destructive/30">
+                        <CardContent className="pt-6">
+                            <div className="text-destructive text-center">
+                                <p className="font-semibold">Error loading media</p>
+                                <p className="text-sm">Please try again or contact support</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : null}
+                
                 <ImageGrid
                     images={allMedia}
                     onImageSelect={handleImageSelect}
@@ -269,104 +266,156 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                     setSelectedMediaUrls={setSelectedMediaUrls}
                 />
             </div>
-            {
-                isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length == 0 ? <ImageDetail files={files}
-                    setFiles={setFiles}
-                    setSelectedImage={setSelectedImage}
-                    onDelete={handleDelete}
-                    handleUpload={handleUpload}
-                    handleClose={handleClose}
-                    imageUrl={selectedImage}
-                    userId={userId}
-                /> : null
-
-            }
-            {isGalleryPage && selectedImage && (
-                <>
-                    {
-                        selectedMediaUrls && selectedMediaUrls.length > 0 && (
-                            <div className="grid grid-cols-1 relative">
-                                <Button
-                                    className="sticky top-3"
-                                    variant={"destructive"}
-                                    onClick={(e) => handleMediaDeleteArray(e)}
-                                >Delete All</Button>
-                            </div>
-                        )
-
-                    }
-                </>
-
+            
+            {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length === 0 ? (
+                <Card className="shadow-sm border-border">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold flex items-center">
+                            {tab === 'images' && <Image className="w-5 h-5 mr-2 text-primary" />}
+                            {tab === 'videos' && <FileVideo className="w-5 h-5 mr-2 text-primary" />}
+                            {tab === 'pdfs' && <FileArchive className="w-5 h-5 mr-2 text-primary" />}
+                            Media Details
+                        </CardTitle>
+                        <CardDescription>Edit details for the selected item</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ImageDetail 
+                            files={files}
+                            setFiles={setFiles}
+                            setSelectedImage={setSelectedImage}
+                            onDelete={handleDelete}
+                            handleUpload={handleUpload}
+                            handleClose={handleClose}
+                            imageUrl={selectedImage}
+                            userId={userId}
+                        />
+                    </CardContent>
+                </Card>
+            ) : null}
+            
+            {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length > 0 && (
+                <Card className="shadow-sm border-border">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold flex items-center">
+                            <Trash2 className="w-5 h-5 mr-2 text-destructive" />
+                            Bulk Actions
+                        </CardTitle>
+                        <CardDescription>
+                            {selectedMediaUrls.length} items selected
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button
+                            className="w-full"
+                            variant="destructive"
+                            onClick={(e) => handleMediaDeleteArray(e)}
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Selected Items
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
         </div>
     );
 
     if (isLoading) {
         return (
-            <div>
-                <Skeleton className="h-8 w-1/2 mb-4" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                    {Array.from({ length: 20 }).map((_, index) => (
-                        <div key={index} className="flex flex-col items-center justify-center">
-                            <Skeleton className="h-[125px] w-[100%] rounded-xl" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-[100%]" />
-                                <Skeleton className="h-4 w-[100%]" />
-                            </div>
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-1/3" />
+                        <Skeleton className="h-4 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {Array.from({ length: 15 }).map((_, index) => (
+                                <div key={index} className="flex flex-col space-y-2">
+                                    <Skeleton className="h-[125px] w-full rounded-md" />
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
+
     return (
-        <>
-            <div className="m">
-                <UploadSheet
-                    files={files}
-                    setFiles={setFiles}
-                    handleUpload={handleUpload}
-                    dropZoneConfig={dropZoneConfig}
-                />
-                {/* {
-                    selectedMediaUrls && selectedMediaUrls.length > 0 && (
-                        <div className="absolute top-10 right-40">
-                            <Button
-                                onClick={(e) => handleMediaDeleteArray(e)}
-                            >Delete All</Button>
-                        </div>
-                    )
-
-                } */}
-
-            </div>
-
-
-            <Tabs value={tab} onValueChange={onTabChange} className="w-full">
-                <TabsList>
-                    <TabsTrigger value="images"
-                        onClick={() => handleTabClick('images')}
-                        className={tab === 'images' ? 'active' : ''}
-                    >Images</TabsTrigger>
-                    <TabsTrigger value="videos" onClick={() => handleTabClick('videos')}
-                        className={tab === 'videos' ? 'active' : ''}>Video</TabsTrigger>
-                    <TabsTrigger value="pdfs" onClick={() => handleTabClick('pdfs')}
-                        className={tab === 'pdfs' ? 'active' : ''}>PDF</TabsTrigger>
-                </TabsList>
-                <TabsContent value="images">
-                    {renderTabContent()}
-                </TabsContent>
-                <TabsContent value="videos">
-                    {renderTabContent()}
-                </TabsContent>
-                <TabsContent value="pdfs">
-                    {renderTabContent()}
-                </TabsContent>
-            </Tabs>
-
-
-        </>
-
+        <Card className="shadow-sm border-border">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-xl font-semibold flex items-center justify-between">
+                    <div className="flex items-center">
+                        {tab === 'images' && <Image className="w-5 h-5 mr-2 text-primary" />}
+                        {tab === 'videos' && <FileVideo className="w-5 h-5 mr-2 text-primary" />}
+                        {tab === 'pdfs' && <FileArchive className="w-5 h-5 mr-2 text-primary" />}
+                        Media Gallery
+                        <Badge variant="outline" className="ml-2">
+                            {allMedia?.length || 0} items
+                        </Badge>
+                    </div>
+                    <UploadSheet
+                        files={files}
+                        setFiles={setFiles}
+                        handleUpload={handleUpload}
+                        dropZoneConfig={dropZoneConfig}
+                    >
+                        <Button variant="outline" size="sm" className="gap-1">
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload Files
+                        </Button>
+                    </UploadSheet>
+                </CardTitle>
+                <CardDescription>Manage your media files for tours and content</CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+                <Tabs 
+                    value={tab} 
+                    onValueChange={onTabChange} 
+                    className="w-full"
+                >
+                    <TabsList className="w-full md:w-auto grid grid-cols-3 md:inline-flex mb-4">
+                        <TabsTrigger 
+                            value="images"
+                            onClick={() => handleTabClick('images')}
+                            className={cn("flex items-center gap-2", tab === 'images' ? 'text-primary' : '')}
+                        >
+                            <Image className="h-4 w-4" />
+                            Images
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="videos" 
+                            onClick={() => handleTabClick('videos')}
+                            className={cn("flex items-center gap-2", tab === 'videos' ? 'text-primary' : '')}
+                        >
+                            <FileVideo className="h-4 w-4" />
+                            Videos
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="pdfs" 
+                            onClick={() => handleTabClick('pdfs')}
+                            className={cn("flex items-center gap-2", tab === 'pdfs' ? 'text-primary' : '')}
+                        >
+                            <FileArchive className="h-4 w-4" />
+                            PDFs
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="images" className="mt-0">
+                        {renderTabContent()}
+                    </TabsContent>
+                    <TabsContent value="videos" className="mt-0">
+                        {renderTabContent()}
+                    </TabsContent>
+                    <TabsContent value="pdfs" className="mt-0">
+                        {renderTabContent()}
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
     );
 };
 

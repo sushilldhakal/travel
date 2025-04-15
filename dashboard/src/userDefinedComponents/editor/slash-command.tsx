@@ -15,7 +15,7 @@ import {
 import { createSuggestionItems } from "novel/extensions";
 import { Command, renderItems } from "novel/extensions";
 import Magic from "@/assets/icons/magic";
-import { generateCompletion } from "@/http/api";
+import { generateCompletion } from "@/http";
 import {
   type JSONContent,
 } from "novel";

@@ -1,4 +1,4 @@
-import { getUsersTours, deleteTour } from '@/http/api';
+import { getUsersTours, deleteTour } from '@/http';
 import { Tour } from '@/Provider/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from "@/userDefinedComponents/DataTable";
@@ -13,23 +13,18 @@ import { Link } from 'react-router-dom';
 import routePaths from '@/lib/routePath';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
-import useTokenStore from '@/store/store';
-import { jwtDecode } from 'jwt-decode';
-import { useEffect, useState } from 'react';
+import { getUserId } from '@/util/AuthLayout';
 
 const TourPage = () => {
   const { toast } = useToast()
-  const { token } = useTokenStore(state => state);
-  const decodedToken = jwtDecode(token);
-  const currentUserRole = decodedToken.roles || "";
-  const currentUserId = decodedToken.sub;
+  const currentUserId = getUserId();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tours', currentUserId],
-    queryFn: () => getUsersTours(currentUserId),
+    queryFn: () => getUsersTours(currentUserId || ''),
   });
 
-  console.log("data", data?.data?.data?.tours);
+  console.log("data", data, currentUserId);
 
   const queryClient = useQueryClient();
 

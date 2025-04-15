@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { addPost, deletePost, getSinglePost, updatePost } from "@/http/api";
+import { addPost, deletePost, getSinglePost, updatePost } from "@/http";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import Loader from "@/userDefinedComponents/Loader";
@@ -14,7 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle, Paperclip, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import GalleryPage from "../Gallery/GalleryPage";
@@ -24,8 +24,7 @@ import { toast } from "@/components/ui/use-toast";
 import { JSONContent } from "novel";
 import { Switch } from "@/components/ui/switch";
 import Component from "./CommentComponents";
-
-
+import { UserAvatar } from "@/userDefinedComponents/Avatar";
 
 const formSchema = z.object({
     title: z.string().min(2, {
@@ -44,11 +43,9 @@ const formSchema = z.object({
     enableComments: z.boolean().optional(),
 });
 
-
 const EditPost = () => {
     const { postId } = useParams<{ postId: string }>();
     const { updateBreadcrumbs } = useBreadcrumbs();
-    const navigate = useNavigate();
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [editorContent, setEditorContent] = useState<JSONContent>();
 
@@ -70,14 +67,10 @@ const EditPost = () => {
         queryKey: ['posts', postId],
         queryFn: () => postId ? getSinglePost(postId) : Promise.reject('No post ID provided'),
         enabled: !!postId,
-
     });
-    console.log("initialPostData in edit post", initialPostData)
-
 
     useEffect(() => {
         if (initialPostData && postId && initialPostData.post?.content) {
-            // Update breadcrumbs
             const breadcrumbLabel = initialPostData.breadcrumbs?.[0]?.label ?
                 initialPostData.breadcrumbs[0].label.charAt(0).toUpperCase() + initialPostData.breadcrumbs[0].label.slice(1)
                 : '';
@@ -88,29 +81,24 @@ const EditPost = () => {
             ];
             updateBreadcrumbs(breadcrumbs);
 
-            // Set the form data after fetching the post data
             const defaultValues = {
                 title: initialPostData.post?.title || '',
-                content: initialPostData.post?.content || '', // No need to parse it here if it's already JSON
+                content: initialPostData.post?.content || '',
                 image: initialPostData.post?.image || '',
                 status: initialPostData.post?.status || '',
                 tags: initialPostData.post?.tags || [],
             };
-            form.reset(defaultValues);  // Reset the form with the fetched post data
-            // If content is already in the correct format, set it directly
-            setEditorContent(JSON.parse(initialPostData?.post?.content))
-
+            form.reset(defaultValues);
+            setEditorContent(JSON.parse(initialPostData?.post?.content));
         }
     }, [initialPostData, postId, updateBreadcrumbs, form]);
-
-
 
     const mutation = useMutation({
         mutationFn: (data: FormData) => {
             if (postId) {
-                return updatePost(data, postId)
+                return updatePost(data, postId);
             }
-            throw new Error('No post ID provided')
+            throw new Error('No post ID provided');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -121,16 +109,14 @@ const EditPost = () => {
         },
     });
 
-
     const deleteMutation = useMutation({
         mutationFn: () => {
             if (postId) {
-                return deletePost(postId)
+                return deletePost(postId);
             }
-            throw new Error('No post ID provided')
+            throw new Error('No post ID provided');
         },
         onSuccess: () => {
-            //queryClient.invalidateQueries({ queryKey: ['posts'] });
             toast({
                 title: 'post deleted successfully',
                 description: 'The post has been deleted successfully.',
@@ -141,7 +127,7 @@ const EditPost = () => {
                 title: 'Failed to delete post',
                 description: 'An error occurred while deleting the post. Please try again later.',
             });
-        }
+        },
     });
 
     const handleDeletePost = async () => {
@@ -155,21 +141,18 @@ const EditPost = () => {
         }
     };
 
-
     const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
         if (imageUrl) {
             onChange(imageUrl);
-            setImageDialogOpen(false); // Close the image dialog
+            setImageDialogOpen(false);
         }
     };
+
     const handleRemoveImage = (onChange: (value: string) => void) => {
         onChange('');
     };
 
-
     function onSubmit(values: z.infer<typeof formSchema>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
         const formdata = new FormData();
         formdata.append('title', values.title);
         formdata.append('status', values.status);
@@ -178,7 +161,7 @@ const EditPost = () => {
         if (values.enableComments) formdata.append('enableComments', values.enableComments.toString());
         if (values.tags) {
             values.tags.forEach((tag) => {
-                formdata.append('tags[]', tag); // Send each tag individually
+                formdata.append('tags[]', tag);
             });
         }
         mutation.mutate(formdata);
@@ -198,13 +181,12 @@ const EditPost = () => {
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        console.log("form", form.getValues());
                         form.handleSubmit(
                             (values) => {
-                                onSubmit(values); // your submit logic
+                                onSubmit(values);
                             },
                             (errors) => {
-                                console.log("Form Errors:", errors); // log errors
+                                console.log("Form Errors:", errors);
                             }
                         )();
                     }}
@@ -221,14 +203,20 @@ const EditPost = () => {
                         </Button>
                     </div>
                     <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3">
-                        {/* Left side (2/3): Title and Content */}
                         <div className="col-span-2 space-y-6 max-lg:col-span-3">
                             <Card className="mt-6">
                                 <CardHeader>
-                                    <CardTitle>Edit Post</CardTitle>
-                                    <CardDescription>
-                                        Fill out the form below to edit a  post.
-                                    </CardDescription>
+                                    <div className="flex items-center space-x-4">
+                                        {initialPostData?.post?.author && (
+                                            <UserAvatar userId={initialPostData.post.author.toString()} size="md" />
+                                        )}
+                                        <div>
+                                            <CardTitle>Edit Post</CardTitle>
+                                            <CardDescription>
+                                                Fill out the form below to edit a post.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid gap-6">
@@ -251,10 +239,10 @@ const EditPost = () => {
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Editor
-                                                    initialValue={editorContent}  // Pass the content directly to the editor
+                                                    initialValue={editorContent}
                                                     onContentChange={(content) => {
                                                         setEditorContent(content);
-                                                        form.setValue('content', JSON.stringify(content)); // Update the form value
+                                                        field.onChange(JSON.stringify(content));
                                                     }}
                                                 />
                                             )}
@@ -264,7 +252,6 @@ const EditPost = () => {
                             </Card>
                         </div>
 
-                        {/* Right side (1/3): Status, Image, and Tags */}
                         <div className="col-span-1 space-y-6 max-lg:col-span-3">
                             <Card className="mt-6 p-5">
                                 <FormField
@@ -326,34 +313,26 @@ const EditPost = () => {
                                                                 "size-8"
                                                             )}
                                                         >
-                                                            <Paperclip className="size-4" />
-                                                            <span className="sr-only">Select your files</span>
+                                                            <Paperclip className="h-4 w-4" />
                                                         </div>
-                                                        <span className="pl-2">Choose Image</span>
                                                     </DialogTrigger>
-                                                    <DialogContent
-                                                        className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
-                                                        onInteractOutside={(e) => {
-                                                            e.preventDefault();
-                                                        }}
-                                                    >
+                                                    <DialogContent className="asDialog max-w-[90%] max-h-[90%] overflow-auto">
                                                         <DialogHeader>
-                                                            <DialogTitle className="mb-3 text-left">Choose Image From Gallery</DialogTitle>
-                                                            <div className="upload dialog">
-                                                                <GalleryPage
-                                                                    isGalleryPage={false}
-                                                                    onImageSelect={(imageUrl) =>
-                                                                        handleImageSelect(imageUrl, field.onChange)
-                                                                    }
-                                                                />
-                                                            </div>
+                                                            <DialogTitle>Select Image</DialogTitle>
+                                                            <DialogDescription>
+                                                                Choose an image from your gallery.
+                                                            </DialogDescription>
                                                         </DialogHeader>
-                                                        <DialogDescription>
-                                                            Select an Image.
-                                                        </DialogDescription>
+                                                        <div className="mt-4">
+                                                            <GalleryPage
+                                                                onImageSelect={(imageUrl) => handleImageSelect(imageUrl, field.onChange)}
+                                                                mediaType="images"
+                                                            />
+                                                        </div>
                                                     </DialogContent>
                                                 </Dialog>
                                             )}
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -369,38 +348,29 @@ const EditPost = () => {
                                             <FormControl>
                                                 <InputTags
                                                     value={field.value || []}
-                                                    onChange={(newTags) => {
-                                                        field.onChange(newTags);
-                                                    }}
+                                                    onChange={(newTags) => field.onChange(newTags)}
+                                                    placeholder="Enter tags..."
                                                 />
                                             </FormControl>
+                                            <FormDescription>
+                                                Press enter to add a tag
+                                            </FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </Card>
-                        </div>
-                    </div>
 
-                    <div className="mx-auto grid w-full max-w-6xl items-start gap-6 mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Comments</CardTitle>
-                                <CardDescription>Turn on Comments for the post.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-
+                            <Card className="mt-6 p-5">
                                 <FormField
                                     control={form.control}
                                     name="enableComments"
                                     render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                             <div className="space-y-0.5">
-                                                <FormLabel className="text-base">
-                                                    Enable Comments
-                                                </FormLabel>
+                                                <FormLabel>Enable Comments</FormLabel>
                                                 <FormDescription>
-                                                    Enable users to add comments on your post.
+                                                    Allow users to comment on this post
                                                 </FormDescription>
                                             </div>
                                             <FormControl>
@@ -412,18 +382,26 @@ const EditPost = () => {
                                         </FormItem>
                                     )}
                                 />
+                            </Card>
 
-                            </CardContent>
-                        </Card>
-
-
+                            <div className="mt-6 flex w-full items-center justify-between md:hidden">
+                                <Button size="sm" variant={'destructive'} onClick={handleDeletePost}>
+                                    <span className="ml-2">
+                                        <span>Delete</span>
+                                    </span>
+                                </Button>
+                                <Button type="submit" size="sm">
+                                    {mutation.isPending && <LoaderCircle className="animate-spin" />}
+                                    <span className="ml-2">Update Post</span>
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </Form>
-            <Component />
+            {initialPostData?.post?.enableComments && <Component postId={postId} />}
         </div>
+    );
+};
 
-    )
-}
-
-export default EditPost
+export default EditPost;

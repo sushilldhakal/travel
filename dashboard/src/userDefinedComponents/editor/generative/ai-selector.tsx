@@ -11,7 +11,7 @@ import Magic from "@/assets/icons/magic";
 import CrazySpinner from "@/assets/icons/crazy-spinner";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { generateCompletion } from "@/http/api"; // Assuming this is your API function
+import { generateCompletion } from "@/http"; // Assuming this is your API function
 import { toast } from "@/components/ui/use-toast";
 
 interface AISelectorProps {

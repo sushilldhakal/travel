@@ -13,7 +13,7 @@ import { useRef } from "react"
 import routePaths from "@/lib/routePath"
 import useTokenStore from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
-import { register } from "@/http/api"
+import { register } from "@/http"
 import { LoaderCircle } from "lucide-react"
 
 const RegisterPage = () => {

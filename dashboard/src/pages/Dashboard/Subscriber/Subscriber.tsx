@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
-import { getAllSubscribers, subscribe, unsubscribe } from "@/http/api";
+import { getAllSubscribers, subscribe, unsubscribe } from "@/http";
 import { DataTable } from "@/userDefinedComponents/DataTable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpDown } from "lucide-react";

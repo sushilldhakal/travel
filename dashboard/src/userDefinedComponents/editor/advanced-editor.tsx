@@ -97,7 +97,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
 
 
   return (
-    <div className="relative w-full max-w-screen-lg">
+    <div className="relative w-full max-w-screen-xl">
       <div className="flex absolute right-3 top-3 z-10 mb-2 gap-2">
         <div className="rounded-lg bg-accent px-2 py-1 text-xs text-muted-foreground">{saveStatus}</div>
         <div className={charsCount ? "rounded-lg bg-accent px-2 py-1 text-xs text-muted-foreground" : "hidden"}>
@@ -110,7 +110,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
           <EditorContent
             initialContent={initialContent}
             extensions={extensions}
-            className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-screen-lg border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
+            className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-screen-xl border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
             editorProps={{
               handleDOMEvents: {
                 keydown: (_view, event) => handleCommandNavigation(event),

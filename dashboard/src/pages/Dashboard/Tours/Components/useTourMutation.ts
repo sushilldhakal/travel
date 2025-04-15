@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createTour, updateTour } from '@/http/api';
+import { createTour, updateTour } from '@/http';
 import { useToast } from '@/components/ui/use-toast';
 import { useParams } from 'react-router-dom';
 
@@ -7,10 +7,13 @@ export const useTourMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { tourId } = useParams<{ tourId: string }>();
-  
+  console.log("tour id", tourId);
 
   return useMutation({
     mutationFn: (data: FormData) => {
+      // Log the data entries to debug
+      console.log("FormData in mutation function:", Object.fromEntries(data.entries()));
+      
       if (tourId) {
         // If tourId is present, update the existing tour
         return updateTour(tourId, data);
@@ -26,7 +29,8 @@ export const useTourMutation = () => {
         description: tourId ? 'The tour has been updated successfully.' : 'The tour has been created successfully.',
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.log("form error",error);
       toast({
         title: 'Failed to save tour',
         description: 'An error occurred while saving the tour. Please try again later.',

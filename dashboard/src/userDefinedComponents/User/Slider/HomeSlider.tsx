@@ -1,8 +1,6 @@
 import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import { useQuery } from "@tanstack/react-query";
-import { getLatestTours } from "@/http/api";
+import { getLatestTours } from "@/http";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
@@ -89,17 +87,30 @@ const HomeSlider = () => {
         <div className="overflow-hidden main-slider pattern-2">
             <Slider className="banner-slider w-full" {...settings}>
                 {sortedTours?.map((tour: any) => {
-                    const descriptionHtml = tour.description
-                        ? jsonToHtml(JSON.parse(tour.description))
-                        : "No description available.";
+                    let descriptionHtml = "No description available.";
+
+                    if (tour.description) {
+                        try {
+                            // Try to parse as JSON first
+                            const jsonData = JSON.parse(tour.description);
+                            descriptionHtml = jsonToHtml(jsonData);
+                        } catch (error) {
+                            // If parsing fails, use the description as plain text
+                            descriptionHtml = tour.description;
+                            // Limit description length if needed
+                            if (descriptionHtml.length > 400) {
+                                descriptionHtml = descriptionHtml.substring(0, 400) + "...Read More";
+                            }
+                        }
+                    }
 
                     return (
                         <div key={tour._id} className="w-full">
                             <div
-                                className="banner-content parallax-container h-screen relative bg-fixed bg-center bg-cover bg-no-repeat w-full"
+                                className="banner-content parallax-container h-[calc(100vh-20%)] relative bg-fixed bg-center bg-cover bg-no-repeat w-full"
                                 style={{
                                     backgroundImage: `url(${tour.coverImage})`,
-                                    height: 'calc(100vh - 104px)',
+                                    height: 'calc(80vh)',
                                     backgroundAttachment: 'fixed',
                                 }}
                             >

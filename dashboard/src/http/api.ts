@@ -2,12 +2,15 @@ import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import axios, { isAxiosError } from 'axios';
 
-const api = axios.create({
-    baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL,
+// Base API configuration
+export const api = axios.create({
+    baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL || 'http://localhost:8000', // Use environment variable with fallback
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
 api.interceptors.request.use((config) => {
     const token = useTokenStore.getState().token;
     if (token) {
@@ -40,7 +43,10 @@ export const resetPassword = async (data: { token: string, password: string }) =
     api.post('/api/users/login/reset', data);
 
 
-export const getUserSetting = async (userId: string) => api.get(`/api/users/setting/${userId}`);
+export const getUserSetting = async (userId: string) => {
+    const response = await api.get(`/api/users/setting/${userId}`);
+    return response.data;
+};
 
 export const userSetting = async (userId: string, data: FormData) =>
     api.patch(`/api/users/setting/${userId}`, data, {
@@ -48,19 +54,32 @@ export const userSetting = async (userId: string, data: FormData) =>
             'Content-Type': 'multipart/form-data',
         },
     });
+
+// Get decrypted API key (only when needed for actual API operations)
+export const getDecryptedApiKey = async (userId: string, keyType: string) => {
+    const response = await api.get(`/api/users/setting/${userId}/key?keyType=${keyType}`);
+    return response.data;
+};
   
 //tours
-export const getTours = async () => api.get('/api/tours');
+export const getTours = async (page = 1, limit = 10) => api.get(`/api/tours?page=${page}&limit=${limit}`);
 
-export const getUsersTours = async (userId:string) => api.get(`/api/tours/${userId}`);
+export const getUsersTours = async (userId:string) => api.get(`/api/tours/user/${userId}`);
 
 export const getLatestTours = async () => api.get('/api/tour/search/latest');
 
 export const getSingleTour = async (tourId: string) => {
     try {
-        const response = await api.get(`/api/tours/${tourId}`);
-        const tourData = response.data;
-        const breadcrumbs = tourData.breadcrumbs || [];
+        // Use the new specific endpoint for single tour
+        const response = await api.get(`/api/tours/single/${tourId}`);
+        console.log("Tour API response:", response.data);
+        
+        // Handle both response structures
+        // If response.data.tour exists, use that structure
+        // Otherwise, assume the tour data is directly in response.data
+        const tourData = response.data.tour || response.data;
+        const breadcrumbs = response.data.breadcrumbs || [];
+        
         return {
             ...tourData,
             breadcrumbs: breadcrumbs,
@@ -74,18 +93,20 @@ export const getSingleTour = async (tourId: string) => {
     }
 };
 
-export const createTour = async (data: FormData) =>
-    api.post(`/api/tours`, data, {
+export const createTour = async (data: FormData) => {
+    return api.post(`/api/tours`, data, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
     });
-export const updateTour = async (tourId: string, data: FormData) =>
-    api.patch(`/api/tours/${tourId}`, data, {
+}
+export const updateTour = async (tourId: string, data: FormData) => {
+    return api.patch(`/api/tours/${tourId}`, data, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
     });
+}
 export const deleteTour = async (tourId: string) => {
     try {
         const response = await api.delete(`/api/tours/${tourId}`);
@@ -442,8 +463,11 @@ export const deleteFaq = async (faqId: string) => {
 
 
 //posts
-export const getPost = async () => api.get('/api/posts');
-
+export const getPost = async () => {
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    return api.get(`/api/posts?_t=${timestamp}`);
+};
 
 export const getAllUserPosts = async () => api.get('/api/posts/user');
 
@@ -471,6 +495,32 @@ export const updatePost = async (postData: FormData, postId: string) => {
 
 export const deletePost = async (postId: string) => {
     return api.delete(`/api/posts/${postId}`);
+};
+
+export const likePost = async (postId: string, userId: string) => {
+  try {
+    const response = await api.patch(`/api/posts/like/${postId}`, { userId });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error liking post: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error liking post: ${String(error)}`);
+    }
+  }
+};
+
+export const viewPost = async (postId: string) => {
+  try {
+    const response = await api.patch(`/api/posts/view/${postId}`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error tracking post view: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error tracking post view: ${String(error)}`);
+    }
+  }
 };
 
 //comment
@@ -504,4 +554,270 @@ export const deleteComment = async (commentId: string) => {
 
 export const getUnapprovedCommentsCount = async () => {
     return api.get(`/api/posts/comment/unapproved/count`);
+};
+
+// New comment functions
+// export const addReply = async (commentData: FormData, commentId: string) => {
+//   try {
+//     const response = await api.post(`/api/posts/comment/reply/${commentId}`, commentData);
+//     return response.data;
+//   } catch (error) {
+//     if (isAxiosError(error)) {
+//       throw new Error(`Error adding reply: ${error.response?.data.message || error.message}`);
+//     } else {
+//       throw new Error(`Error adding reply: ${String(error)}`);
+//     }
+//   }// In api.ts, change the addReply function:
+  export const addReply = async (data: { text: string, user: string, post: string }, commentId: string) => {
+    try {
+      const response = await api.post(`/api/posts/comment/reply/${commentId}`, data);
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(`Error adding reply: ${error.response?.data.message || error.message}`);
+      } else {
+        throw new Error(`Error adding reply: ${String(error)}`);
+      }
+    }
+  };
+  
+
+
+export const likeComment = async (commentId: string, userId: string) => {
+  try {
+    const response = await api.patch(`/api/posts/comment/like/${commentId}`, { userId });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error toggling comment like: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error toggling comment like: ${String(error)}`);
+    }
+  }
+};
+
+export const viewComment = async (commentId: string) => {
+  try {
+    const response = await api.patch(`/api/posts/comment/view/${commentId}`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error tracking comment view: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error tracking comment view: ${String(error)}`);
+    }
+  }
+};
+
+export const getCommentWithReplies = async (commentId: string) => {
+  try {
+    const response = await api.get(`/api/posts/comment/${commentId}/replies`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error getting comment with replies: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error getting comment with replies: ${String(error)}`);
+    }
+  }
+};
+
+// Avatar functions
+export const uploadAvatar = async (userId: string, avatarData: File | FormData | string) => {
+  try {
+    const formData = new FormData();
+    
+    if (typeof avatarData === 'string') {
+      // If avatarData is a string (URL), append it as avatarUrl
+      formData.append('avatarUrl', avatarData);
+    } else if (avatarData instanceof File) {
+      // If avatarData is a File, append it as avatar
+      formData.append('avatar', avatarData);
+    } else if (avatarData instanceof FormData) {
+      // If avatarData is already a FormData, use it directly
+      return api.post(`/api/users/${userId}/avatar`, avatarData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }).then(response => response.data);
+    }
+    
+    const response = await api.post(`/api/users/${userId}/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error uploading avatar: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error uploading avatar: ${String(error)}`);
+    }
+  }
+};
+
+export const getUserAvatar = async (userId: string) => {
+  try {
+    const response = await api.get(`/api/users/${userId}/avatar`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      // Return null if avatar not found (404)
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw new Error(`Error getting avatar: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error getting avatar: ${String(error)}`);
+    }
+  }
+};
+
+// Change password for a user
+export const changeUserPassword = async (userId: string, data: { currentPassword: string; newPassword: string }) => {
+  try {
+    const response = await api.post(`/api/users/${userId}/change-password`, data);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error changing password: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error changing password: ${String(error)}`);
+    }
+  }
+};
+
+//reviews
+export const getPendingReviews = async () => {
+  try {
+    const response = await api.get('/api/tours/reviews/pending');
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error fetching pending reviews: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error fetching pending reviews: ${String(error)}`);
+    }
+  }
+};
+
+export const getTourReviews = async (tourId: string, status?: string) => {
+  try {
+    const url = status 
+      ? `/api/tours/${tourId}/reviews?status=${status}` 
+      : `/api/tours/${tourId}/reviews`;
+    const response = await api.get(url);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error fetching tour reviews: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error fetching tour reviews: ${String(error)}`);
+    }
+  }
+};
+
+export const updateReviewStatus = async (tourId: string, reviewId: string, status: 'approved' | 'rejected') => {
+  try {
+    const response = await api.patch(`/api/tours/${tourId}/reviews/${reviewId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error updating review status: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error updating review status: ${String(error)}`);
+    }
+  }
+};
+
+export const addReviewReply = async (tourId: string, reviewId: string, comment: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/replies`, { comment });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error adding reply: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error adding reply: ${String(error)}`);
+    }
+  }
+};
+
+export const likeReview = async (tourId: string, reviewId: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/like`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error liking review: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error liking review: ${String(error)}`);
+    }
+  }
+};
+
+export const addReview = async (tourId: string, rating: number, comment: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/reviews`, { rating, comment });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error submitting review: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error submitting review: ${String(error)}`);
+    }
+  }
+};
+
+export const getAllReviews = async () => {
+  try {
+    const response = await api.get('/api/tours/reviews/all');
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error fetching all reviews: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error fetching all reviews: ${String(error)}`);
+    }
+  }
+};
+
+export const incrementReviewView = async (tourId: string, reviewId: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/view`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error incrementing review view: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error incrementing review view: ${String(error)}`);
+    }
+  }
+};
+
+export const incrementReplyView = async (tourId: string, replyId: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/replies/${replyId}/view`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error incrementing reply view: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error incrementing reply view: ${String(error)}`);
+    }
+  }
+};
+
+export const likeReply = async (tourId: string, replyId: string) => {
+  try {
+    const response = await api.post(`/api/tours/${tourId}/replies/${replyId}/like`);
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(`Error liking reply: ${error.response?.data.message || error.message}`);
+    } else {
+      throw new Error(`Error liking reply: ${String(error)}`);
+    }
+  }
 };

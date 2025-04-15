@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getSingleMedia, updateMedia } from "@/http/api";
+import { getSingleMedia, updateMedia } from "@/http";
 import { ImageResource } from "@/Provider/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Document, Page, pdfjs } from 'react-pdf';

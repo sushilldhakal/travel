@@ -16,7 +16,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActiveTab }
                     to={`#${tab.id}`}
                     className={`inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 justify-start p-1 ${activeTab === tab.id ? 'text-primary bg-muted hover:bg-muted' : 'hover:bg-muted'
                         }`}
-                    scroll={(el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    // scroll={(el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     onClick={() => setActiveTab(tab.id)}
                 >
                     {tab.title}

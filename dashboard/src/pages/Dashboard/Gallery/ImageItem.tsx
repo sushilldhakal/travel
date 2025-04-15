@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ImageResource } from "@/Provider/types";
-import { ChevronLeft, ChevronRight, Circle, CircleCheckBig, XIcon } from "lucide-react";
-import { forwardRef, memo, useEffect, useState } from "react";
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/TextLayer.css';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { Circle, CircleCheckBig, XIcon, FileText, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { forwardRef, memo, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+
 interface ImageItemProps {
     image: ImageResource;
     onDelete: (imageId: string, mediaType: 'images' | 'videos' | 'PDF') => void;
@@ -13,38 +13,13 @@ interface ImageItemProps {
     setSelectedMediaUrls: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
-
-
-
 const ImageItem = memo(
     forwardRef<HTMLDivElement, ImageItemProps>(
         ({ image, onDelete, setSelectedMediaUrls, onSelect, ...props }, ref) => {
-
-            const [numPages, setNumPages] = useState<number>(1);
-            const [pageNumber, setPageNumber] = useState<number>(1);
             const [isSelected, setIsSelected] = useState(false);
-            const [selectedImages, setSelectedImages] = useState<string[]>([]);
-            function onDocumentLoadSuccess({ numPages }: PDFDocumentProxy): void {
-                setNumPages(numPages);
-                setPageNumber(1);
-            }
+            const [imageLoaded, setImageLoaded] = useState(false);
+            const [imageError, setImageError] = useState(false);
 
-            const changePage = (offset: number) => {
-                setPageNumber(prevPageNumber => prevPageNumber + offset);
-            };
-
-            const nextPage = () => {
-                changePage(1);
-            };
-
-            const prevPage = () => {
-                changePage(-1);
-            };
 
             const handleSelect = (imageUrl: string, mediaType: 'images' | 'videos' | 'PDF', public_id: string) => {
                 setSelectedMediaUrls((prevselectedMediaUrls) => {
@@ -59,81 +34,160 @@ const ImageItem = memo(
                 });
             };
 
+            // Helper function to check if the resource is a PDF
+            const isPDF = () => {
+                // Check multiple conditions to identify PDFs
+                return (
+                    image.resource_type === "raw" ||
+                    image.format === "pdf" ||
+                    image.url?.toLowerCase().endsWith('.pdf') ||
+                    image.secure_url?.toLowerCase().endsWith('.pdf')
+                );
+            };
+
+            // Get a display name for the media
+            const getDisplayName = () => {
+                if (image.display_name) return image.display_name;
+
+                // Extract name from URL if no display name
+                const url = image.secure_url || image.url;
+                if (url) {
+                    const urlParts = url.split('/');
+                    let fileName = urlParts[urlParts.length - 1];
+
+                    // Remove query parameters if any
+                    fileName = fileName.split('?')[0];
+
+                    // Decode URL-encoded characters
+                    try {
+                        fileName = decodeURIComponent(fileName);
+                    } catch (e) {
+                        // If decoding fails, use as is
+                    }
+
+                    return fileName;
+                }
+
+                return image.public_id || "Untitled";
+            };
 
             return (
                 <div
-                    className="relative group break-inside-avoid mb-2 cursor-pointer"
+                    className="relative group break-inside-avoid mb-4 cursor-pointer"
                     ref={ref}
                     {...props}
                     onClick={(e) => {
                         // Prevent div click if a button is clicked
-                        if (!e.defaultPrevented && image.resource_type === "image") {
+                        if (!e.defaultPrevented) {
                             onSelect(image.url);
                         }
                     }}
-                >{
-                        image.resource_type === "image" && (
-                            <img
-                                src={image.secure_url ? image.secure_url : image.url}
-                                alt={image.display_name ? image.display_name : image.asset_id}
-                                className="rounded-md w-full"
-                            />
-                        )
-
-                    }
-
-                    {
-
-                        image.resource_type === "video" && (
-                            <video src={image.secure_url ? image.secure_url : image.url} width="750" height="500" controls onClick={() => onSelect(image.url)} />
-                        )
-                    }
-                    {
-                        image.resource_type === "raw" && (
-                            <div className="relative group pdf-container">
-                                <Document file={image.url} onLoadSuccess={onDocumentLoadSuccess}>
-                                    <Page
-                                        pageNumber={pageNumber}
-                                        height={400}
-                                        width={300}
-                                        onClick={() => onSelect(image.url)}
-                                        className="w-full" />
-                                </Document>
-                                <div className="absolute flex justify-center min-w-[155px] leading-10 bottom-5 right-0 left-[50%] transform translate-x-[-50%] z-10 text-center p-2 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity transition-250">
-                                    <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={prevPage} disabled={pageNumber <= 1}><ChevronLeft /></Button>
-                                    <span className="bg-white rounded-md px-2">{` ${pageNumber} of ${numPages} `}</span>
-                                    <Button className="p-0 bg-white rounded-md px-2 text-xs hover:bg-white" onClick={nextPage} disabled={pageNumber >= numPages}><ChevronRight /></Button>
+                >
+                    {image.resource_type === "image" && (
+                        <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-muted/20">
+                            {!imageLoaded && !imageError && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Skeleton className="h-full w-full absolute" />
                                 </div>
+                            )}
+                            {imageError ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-muted-foreground">
+                                    <p className="text-sm text-center">Unable to load image</p>
+                                </div>
+                            ) : (
+                                <img
+                                    src={image.secure_url ? image.secure_url : image.url}
+                                    alt={getDisplayName()}
+                                    className={cn(
+                                        "rounded-md w-full h-full object-cover transition-opacity",
+                                        imageLoaded ? "opacity-100" : "opacity-0"
+                                    )}
+                                    loading="lazy"
+                                    onLoad={() => setImageLoaded(true)}
+                                    onError={() => setImageError(true)}
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    {image.resource_type === "video" && (
+                        <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border">
+                            <video
+                                src={image.secure_url ? image.secure_url : image.url}
+                                className="w-full h-full object-cover"
+                                preload="metadata"
+                                controls
+                                onClick={() => onSelect(image.url)}
+                            />
+                        </div>
+                    )}
+
+                    {isPDF() && (
+                        <>
+
+                            <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5 flex flex-col items-center justify-center p-4">
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-3 text-xs gap-1 hover:bg-primary/10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(image.secure_url || image.url, '_blank');
+                                    }}
+                                ><FileText className="h-16 w-16 text-primary/80 mb-2" />
+                                    <iframe src={image.secure_url ? image.secure_url : image.url} width="100%" height="800px" />
+
+                                    <div className="text-center">
+                                        <p className="text-xs font-semibold">PDF Document</p>
+                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-full">
+                                            {getDisplayName()}
+                                        </p>
+                                    </div>
+
+
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View PDF
+                                </Button>
                             </div>
-                        )
+                        </>
+                    )
                     }
 
-                    <Button
+                    {/* Item name */}
+                    {/* < div className="mt-1 text-xs truncate px-0.5" >
+                        {getDisplayName()}
+                    </div > */}
+
+                    {/* Select button */}
+                    < Button
                         variant="outline"
                         size="icon"
-                        className="absolute z-10 w-8 h-8 bg-transparent border-0 transition ease-in-out delay-150 top-2 left-2 bg-transparent hover:bg-transparent"
+                        className="absolute z-10 w-8 h-8 bg-background/90 border-0 transition ease-in-out top-2 left-2 hover:bg-background/95 shadow-sm"
                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering the div's onClick
+                            e.stopPropagation();
                             setIsSelected(!isSelected);
                             handleSelect(image.url, image.resource_type, image.public_id);
                         }}
                     >
-                        {isSelected ? <CircleCheckBig className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
+                        {isSelected ? <CircleCheckBig className="w-5 h-5 text-primary" /> : <Circle className="w-5 h-5" />}
                         <span className="sr-only">select</span>
-                    </Button>
-                    <Button
+                    </Button >
+
+                    {/* Delete button */}
+                    < Button
                         variant="ghost"
                         size="icon"
-                        className="absolute w-4 h-4 transition ease-in-out delay-150 group-hover:opacity-100 opacity-0 top-2 right-2 bg-background/80 hover:bg-destructive"
+                        className="absolute w-6 h-6 transition ease-in-out delay-150 group-hover:opacity-100 opacity-0 top-2 right-2 bg-background/90 hover:bg-destructive shadow-sm"
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete(image.public_id, image.resource_type === "image" ? 'images' : image.resource_type === "video" ? 'videos' : 'PDF');
                         }}
                     >
-                        <XIcon className="w-4 h-4" />
+                        <XIcon className="w-3 h-3" />
                         <span className="sr-only">Delete</span>
-                    </Button>
-                </div>
+                    </Button >
+                </div >
             );
         }
     )
