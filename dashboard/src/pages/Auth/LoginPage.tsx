@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useTokenStore from '@/store/store';
-import { Check, ContactRound, FolderPen, LockKeyhole, Mail, Smartphone } from "lucide-react";
+import { Check, ContactRound, FolderPen, LockKeyhole, Mail, Smartphone, CheckCircle2, AlertCircle } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 import { Switch } from "@/components/ui/switch";
 import './login.css';
@@ -17,8 +17,6 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const setToken = useTokenStore((state) => state.setToken);
-
-
 
   const loginEmailRef = useRef<HTMLInputElement>(null);
   const registerEmailRef = useRef<HTMLInputElement>(null);
@@ -34,6 +32,7 @@ const LoginPage = () => {
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const switchForm = (formType: string) => setShowForm(formType);
   const [forgotToken, setForgotToken] = useState('');
+  
   useEffect(() => {
     // Add the class if the path matches
     if (location.pathname === '/auth/login' || location.pathname === '/auth/login/verify' || location.pathname === '/auth/login/forgot') {
@@ -93,8 +92,9 @@ const LoginPage = () => {
         description: `${response} Your account has been created successfully. Please verify your email address to log in.`,
       });
     }, onError: (error) => toast({
-      title: 'Incorrect Email or Password',
-      description: `${error}Please Enter new email and password`,
+      title: 'Registration Error',
+      description: `${error}. Please try again with different information.`,
+      variant: "destructive"
     })
   });
 
@@ -112,8 +112,9 @@ const LoginPage = () => {
         navigate('/');
       }
     }, onError: (error) => toast({
-      title: 'Incorrect Email or Password',
-      description: `${error}Please Enter your email and password`,
+      title: 'Login Failed',
+      description: `${error}. Please check your email and password.`,
+      variant: "destructive"
     }),
   });
 
@@ -121,15 +122,16 @@ const LoginPage = () => {
     mutationFn: verifyEmail,
     onSuccess: () => {
       toast({
-        title: 'Email has been verify',
-        description: 'Email verification completed. Please login to continue',
+        title: 'Email Verification Complete',
+        description: 'Your email has been verified. Please login to continue.',
       });
       setShowForm('signup active verified ');
     },
 
     onError: (error) => toast({
-      title: 'Error occurred',
+      title: 'Verification Error',
       description: `${error}`,
+      variant: "destructive"
     }),
   });
 
@@ -137,14 +139,15 @@ const LoginPage = () => {
     mutationFn: forgotPassword,
     onSuccess: () => {
       toast({
-        title: 'Email sent to you email address',
-        description: 'Please check your email to get new password',
+        title: 'Password Reset Email Sent',
+        description: 'Please check your email for password reset instructions.',
       });
       setShowForm('forgot-section login');
     },
     onError: (error) => toast({
-      title: 'Error occurred',
+      title: 'Password Reset Error',
       description: `${error}`,
+      variant: "destructive"
     }),
   });
 
@@ -180,8 +183,6 @@ const LoginPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-
-
   const handleLoginSubmit = () => {
     if (validateLogin()) {
       const email = loginEmailRef.current?.value ?? '';
@@ -192,7 +193,6 @@ const LoginPage = () => {
   };
 
   const handleRegisterSubmit = () => {
-
     if (validateRegister()) {
       const email = registerEmailRef.current?.value ?? '';
       const password = registerPasswordRef.current?.value ?? '';
@@ -213,7 +213,6 @@ const LoginPage = () => {
 
   const verifyForm = () => {
     setShowForm('signup active');
-
   }
 
   const handleForgotPassword = () => {
@@ -238,10 +237,8 @@ const LoginPage = () => {
     setChecked(!checked);
   }
 
-
-
   return (
-    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-primary/80 via-primary/60 to-secondary/70">
       <div className={`container ${showForm}`}>
         <div className="overlay"></div>
         <div className="box"></div>
@@ -272,13 +269,15 @@ const LoginPage = () => {
             <div className={`form-item log-in ${showForm === 'login' || showForm === 'login forgot' ? 'active' : ''}`}>
               <div className="table">
                 <div className="table-cell">
-                  {
-                    loginMutation.error && <p className="text-red-500 pl-5 text-xs text-center">Email and Password doesn't match</p>
-                  }
+                  {loginMutation.error && (
+                    <div className="flex items-center gap-2 justify-center mb-2 text-red-500">
+                      <AlertCircle size={16} />
+                      <p className="text-xs">Email and Password don't match</p>
+                    </div>
+                  )}
                   <h4 className="login_fields__user header-login mb-3 mt-4">
                     <ContactRound />
                     Your Email and Password
-
                   </h4>
 
                   <div className="login_fields__user input-field">
@@ -309,8 +308,8 @@ const LoginPage = () => {
                       <Label htmlFor="longSignin">Keep me signed in</Label>
                     </div>
                   </div>
-                  <Button className="btn login-btn login_fields__user" onClick={handleLoginSubmit}>
-                    Log in
+                  <Button className="btn login-btn login_fields__user" onClick={handleLoginSubmit} disabled={loginMutation.isPending}>
+                    {loginMutation.isPending ? 'Logging in...' : 'Log in'}
                   </Button>
                   <div className="visible-xs">
                     <p>Don't have an account?</p>
@@ -319,7 +318,12 @@ const LoginPage = () => {
                     </div>
                   </div>
                   <div className="hidden forgot-form">
-                    {forgotPasswordMutation.isSuccess && <p className="text-green-500 pl-5 text-xs text-center">Email sent successfully</p>}
+                    {forgotPasswordMutation.isSuccess && (
+                      <div className="flex items-center gap-2 justify-center mb-2 text-green-500">
+                        <CheckCircle2 size={16} />
+                        <p className="text-xs">Email sent successfully</p>
+                      </div>
+                    )}
                     <h4 className="forgot_fields__user header-login">
                       <ContactRound />
                       Enter your {forgotToken ? 'new password' : 'Email'}
@@ -335,8 +339,8 @@ const LoginPage = () => {
                         <Check />
                       </div>
                     </div>
-                    <Button className="btn forgot-btn forgot_fields__user" onClick={handleButtonClick}>
-                      Submit
+                    <Button className="btn forgot-btn forgot_fields__user" onClick={handleButtonClick} disabled={forgotPasswordMutation.isPending || resetPasswordMutation.isPending}>
+                      {forgotPasswordMutation.isPending || resetPasswordMutation.isPending ? 'Submitting...' : 'Submit'}
                     </Button>
                   </div>
                 </div>
@@ -397,8 +401,8 @@ const LoginPage = () => {
                       <Label htmlFor="userAgreement">I accept the <a href="#">User Agreement</a></Label>
                     </div>
                   </div>
-                  <Button className="btn signup-btn signup_fields__user" onClick={handleRegisterSubmit}>
-                    Sign up
+                  <Button className="btn signup-btn signup_fields__user" onClick={handleRegisterSubmit} disabled={registrationMutation.isPending}>
+                    {registrationMutation.isPending ? 'Signing up...' : 'Sign up'}
                   </Button>
                   <div className="visible-xs">
                     <p>Already a member?</p>
@@ -411,10 +415,9 @@ const LoginPage = () => {
                   </h4>
 
                   <h4 className="verify_fields__user header-login show-on-verified text-green-600">
-                    You email has been verified. Please login to Continue
+                    <CheckCircle2 className="mx-auto mb-2" />
+                    Your email has been verified. Please login to continue
                   </h4>
-
-
 
                 </div>
               </div>

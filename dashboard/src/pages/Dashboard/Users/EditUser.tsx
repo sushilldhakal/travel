@@ -1,23 +1,22 @@
-import { getUserById, changeUserPassword } from "@/http";
+import { getUserById, changeUserPassword, updateUser } from "@/http";
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
 import { Breadcrumb } from "@/Provider/types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import useTokenStore from "@/store/store";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import AvatarUploader from "@/userDefinedComponents/Avatar/AvatarUploader";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2, Save } from "lucide-react";
 
 // Extend JwtPayload to include roles
 interface CustomJwtPayload extends JwtPayload {
@@ -41,6 +40,16 @@ const passwordFormSchema = z.object({
     path: ["confirmPassword"],
 });
 
+// User information form schema
+const userFormSchema = z.object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+    email: z.string().email({ message: "Please enter a valid email address." }),
+    phone: z.number().optional(),
+    roles: z.string(),
+});
+
+type UserFormValues = z.infer<typeof userFormSchema>;
+
 const EditUser = () => {
     const { token } = useTokenStore(state => state);
     const navigate = useNavigate();
@@ -52,7 +61,6 @@ const EditUser = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const queryClient = useQueryClient();
 
     const { updateBreadcrumbs } = useBreadcrumbs();
     const { userId } = useParams<{ userId: string }>();
@@ -62,6 +70,30 @@ const EditUser = () => {
         staleTime: 10000, // in Milli-seconds
         enabled: !!userId, // Only run the query if userId exists
     });
+
+    // User form
+    const userForm = useForm<UserFormValues>({
+        resolver: zodResolver(userFormSchema),
+        defaultValues: {
+            name: '',
+            email: '',
+            phone: '',
+            roles: '',
+        },
+    });
+
+    // Update form values when data loads
+    useEffect(() => {
+        if (data?.data?.user) {
+            const user = data.data.user;
+            userForm.reset({
+                name: user.name || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                roles: user.roles || '',
+            });
+        }
+    }, [data, userForm]);
 
     useEffect(() => {
         if (!isLoading && !isError) {
@@ -81,6 +113,28 @@ const EditUser = () => {
             newPassword: "",
             confirmPassword: "",
         },
+    });
+
+    // User update mutation
+    const updateUserMutation = useMutation({
+        mutationFn: (data: UserFormValues) => {
+            return updateUser(userId || '', {
+                name: data.name,
+                email: data.email,
+                phone: data.phone || '',
+                roles: data.roles,
+            });
+        },
+        onSuccess: () => {
+            toast.success("User information updated successfully");
+            refetch(); // Refetch to get the latest data
+        },
+        onError: (error) => {
+            toast.error(`Failed to update user information: ${error.message}`);
+        },
+        onSettled: () => {
+            setIsSaving(false);
+        }
     });
 
     // Password change mutation
@@ -105,18 +159,14 @@ const EditUser = () => {
         passwordMutation.mutate(data);
     };
 
+    const handleUserSubmit = (data: UserFormValues) => {
+        setIsSaving(true);
+        updateUserMutation.mutate(data);
+    };
+
     const handleAvatarChange = () => {
         // Refetch user data after avatar change
         refetch();
-    };
-
-    const handleSave = () => {
-        // Placeholder for save functionality
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success("User information saved successfully");
-        }, 1000);
     };
 
     // All users can have avatars now
@@ -132,7 +182,7 @@ const EditUser = () => {
         if (tableData) {
             const breadcrumbLabel = tableData.breadcrumbs?.[0]?.label
                 ? tableData.breadcrumbs[0].label.charAt(0).toUpperCase() + tableData.breadcrumbs[0].label.slice(1)
-                : `Tour ${userId}`;
+                : `User ${userId}`;
             const breadcrumbs: Breadcrumb[] = [
                 { label: 'Dashboard', href: '/dashboard', type: 'link' },
                 { label: 'Users', href: '/dashboard/users', type: 'link' },
@@ -143,7 +193,7 @@ const EditUser = () => {
             const breadcrumbs: Breadcrumb[] = [
                 { label: 'Dashboard', href: '/dashboard', type: 'link' },
                 { label: 'Users', href: '/dashboard/users', type: 'link' },
-                { label: 'Add Tour', href: '/dashboard/users/add', type: 'page' },
+                { label: 'User', href: '/dashboard/users/add', type: 'page' },
             ];
             updateBreadcrumbs(breadcrumbs);
         }
@@ -170,27 +220,83 @@ const EditUser = () => {
                     </div>
                 </header>
                 <div className="space-y-6">
-                    <div className="space-y-2">
-                        <h2 className="text-lg font-semibold">Personal Information</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <Label htmlFor="name">Name</Label>
-                                <Input id="name" placeholder="Enter your name" defaultValue={tableData?.user?.name} />
+                    <Form {...userForm}>
+                        <form onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-6">
+                            <div className="space-y-2">
+                                <h2 className="text-lg font-semibold">Personal Information</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <FormField
+                                        control={userForm.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Name</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Enter your name" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={userForm.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Email</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Enter your email" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={userForm.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Phone</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Enter your phone number" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={userForm.control}
+                                        name="roles"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Role</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="User role"
+                                                        {...field}
+                                                        disabled={currentUserRole !== 'admin'}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <Label htmlFor="email">Email</Label>
-                                <Input id="email" placeholder="Enter your email" defaultValue={tableData?.user?.email} />
+
+                            <div className="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    disabled={isSaving || updateUserMutation.isPending}
+                                    className="gap-2"
+                                >
+                                    {(isSaving || updateUserMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <Save className="h-4 w-4" />
+                                    Save Changes
+                                </Button>
                             </div>
-                            <div>
-                                <Label htmlFor="phone">Phone</Label>
-                                <Input id="phone" placeholder="Enter your phone number" defaultValue={tableData?.user?.phone} />
-                            </div>
-                            <div>
-                                <Label htmlFor="role">Role</Label>
-                                <Input id="role" placeholder="User role" defaultValue={tableData?.user?.roles} disabled />
-                            </div>
-                        </div>
-                    </div>
+                        </form>
+                    </Form>
 
                     {/* Security section */}
                     {canChangePassword && (
@@ -233,14 +339,15 @@ const EditUser = () => {
                                                                     <div className="relative">
                                                                         <FormControl>
                                                                             <Input
+                                                                                {...field}
                                                                                 type={showCurrentPassword ? "text" : "password"}
                                                                                 placeholder="Enter your current password"
-                                                                                {...field}
+                                                                                className="pr-10"
                                                                             />
                                                                         </FormControl>
                                                                         <button
                                                                             type="button"
-                                                                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                                                                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
                                                                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                                                         >
                                                                             {showCurrentPassword ? (
@@ -263,14 +370,15 @@ const EditUser = () => {
                                                                     <div className="relative">
                                                                         <FormControl>
                                                                             <Input
+                                                                                {...field}
                                                                                 type={showNewPassword ? "text" : "password"}
                                                                                 placeholder="Enter your new password"
-                                                                                {...field}
+                                                                                className="pr-10"
                                                                             />
                                                                         </FormControl>
                                                                         <button
                                                                             type="button"
-                                                                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                                                                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
                                                                             onClick={() => setShowNewPassword(!showNewPassword)}
                                                                         >
                                                                             {showNewPassword ? (
@@ -280,9 +388,6 @@ const EditUser = () => {
                                                                             )}
                                                                         </button>
                                                                     </div>
-                                                                    <FormDescription>
-                                                                        Password must be at least 8 characters long
-                                                                    </FormDescription>
                                                                     <FormMessage />
                                                                 </FormItem>
                                                             )}
@@ -296,14 +401,15 @@ const EditUser = () => {
                                                                     <div className="relative">
                                                                         <FormControl>
                                                                             <Input
+                                                                                {...field}
                                                                                 type={showConfirmPassword ? "text" : "password"}
                                                                                 placeholder="Confirm your new password"
-                                                                                {...field}
+                                                                                className="pr-10"
                                                                             />
                                                                         </FormControl>
                                                                         <button
                                                                             type="button"
-                                                                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                                                                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
                                                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                                                         >
                                                                             {showConfirmPassword ? (
@@ -319,27 +425,13 @@ const EditUser = () => {
                                                         />
                                                         <DialogFooter>
                                                             <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                onClick={() => setPasswordDialogOpen(false)}
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                            <Button
                                                                 type="submit"
+                                                                className="gap-2"
                                                                 disabled={passwordMutation.isPending}
                                                             >
-                                                                {passwordMutation.isPending ? (
-                                                                    <>
-                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                                        Changing...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <KeyRound className="mr-2 h-4 w-4" />
-                                                                        Change Password
-                                                                    </>
-                                                                )}
+                                                                {passwordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                                                                <KeyRound className="h-4 w-4" />
+                                                                Update Password
                                                             </Button>
                                                         </DialogFooter>
                                                     </form>
@@ -351,16 +443,10 @@ const EditUser = () => {
                             </Card>
                         </div>
                     )}
-
-                    <div className="flex justify-end">
-                        <Button onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </div>
                 </div>
             </div>
         </div>
     );
-};
+}
 
-export default EditUser
+export default EditUser;

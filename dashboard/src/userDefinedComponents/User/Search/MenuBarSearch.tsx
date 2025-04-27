@@ -138,7 +138,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
     return (
         <>
             <div ref={searchRef} id="search" className={`cd-main-search fixed ${isHeaderFixed ? 'h-[66px]' : 'h-[106px]'} left-0 right-0 w-full bg-secondary shadow-md transition-all duration-500 ease-in-out ${headerSearch ? 'visibilty-visible opacity-100 z-50 top-0' : 'visibilty-hidden opacity-0 h-0 z-0 top-[-400px]'}`}>
-                <form onSubmit={handleSubmit} className="bg-secondary h-full mx-auto max-w-7xl relative">
+                <form onSubmit={handleSubmit} className="bg-secondary h-full mx-auto max-w-8xl relative">
                     <Input
                         className="pr-60 text-primary h-full w-full text-xl bg-transparent leading-10 focus-visible:ring--offset-0 focus-visible:ring-0 focus-visible:outline-none box-shadow-none border-0 text-white placeholder:text-gray-400"
                         type="search"
@@ -219,7 +219,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                 </form>
 
                 {headerSearch && (
-                    <div className="cd-search-suggestions grid grid-flow-col transition-all duration-500 ease-in-out grid-cols-12 px-5 py-2 relative mx-auto max-w-7xl bg-secondary">
+                    <div className="cd-search-suggestions grid grid-flow-col transition-all duration-500 ease-in-out grid-cols-12 px-5 py-2 relative mx-auto max-w-8xl bg-secondary">
                         <div className="news col-span-9">
                             <h3 className="mb-5 letter-spacing">Tours</h3>
                             {

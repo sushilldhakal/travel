@@ -104,19 +104,17 @@ export function MultiSelect({
                                 {displayOptions.map((option) => (
                                     <Badge key={getOptionValue(option)} variant="secondary" className={cn("mr-1", badgeClassName)}>
                                         {option.label}
-                                        <button
-                                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                        <span
+                                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
                                             onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
                                                 handleRemove(option.value)
                                             }}
-                                            disabled={disabled}
-                                            type="button"
                                             aria-label={`Remove ${option.label}`}
                                         >
                                             <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                        </button>
+                                        </span>
                                     </Badge>
                                 ))}
                                 {maxDisplayValues && selectedOptions.length > maxDisplayValues && (

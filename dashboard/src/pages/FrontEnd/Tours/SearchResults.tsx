@@ -154,7 +154,7 @@ const SearchResults = () => {
       </div>
 
       <div className="w-full bg-background border-b sticky top-[65px] z-[1]">
-        <div className="container max-w-7xl px-2 py-3 mx-auto">
+        <div className="container max-w-8xl px-2 py-3 mx-auto">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left side - Filters */}
             <div className="flex items-center gap-2">

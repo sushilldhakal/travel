@@ -856,29 +856,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                     )}
                   />
                 </div>
-                <div className="pt-2">
-                  <FormField
-                    control={form.control}
-                    name="tourDates.dateRange"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date Range</FormLabel>
-                        <DatePickerWithRange
-                          date={field.value}
-                          setDate={(date) => {
-                            field.onChange(date);
-                            // The useEffect will handle calculation of days/nights
-                          }}
-                          className="w-full"
-                        />
-                        <FormMessage />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Days and nights will be calculated automatically
-                        </p>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+
               </div>
             )}
 

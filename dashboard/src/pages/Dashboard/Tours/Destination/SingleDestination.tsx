@@ -12,15 +12,28 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { Edit, FileText, MapPin, Image as ImageIcon, Save, Trash2, X } from "lucide-react";
-import { getDestination, updateDestination, deleteDestination } from "@/http";
+import { getDestination, updateDestination, deleteDestination, getUserToursTitle } from "@/http";
 import { getUserId } from "@/util/AuthLayout";
 import GalleryPage from "../../Gallery/GalleryPage";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { JSONContent } from "novel";
+import { MultiSelect, SelectValue } from "@/components/ui/MultiSelect";
 
 interface SingleDestinationProps {
     destinationId: string;
     onUpdate: () => void;
+}
+
+interface TourTitle {
+    _id: string;
+    title: string;
+}
+
+interface TourObject {
+    _id?: string;
+    id?: string;
+    title?: string;
+    [key: string]: any;
 }
 
 const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) => {
@@ -28,6 +41,7 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
     const queryClient = useQueryClient();
     const [isEditMode, setIsEditMode] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
     const [descriptionContent, setDescriptionContent] = useState<JSONContent>({
         type: "doc",
         content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
@@ -37,16 +51,31 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
         defaultValues: {
             name: '',
             description: '',
-            imageUrl: '',
-            isActive: true
+            coverImage: '',
+            isActive: true,
+            country: '',
+            region: '',
+            city: '',
+            featuredTours: []
         }
     });
 
     // Fetch destination data
-    const { data: destination, isLoading, isError } = useQuery({
+    // In SingleDestination.tsx
+    const { data: response, isLoading, isError } = useQuery({
         queryKey: ['destination', destinationId],
         queryFn: () => getDestination(destinationId),
         enabled: !!destinationId,
+    });
+
+    const destination = response; // Access the data property from the response
+
+
+    // Fetch tour titles
+    const { data: tourTitles } = useQuery({
+        queryKey: ['tourTitles', userId],
+        queryFn: () => getUserToursTitle(userId!),
+        enabled: !!userId,
     });
 
     // Update destination mutation
@@ -58,15 +87,24 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                 description: "The destination has been updated successfully.",
             });
             setIsEditMode(false);
+            // Invalidate and refetch the destination data to show the updated featured tours
+            queryClient.invalidateQueries({
+                queryKey: ['destination', destinationId]
+            });
+            // Also invalidate the tour titles to ensure we have the latest data
+            if (userId) {
+                queryClient.invalidateQueries({
+                    queryKey: ['tourTitles', userId]
+                });
+            }
             onUpdate();
         },
         onError: (error) => {
             toast({
                 title: "Failed to update",
-                description: "There was an error updating the destination.",
+                description: `There was an error updating the destination: ${error.message}`,
                 variant: "destructive",
             });
-            console.error(error);
         }
     });
 
@@ -83,10 +121,9 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
         onError: (error) => {
             toast({
                 title: "Failed to delete",
-                description: "There was an error deleting the destination.",
+                description: `There was an error deleting the destination: ${error.message}`,
                 variant: "destructive",
             });
-            console.error(error);
         }
     });
 
@@ -96,8 +133,12 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
             form.reset({
                 name: destination.name,
                 description: destination.description || '',
-                imageUrl: destination.imageUrl || '',
-                isActive: destination.isActive
+                coverImage: destination.coverImage || '',
+                isActive: destination.isActive,
+                country: destination.country || '',
+                region: destination.region || '',
+                city: destination.city || '',
+                featuredTours: destination.featuredTours || []
             });
 
             // Initialize rich text editor content if description exists
@@ -129,22 +170,30 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
     const handleUpdateDestination = (values: {
         name: string;
         description: string;
-        imageUrl: string;
+        coverImage: string;
         isActive: boolean;
+        country: string;
+        region: string;
+        city: string;
+        featuredTours: string[];
     }) => {
         const formData = new FormData();
         formData.append('name', values.name);
         formData.append('description', values.description);
-        formData.append('imageUrl', values.imageUrl);
+        formData.append('coverImage', values.coverImage);
         formData.append('isActive', values.isActive.toString());
+        formData.append('country', values.country);
+        formData.append('region', values.region);
+        formData.append('city', values.city);
+        values.featuredTours.forEach((id) => formData.append('featuredTours[]', id));
         if (userId) formData.append('userId', userId);
 
         updateMutation.mutate(formData);
     };
 
     // Handle image selection from gallery
-    const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
-        onChange(imageUrl);
+    const handleImageSelect = (coverImage: string, onChange: (value: string) => void) => {
+        onChange(coverImage);
         setDialogOpen(false);
     };
 
@@ -160,8 +209,12 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
             // Initialize form with destination data
             form.setValue('name', destination.name);
             form.setValue('description', destination.description || '');
-            form.setValue('imageUrl', destination.imageUrl || '');
+            form.setValue('coverImage', destination.coverImage || '');
             form.setValue('isActive', destination.isActive);
+            form.setValue('country', destination.country || '');
+            form.setValue('region', destination.region || '');
+            form.setValue('city', destination.city || '');
+            form.setValue('featuredTours', destination.featuredTours || []);
             setIsEditMode(true);
         }
     };
@@ -222,30 +275,134 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                 <Badge variant="outline" className="bg-primary/10 text-primary">Editing</Badge>
                             </div>
 
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-primary" />
-                                            Destination Name
-                                        </FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                {...field}
-                                                placeholder="Enter destination name"
-                                                className="focus-visible:ring-primary"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="col-span-2 grid gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Destination Name</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g., Kathmandu" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="country"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Country</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g., Nepal" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="region"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Region</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g., Bagmati" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="city"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>City</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g., Kathmandu" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="featuredTours"
+                                        render={({ field }) => {
+                                            // Extract current field value and handle nested arrays
+                                            let fieldValue: string[] = [];
+                                            if (Array.isArray(field.value)) {
+                                                if (Array.isArray(field.value[0])) {
+                                                    // It's a nested array, extract the inner array
+                                                    fieldValue = field.value[0];
+                                                } else {
+                                                    // It's a flat array
+                                                    fieldValue = field.value;
+                                                }
+                                                console.log("fieldValue", fieldValue);
+
+                                                // If fieldValue contains objects instead of strings, extract the IDs
+                                                if (fieldValue.length > 0 && typeof fieldValue[0] === 'object') {
+                                                    fieldValue = fieldValue.map((item: TourObject) => item._id || item.id || '');
+                                                }
+                                            }
+
+                                            // Format current values to match MultiSelect expected format
+                                            const currentValues: SelectValue[] = Array.isArray(fieldValue) ?
+                                                fieldValue.map(val => {
+                                                    // Handle different possible formats
+                                                    if (typeof val === 'string') {
+                                                        return { value: val, label: val } as SelectValue;
+                                                    } else if (val && typeof val === 'object' && 'value' in val) {
+                                                        return val as SelectValue;
+                                                    }
+                                                    return { value: '', label: '' } as SelectValue; // Return empty object instead of null
+                                                }).filter(val => {
+                                                    const typedVal = val as { value: string; label: string };
+                                                    return typedVal.value !== '';
+                                                }) : [];
+
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel>Featured Tours</FormLabel>
+                                                    <FormControl>
+                                                        <MultiSelect
+                                                            options={(tourTitles?.data?.data || []).map((item: TourTitle) => ({
+                                                                value: item._id,
+                                                                label: item.title,
+                                                            }))}
+                                                            value={currentValues}
+                                                            onValueChange={(selectedValues: SelectValue[]) => {
+                                                                // Ensure only the string values (IDs) are passed to RHF
+                                                                const ids = selectedValues.map((val: SelectValue) =>
+                                                                    typeof val === 'string' ? val : val.value
+                                                                );
+                                                                field.onChange(ids);
+                                                            }}
+                                                            placeholder="Select featured tours"
+                                                            className="w-full"
+                                                            maxDisplayValues={2}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            );
+                                        }}
+                                    />
+
+                                </div>
+                            </div>
 
                             <FormField
                                 control={form.control}
-                                name="imageUrl"
+                                name="coverImage"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="flex items-center gap-2">
@@ -312,8 +469,8 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                                     <div className="upload dialog">
                                                         <GalleryPage
                                                             isGalleryPage={false}
-                                                            onImageSelect={(imageUrl) =>
-                                                                handleImageSelect(imageUrl, field.onChange)
+                                                            onImageSelect={(coverImage) =>
+                                                                handleImageSelect(coverImage, field.onChange)
                                                             }
                                                         />
                                                     </div>
@@ -394,9 +551,9 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                     // View Mode
                     <>
                         <div className="relative">
-                            {destination?.imageUrl ? (
+                            {destination?.coverImage ? (
                                 <img
-                                    src={destination.imageUrl as string}
+                                    src={destination.coverImage as string}
                                     alt={destination.name || 'Destination'}
                                     className="w-full h-[200px] object-cover"
                                 />
@@ -420,21 +577,95 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                         </div>
 
                         <CardContent className="p-5">
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex items-center gap-2 mb-4">
                                 <MapPin className="h-5 w-5 text-primary" />
                                 <h3 className="text-lg font-semibold">
                                     {destination?.name}
                                 </h3>
                             </div>
 
-                            <Separator className="my-3" />
+                            <div className="grid grid-cols-1 gap-6 mb-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <Badge variant="outline" className="h-6 bg-secondary/50">Location</Badge>
+                                        <div className="space-y-1.5">
+                                            {destination?.country && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-sm font-medium">Country:</span>
+                                                    <span className="text-sm text-muted-foreground">{destination.country}</span>
+                                                </div>
+                                            )}
+                                            {destination?.region && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-sm font-medium">Region:</span>
+                                                    <span className="text-sm text-muted-foreground">{destination.region}</span>
+                                                </div>
+                                            )}
+                                            {destination?.city && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-sm font-medium">City:</span>
+                                                    <span className="text-sm text-muted-foreground">{destination.city}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <div className="text-sm text-muted-foreground">
-                                {destination?.description
-                                    ? destination.description.length > 150
-                                        ? `${destination.description.slice(0, 150)}...`
-                                        : destination.description
-                                    : "No description provided"}
+                                <div className="space-y-3">
+                                    {destination?.featuredTours && destination.featuredTours.length > 0 && (
+                                        <div className="flex flex-col gap-2">
+                                            <Badge variant="outline" className="w-fit h-6 bg-secondary/50">Featured Tours</Badge>
+                                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                                {destination.featuredTours.map((tour: string | TourObject) => {
+                                                    // Handle both string IDs and full tour objects
+                                                    const tourId = typeof tour === 'string' ? tour : (tour._id || tour.id || '');
+                                                    const tourTitle = typeof tour === 'string'
+                                                        ? (tourTitles?.data?.data?.find((t: TourTitle) => t._id === tourId)?.title || tourId)
+                                                        : (tour.title || 'Unknown Tour');
+
+                                                    return (
+                                                        <Badge
+                                                            key={tourId}
+                                                            variant="secondary"
+                                                            className="text-xs"
+                                                        >
+                                                            {tourTitle}
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-primary" />
+                                    <h4 className="font-medium">Description</h4>
+                                </div>
+                                <div className="text-sm text-muted-foreground bg-secondary/20 p-3 rounded-md">
+                                    {destination?.description && destination.description.length > 300 ? (
+                                        <span>
+                                            {destination.description.substring(0, 300)}...
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                size="sm"
+                                                className="text-primary px-1"
+                                                onClick={() => setDescriptionDialogOpen(true)}
+                                            >
+                                                Read more
+                                            </Button>
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {destination?.description || "No description provided"}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </>
@@ -496,6 +727,25 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                     </>
                 )}
             </CardFooter>
+
+            {/* Description Dialog */}
+            <Dialog open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            {destination?.name} - Full Description
+                        </DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription>
+                    </DialogDescription>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        <div className="text-sm space-y-4 leading-relaxed">
+                            {destination?.description || "No description provided"}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 };

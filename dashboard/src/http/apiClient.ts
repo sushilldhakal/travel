@@ -19,6 +19,7 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+
 // Helper function to handle errors consistently
 export const handleApiError = (error: unknown, context: string) => {
     if (axios.isAxiosError(error)) {

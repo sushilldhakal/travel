@@ -10,29 +10,22 @@ export const getTours = async ({
   pageParam = 0,
   limit = 6
 }) => {
-  console.log("Fetching tours page:", pageParam);
   // Explicitly format the URL with query parameters
   const url = `/api/tours?page=${pageParam + 1}&limit=${limit}`;
-  console.log("Request URL:", url, "Base URL:", api.defaults.baseURL);
   try {
     // Add a timeout to ensure the request doesn't hang
     const response = await api.get(url, { timeout: 15000 });
-    console.log("Tour response received");
     
     // Ensure we're returning the data in the expected format
     if (!response.data) {
-      console.error("Response data is undefined or null");
       throw new Error("Invalid response format: No data received");
     }
     
     if (!response.data.tours) {
-      console.error("Response data does not contain tours array:", response.data);
       throw new Error("Invalid response format: No tours array");
     }
     
     const { tours, pagination } = response.data;
-    console.log("Extracted tours:", tours.length, "items");
-    console.log("Pagination info:", pagination);
     
     // Return data in the format expected by useInfiniteQuery and matching TourResponse interface
     return {
@@ -68,14 +61,14 @@ export const getTours = async ({
 
 export const getUsersTours = async (userId: string) => api.get(`/api/tours/user/${userId}`);
 
+export const getUserToursTitle = async (userId: string) => api.get(`/api/tours/user/${userId}/titles`);
+
 export const getLatestTours = async () => api.get('/api/tour/search/latest');
 
 export const getSingleTour = async (tourId: string) => {
     try {
         // Use the new specific endpoint for single tour
         const response = await api.get(`/api/tours/single/${tourId}`);
-        console.log("Tour API response:", response.data);
-        
         // Handle both response structures
         // If response.data.tour exists, use that structure
         // Otherwise, assume the tour data is directly in response.data
@@ -106,7 +99,6 @@ export const createTour = async (data: FormData) => {
 };
 
 export const updateTour = async (tourId: string, data: FormData) => {
-  console.log("tour id in tourAPI", tourId);
     return api.patch(`/api/tours/${tourId}`, data, {
         headers: {
             'Content-Type': 'multipart/form-data',

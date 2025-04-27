@@ -23,12 +23,12 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
 
     useEffect(() => {
         const accessToken = localStorage.getItem("token-store");
-        
+
         // Get initial header height for proper spacing when fixed
         if (headerRef.current) {
             headerHeight.current = headerRef.current.offsetHeight;
         }
-        
+
         window.addEventListener('scroll', isSticky);
 
         if (accessToken && isValidToken(accessToken)) {
@@ -89,13 +89,13 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
             {isHeaderFixed && (
                 <div style={{ height: `76px` }} className="w-full"></div>
             )}
-            <Disclosure 
+            <Disclosure
                 ref={headerRef}
-                id="main-header" 
-                as="nav" 
+                id="main-header"
+                as="nav"
                 className={`${isHeaderFixed ? 'fixed top-0 h-[60px]' : 'relative h-[76px]'} z-50 bg-secondary w-full text-secondary-foreground main-header border-t-2 border-primary px-5 transition-all duration-200`}
             >
-                <div className="mx-auto max-w-7xl h-full">
+                <div className="mx-auto max-w-8xl h-full">
                     <div className={`relative flex items-center justify-between h-full`}>
                         <div className="absolute inset-y-0 left-0 flex items-center md:hidden">
                             {/* Mobile menu button*/}

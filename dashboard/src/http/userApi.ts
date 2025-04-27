@@ -105,3 +105,17 @@ export const getUserAvatar = async (userId: string) => {
         }
     }
 };
+
+export const updateUser = async (userId: string, data: { name: string; email: string; phone: string }) => {
+    try {
+        const response = await api.patch(`/api/users/${userId}`, data);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error updating user: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error updating user: ${String(error)}`);
+        }
+    }
+};
+    

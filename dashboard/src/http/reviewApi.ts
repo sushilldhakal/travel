@@ -1,4 +1,4 @@
-import { api, handleApiError } from './apiClient';
+import { api } from './apiClient';
 import { isAxiosError } from 'axios';
 
 /**
@@ -7,7 +7,7 @@ import { isAxiosError } from 'axios';
 
 export const getPendingReviews = async () => {
     try {
-        const response = await api.get('/api/tours/reviews/pending');
+        const response = await api.get('/api/reviews/pending');
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -21,8 +21,8 @@ export const getPendingReviews = async () => {
 export const getTourReviews = async (tourId: string, status?: string) => {
     try {
         const url = status 
-            ? `/api/tours/${tourId}/reviews?status=${status}` 
-            : `/api/tours/${tourId}/reviews`;
+            ? `/api/reviews/tour/${tourId}?status=${status}` 
+            : `/api/reviews/tour/${tourId}`;
         const response = await api.get(url);
         return response.data;
     } catch (error) {
@@ -36,7 +36,7 @@ export const getTourReviews = async (tourId: string, status?: string) => {
 
 export const updateReviewStatus = async (tourId: string, reviewId: string, status: 'approved' | 'rejected') => {
     try {
-        const response = await api.patch(`/api/tours/${tourId}/reviews/${reviewId}/status`, { status });
+        const response = await api.patch(`/api/reviews/tour/${tourId}/review/${reviewId}/status`, { status });
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -49,7 +49,7 @@ export const updateReviewStatus = async (tourId: string, reviewId: string, statu
 
 export const addReviewReply = async (tourId: string, reviewId: string, comment: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/replies`, { comment });
+        const response = await api.post(`/api/reviews/tour/${tourId}/review/${reviewId}/reply`, { comment });
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -62,7 +62,7 @@ export const addReviewReply = async (tourId: string, reviewId: string, comment: 
 
 export const likeReview = async (tourId: string, reviewId: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/like`);
+        const response = await api.post(`/api/reviews/tour/${tourId}/review/${reviewId}/like`);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -75,7 +75,7 @@ export const likeReview = async (tourId: string, reviewId: string) => {
 
 export const addReview = async (tourId: string, rating: number, comment: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/reviews`, { rating, comment });
+        const response = await api.post(`/api/reviews/tour/${tourId}`, { rating, comment });
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -88,7 +88,7 @@ export const addReview = async (tourId: string, rating: number, comment: string)
 
 export const getAllReviews = async () => {
     try {
-        const response = await api.get('/api/tours/reviews/all');
+        const response = await api.get('/api/reviews/all');
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -99,9 +99,38 @@ export const getAllReviews = async () => {
     }
 };
 
+export const getApprovedReviews = async (limit?: number) => {
+    try {
+        const url = limit 
+            ? `/api/reviews/approved/all?limit=${limit}` 
+            : `/api/reviews/approved/all`;
+        const response = await api.get(url);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching approved reviews: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching approved reviews: ${String(error)}`);
+        }
+    }
+};
+
+export const getTourRating = async (tourId: string) => {
+    try {
+        const response = await api.get(`/api/reviews/tour/${tourId}/rating`);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error fetching tour rating: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error fetching tour rating: ${String(error)}`);
+        }
+    }
+};
+
 export const incrementReviewView = async (tourId: string, reviewId: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/reviews/${reviewId}/view`);
+        const response = await api.post(`/api/reviews/tour/${tourId}/review/${reviewId}/view`);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -112,9 +141,9 @@ export const incrementReviewView = async (tourId: string, reviewId: string) => {
     }
 };
 
-export const incrementReplyView = async (tourId: string, replyId: string) => {
+export const incrementReplyView = async (tourId: string, reviewId: string, replyId: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/replies/${replyId}/view`);
+        const response = await api.post(`/api/reviews/tour/${tourId}/review/${reviewId}/reply/${replyId}/view`);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -127,7 +156,20 @@ export const incrementReplyView = async (tourId: string, replyId: string) => {
 
 export const likeReply = async (tourId: string, replyId: string) => {
     try {
-        const response = await api.post(`/api/tours/${tourId}/replies/${replyId}/like`);
+        const response = await api.post(`/api/reviews/tours/${tourId}/replies/${replyId}/like`);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error liking reply: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error liking reply: ${String(error)}`);
+        }
+    }
+};
+
+export const likeReplyReview = async (tourId: string, reviewId: string, replyId: string) => {
+    try {
+        const response = await api.post(`/api/reviews/tour/${tourId}/review/${reviewId}/reply/${replyId}/like`);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {

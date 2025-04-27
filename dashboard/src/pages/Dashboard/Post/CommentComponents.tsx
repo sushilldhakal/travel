@@ -338,7 +338,6 @@ export function CommentsSection() {
 
         // For now, we'll just show a toast
         // In a real implementation, you would call the deleteComment API with commentId
-        console.log(`Comment with ID ${commentId} would be deleted`);
     }
 
     if (isLoading) {

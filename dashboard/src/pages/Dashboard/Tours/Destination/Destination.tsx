@@ -10,13 +10,12 @@ import { MapPin, Plus, Search, X } from "lucide-react";
 import SingleDestination from "@/pages/Dashboard/Tours/Destination/SingleDestination";
 import AddDestination from "@/pages/Dashboard/Tours/Destination/AddDestination";
 import { getUserDestinations } from "@/http";
-import { DestinationData } from "@/http/destinationApi";
 
 // Create a type for Destination data
 export interface DestinationData {
     id: string;
     name: string;
-    imageUrl: string | null;
+    coverImage: string | null;
     description: string;
     isActive: boolean;
     createdAt?: string;
@@ -37,12 +36,16 @@ const Destination = () => {
         enabled: !!userId,
     });
 
+    console.log("destinations", destinations);
+
     // Filter destinations based on search query
-    const filteredDestinations = destinations?.filter((destination: DestinationData) =>
-        destination.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (destination.description &&
-            destination.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredDestinations = Array.isArray(destinations)
+        ? destinations.filter((destination: DestinationData) =>
+            destination.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (destination.description &&
+                destination.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+        : [];
 
     return (
         <div className="space-y-6">
@@ -160,10 +163,10 @@ const Destination = () => {
                     </Card>
                 ) : filteredDestinations && filteredDestinations.length > 0 ? (
                     // Destinations list
-                    filteredDestinations.map((destination) => (
+                    filteredDestinations.map((dest) => (
                         <SingleDestination
-                            key={destination.id}
-                            destinationId={destination.id}
+                            key={dest.id || dest._id}
+                            destinationId={dest.id || dest._id}
                             onUpdate={() => {
                                 if (userId) {
                                     queryClient.invalidateQueries({

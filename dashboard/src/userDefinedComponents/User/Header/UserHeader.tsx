@@ -5,7 +5,7 @@ import { Facebook, Instagram, Linkedin, Twitter, Youtube, PhoneCall, Clock } fro
 const UserHeader = () => {
     return (
         <Disclosure as="nav" className="h-10 bg-secondary z-10 relative px-5">
-            <div className="mx-auto max-w-7xl w-full h-full">
+            <div className="mx-auto max-w-8xl w-full h-full">
                 <div className="relative flex items-center justify-between h-full">
                     {/* Left Section - Phone Number & Opening Times */}
                     <div className="hidden md:flex items-center text-secondary-foreground text-xs space-x-8">

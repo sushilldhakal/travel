@@ -52,7 +52,7 @@ const TourByPricing = () => {
     //console.log("sortedTours", sortedTours)
 
     return (
-        <div className="pattern-1 py-16 relative">
+        <div className="pattern-1 pb-16 relative">
             {/* <Progress className="
             absolute top-[50%] right-[-50%] rotate-90 h-1 transition-all duration-300 ease-in-out" value={progress} max={100} /> */}
             <div className="mb-4">

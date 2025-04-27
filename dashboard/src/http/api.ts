@@ -72,7 +72,6 @@ export const getSingleTour = async (tourId: string) => {
     try {
         // Use the new specific endpoint for single tour
         const response = await api.get(`/api/tours/single/${tourId}`);
-        console.log("Tour API response:", response.data);
         
         // Handle both response structures
         // If response.data.tour exists, use that structure

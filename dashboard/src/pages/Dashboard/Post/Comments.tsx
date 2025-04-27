@@ -49,7 +49,6 @@ export default function Comments() {
 
     const { toast } = useToast();
 
-    console.log("initialCommentData", initialCommentData)
 
     // Mutation for accepting comments
     const acceptMutation = useMutation({
@@ -119,7 +118,6 @@ export default function Comments() {
     const handleBulkAccept = () => {
         const selectedRows = table.getFilteredSelectedRowModel().rows
         const selectedIds = selectedRows.map(row => row.original._id)
-        console.log(`Accepting comments with ids: ${selectedIds.join(", ")}`)
         // Implement the logic for bulk accept
     }
 

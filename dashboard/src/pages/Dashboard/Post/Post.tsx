@@ -27,7 +27,6 @@ const Post = () => {
         staleTime: 10000, // in Milliseconds
     });
 
-    console.log("data", data)
 
     // useEffect(() => {
     //     if (data) {
