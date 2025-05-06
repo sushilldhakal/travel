@@ -34,6 +34,7 @@ const routePaths = {
     singleBlog: "/blog/:id",
     about: "/about",
     contact: "/contact",
+    applySeller: "/apply-seller",
   },
   auth: {
     base: "/auth",

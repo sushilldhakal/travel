@@ -1,5 +1,5 @@
 import { createImageUpload } from "novel/plugins";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import { addMedia } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 

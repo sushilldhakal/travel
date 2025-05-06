@@ -12,19 +12,9 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Destination } from "@/Provider/types";
 
-interface Destination {
-    _id: string;
-    name: string;
-    description: string;
-    coverImage: string;
-    country: string;
-    region?: string;
-    city?: string;
-    featuredTours?: string[];
-    popularity?: number;
-    createdAt: string;
-}
+
 
 const DestinationTour = () => {
     const [api, setApi] = useState<CarouselApi | null>(null);
@@ -39,7 +29,7 @@ const DestinationTour = () => {
     // Memoize the sorted destinations to prevent recalculation on every render
     const sortedDestinations = useMemo(() => {
         if (!data?.destinations) return [];
-        
+
         return [...data.destinations]
             .sort((a: Destination, b: Destination) => {
                 // First sort by popularity if available
@@ -55,14 +45,14 @@ const DestinationTour = () => {
     // Set up carousel API
     useEffect(() => {
         if (!api) return;
-        
+
         // Optional: Add any carousel event handling here
         const handleSelect = () => {
             // We can access the current slide index with api.selectedScrollSnap() when needed
         };
-        
+
         api.on("select", handleSelect);
-        
+
         return () => {
             api.off("select", handleSelect);
         };

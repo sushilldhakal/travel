@@ -449,7 +449,11 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                     <div className="relative flex flex-wrap gap-1">
                         {selected.filter((option) => {
                             // Ensure option is a valid object and has a non-empty label
-                            return option && typeof option === 'object' && option.label && option.label.trim() !== '';
+                            return option &&
+                                typeof option === 'object' &&
+                                option.label &&
+                                typeof option.label === 'string' &&
+                                option.label.trim() !== '';
                         })
                             .map((option) => {
                                 return (

@@ -89,12 +89,9 @@ const ReviewsManagement = () => {
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("Fetching reviews for tab:", activeTab);
       const response = await getAllReviews();
-      console.log("API response:", response);
 
       if (!response || !response.data) {
-        console.error("Invalid response format:", response);
         toast({
           title: 'Error',
           description: 'Failed to load reviews. Invalid response format.',
@@ -106,10 +103,8 @@ const ReviewsManagement = () => {
 
       // Extract reviews from the response data structure
       const allReviews = response.data?.reviews || [];
-      console.log("All reviews from API:", allReviews);
 
       if (allReviews.length === 0) {
-        console.log("No reviews found in the response");
         setReviews([]);
         setLoading(false);
         return;
@@ -119,25 +114,19 @@ const ReviewsManagement = () => {
       if (activeTab === 'pending') {
         // For pending tab, show all pending reviews
         data = allReviews.filter((review: Review) => review.status === 'pending') || [];
-        console.log("Filtered pending reviews:", data);
       } else if (activeTab === 'approved') {
         // For approved tab, show all approved reviews
         data = allReviews.filter((review: Review) => review.status === 'approved') || [];
-        console.log("Filtered approved reviews:", data);
       } else if (activeTab === 'rejected') {
         // For rejected tab, show all rejected reviews
         data = allReviews.filter((review: Review) => review.status === 'rejected') || [];
-        console.log("Filtered rejected reviews:", data);
       } else {
         // Default case - show all reviews
         data = allReviews;
-        console.log("All reviews:", data);
       }
 
       setReviews(data);
-      console.log("Set reviews state to:", data);
     } catch (error) {
-      console.error('Error fetching reviews:', error);
       toast({
         title: 'Error',
         description: 'Failed to load reviews. Please try again.',
@@ -154,7 +143,6 @@ const ReviewsManagement = () => {
 
   const handleStatusUpdate = async (reviewId: string, tourId: string, status: 'approved' | 'rejected') => {
     try {
-      console.log(`Updating review ${reviewId} to status: ${status}`);
       await updateReviewStatus(tourId, reviewId, status);
 
       // Show success message

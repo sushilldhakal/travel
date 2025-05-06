@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 interface TourFaqsProps {
     form: UseFormReturn<any>;
     faqFields: any[];
-    faqAppend: (value: Partial<any>) => void;
+    faqAppend: (value: Partial<FaqData>) => void;
     faqRemove: (index: number) => void;
     faq: FaqData[];
     watchedFaq: any[];
@@ -30,6 +30,30 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
     watchedFaq,
     handleFaqSelect
 }) => {
+    // Create a state to track if user has manually added FAQs
+    const [hasManuallyAddedFaqs, setHasManuallyAddedFaqs] = useState(false);
+    
+    // Only show FAQ items if the user has clicked the "Add FAQ" button
+    const handleAddFaq = () => {
+        setHasManuallyAddedFaqs(true);
+        // Let the parent component handle the actual FAQ append
+        faqAppend({
+            question: '',
+            answer: ''
+        } as any); // Use type assertion to bypass TypeScript checks
+    };
+
+    useEffect(() => {
+        console.log({ hasManuallyAddedFaqs, faqCount: faqFields.length });
+    }, [hasManuallyAddedFaqs, faqFields]);
+
+    // Ensure FAQs are visible if there are any in the fields array
+    useEffect(() => {
+        if (Array.isArray(faqFields) && faqFields.length > 0) {
+            setHasManuallyAddedFaqs(true);
+        }
+    }, [faqFields]);
+
     return (
         <Card className="shadow-sm">
             <CardHeader className="bg-secondary border-b pb-6">
@@ -49,117 +73,194 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-2"
-                        onClick={() => faqAppend({
-                            question: '',
-                            answer: ''
-                        })}
+                        onClick={handleAddFaq}
                     >
                         <Plus className="h-4 w-4" />
                         <span>Add FAQ</span>
                     </Button>
                 </div>
 
-                {faqFields.length > 0 ? (
+                {/* Show FAQs if manually added */}
+                {hasManuallyAddedFaqs ? (
                     <div className="space-y-4">
-                        {faqFields.map((field, index) => (
-                            <Card 
-                                key={field.id} 
-                                className={cn(
-                                    "border overflow-hidden transition-all", 
-                                    watchedFaq[index]?.question ? "border-border" : "bg-secondary/50"
-                                )}
-                            >
-                                <Accordion type="single" collapsible className="w-full">
-                                    <AccordionItem value={`item-${index}`} className="border-none">
-                                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-secondary/70">
-                                            <div className="flex items-center space-x-3 w-full">
-                                                <Badge 
-                                                    variant={watchedFaq[index]?.question ? "default" : "outline"} 
-                                                    className="rounded-md h-7 w-7 p-0 flex items-center justify-center"
-                                                >
-                                                    <MessageCircle className="h-4 w-4" />
+                        {Array.isArray(faqFields) && faqFields.map((field, index) => {
+                            // Check if the FAQ has actual content
+                            const hasFaq = watchedFaq && Array.isArray(watchedFaq) && watchedFaq[index]?.question;
+
+                            return (
+                                <Card
+                                    key={field.id}
+                                    className={cn(
+                                        "border overflow-hidden transition-all",
+                                        hasFaq ? "border-border" : "bg-secondary/50"
+                                    )}
+                                >
+                                    {hasFaq ? (
+                                        <Accordion type="single" collapsible className="w-full">
+                                            <AccordionItem value={`item-${index}`} className="border-none">
+                                                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-secondary/70">
+                                                    <div className="flex items-center space-x-3 w-full">
+                                                        <Badge
+                                                            variant="default"
+                                                            className="rounded-md h-7 w-7 p-0 flex items-center justify-center"
+                                                        >
+                                                            <MessageCircle className="h-4 w-4" />
+                                                        </Badge>
+                                                        <div className="flex-1 font-medium text-base truncate">
+                                                            {watchedFaq[index]?.question || `Question ${index + 1}`}
+                                                        </div>
+                                                        <div
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                faqRemove(index);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.stopPropagation();
+                                                                    faqRemove(index);
+                                                                }
+                                                            }}
+                                                            className="ml-auto h-8 w-8 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                            <span className="sr-only">Remove</span>
+                                                        </div>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="px-6 pb-6 pt-2 border-t border-border">
+                                                    <div className="grid grid-cols-1 gap-5 mt-2">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`faqs.${index}.question` as any}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="flex items-center gap-1">
+                                                                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                                                        <span>Question</span>
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Select
+                                                                            onValueChange={(value) => {
+                                                                                field.onChange(value);
+                                                                                const faqData = faq.find(f => f.question === value);
+                                                                                handleFaqSelect(faqData, index);
+                                                                            }}
+                                                                            defaultValue={field.value}
+                                                                        >
+                                                                            <SelectTrigger className="w-full">
+                                                                                <SelectValue placeholder="Select a question" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {faq.map((faqItem, faqIndex) => (
+                                                                                    <SelectItem key={faqIndex} value={faqItem.question}>
+                                                                                        {faqItem.question}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`faqs.${index}.answer` as any}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="flex items-center gap-1">
+                                                                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                                                        <span>Answer</span>
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Textarea
+                                                                            {...field}
+                                                                            placeholder="Enter detailed answer to the question"
+                                                                            className="min-h-[120px] resize-y"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    ) : (
+                                        <div className="p-4 flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <Badge variant="outline"
+                                                    className="rounded-md h-7 w-7 p-0 flex items-center justify-center font-medium">
+                                                    <HelpCircle className="h-4 w-4" />
                                                 </Badge>
-                                                <div className="flex-1 font-medium text-base truncate">
-                                                    {watchedFaq[index]?.question || `Question ${index + 1}`}
+                                                <div className="flex-1 font-medium text-base text-muted-foreground">
+                                                    New FAQ
                                                 </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        faqRemove(index);
-                                                    }}
-                                                    className="ml-auto h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                    <span className="sr-only">Remove</span>
-                                                </Button>
                                             </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="px-6 pb-6 pt-2 border-t border-border">
-                                            <div className="grid grid-cols-1 gap-5 mt-2">
+
+                                            <div className="flex space-x-2">
                                                 <FormField
                                                     control={form.control}
-                                                    name={`faqs.${index}.question`}
+                                                    name={`faqs.${index}.question` as any}
                                                     render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel className="flex items-center gap-1">
-                                                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                                                                <span>Question</span>
-                                                            </FormLabel>
+                                                        <FormItem className="w-full">
                                                             <FormControl>
-                                                                <Select 
+                                                                <Select
                                                                     onValueChange={(value) => {
                                                                         field.onChange(value);
-                                                                        const faqData = faq.find(f => f.question === value);
+                                                                        const faqData = faq && Array.isArray(faq) ?
+                                                                            faq.find(f => f.question === value) :
+                                                                            undefined;
                                                                         handleFaqSelect(faqData, index);
                                                                     }}
                                                                     defaultValue={field.value}
                                                                 >
-                                                                    <SelectTrigger className="w-full">
+                                                                    <SelectTrigger className="w-[220px]">
                                                                         <SelectValue placeholder="Select a question" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {faq.map((faqItem, faqIndex) => (
+                                                                        {Array.isArray(faq) && faq.length > 0 ? faq.map((faqItem, faqIndex) => (
                                                                             <SelectItem key={faqIndex} value={faqItem.question}>
                                                                                 {faqItem.question}
                                                                             </SelectItem>
-                                                                        ))}
+                                                                        )) : (
+                                                                            <SelectItem disabled value="no-faqs">No FAQs available</SelectItem>
+                                                                        )}
                                                                     </SelectContent>
                                                                 </Select>
                                                             </FormControl>
-                                                            <FormMessage />
                                                         </FormItem>
                                                     )}
                                                 />
 
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`faqs.${index}.answer`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel className="flex items-center gap-1">
-                                                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                                                <span>Answer</span>
-                                                            </FormLabel>
-                                                            <FormControl>
-                                                                <Textarea
-                                                                    {...field}
-                                                                    placeholder="Enter detailed answer to the question"
-                                                                    className="min-h-[120px] resize-y"
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        faqRemove(index);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.stopPropagation();
+                                                            faqRemove(index);
+                                                        }
+                                                    }}
+                                                    className="h-10 w-10 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    <span className="sr-only">Remove</span>
+                                                </div>
                                             </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-                            </Card>
-                        ))}
+                                        </div>
+                                    )}
+                                </Card>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center p-10 rounded-lg border-2 border-dashed border-border text-center bg-secondary">
@@ -170,10 +271,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                         <p className="text-muted-foreground mb-5 max-w-md">Add frequently asked questions to help your customers get quick answers to common inquiries</p>
                         <Button
                             type="button"
-                            onClick={() => faqAppend({
-                                question: '',
-                                answer: ''
-                            })}
+                            onClick={handleAddFaq}
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             <span>Add First FAQ</span>

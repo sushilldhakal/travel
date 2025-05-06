@@ -12,41 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from '@tanstack/react-query';
 import { getTourReviews } from '@/http/reviewApi';
+import { Review, ReviewsManagerProps } from '@/Provider/types';
 
-interface Reply {
-  _id: string;
-  comment: string;
-  user: {
-    name: string;
-    email?: string;
-    _id?: string;
-  };
-  createdAt: string;
-  likes: number;
-  views: number;
-}
 
-interface Review {
-  _id: string;
-  user: {
-    name: string;
-    email?: string;
-    avatar?: string;
-    _id?: string;
-  };
-  rating: number;
-  comment?: string;
-  review?: string;
-  createdAt: string;
-  likes: number;
-  views: number;
-  status?: string;
-  replies?: Reply[];
-}
-
-interface ReviewsManagerProps {
-  tourId: string;
-}
 
 const ReviewsManager: React.FC<ReviewsManagerProps> = ({ tourId }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,7 +159,7 @@ const ReviewsManager: React.FC<ReviewsManagerProps> = ({ tourId }) => {
               </div>
 
               <p className="mb-4 text-foreground">
-                {review.comment || review.review || 'No comment provided.'}
+                {review.comment || 'No comment provided.'}
               </p>
 
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -235,7 +203,7 @@ const ReviewsManager: React.FC<ReviewsManagerProps> = ({ tourId }) => {
             <PaginationItem>
               <PaginationPrevious
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                isActive={currentPage === 1}
               />
             </PaginationItem>
             <PaginationItem className="mx-2">
@@ -244,7 +212,7 @@ const ReviewsManager: React.FC<ReviewsManagerProps> = ({ tourId }) => {
             <PaginationItem>
               <PaginationNext
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                isActive={currentPage === totalPages}
               />
             </PaginationItem>
           </PaginationContent>

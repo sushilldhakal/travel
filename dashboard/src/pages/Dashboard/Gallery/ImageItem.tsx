@@ -125,31 +125,37 @@ const ImageItem = memo(
                     {isPDF() && (
                         <>
 
-                            <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5 flex flex-col items-center justify-center p-4">
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-3 text-xs gap-1 hover:bg-primary/10"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(image.secure_url || image.url, '_blank');
-                                    }}
-                                ><FileText className="h-16 w-16 text-primary/80 mb-2" />
-                                    <iframe src={image.secure_url ? image.secure_url : image.url} width="100%" height="800px" />
-
-                                    <div className="text-center">
-                                        <p className="text-xs font-semibold">PDF Document</p>
-                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-full">
+                            <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-background flex flex-col">
+                                <iframe
+                                    src={image.secure_url ? image.secure_url : image.url}
+                                    className="w-full h-full"
+                                    title={getDisplayName()}
+                                />
+                                <div className="absolute bottom-0 w-full bg-primary-foreground backdrop-blur-sm p-2 z-10 flex justify-between items-center">
+                                    <div className="truncate max-w-[70%]">
+                                        <p className="text-xs font-semibold text-foreground">PDF Document</p>
+                                        <p className="text-xs text-foreground truncate">
                                             {getDisplayName()}
                                         </p>
                                     </div>
-
-
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    View PDF
-                                </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="text-xs gap-1 shadow-sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(image.secure_url || image.url, '_blank');
+                                        }}
+                                    >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        View
+                                    </Button>
+                                </div>
                             </div>
+
+
+
+
                         </>
                     )
                     }

@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom';
 import routePaths from '@/lib/routePath';
 import { useToast } from '@/components/ui/use-toast';
 import moment from 'moment';
-import { getUserId } from '@/util/AuthLayout';
+import { getUserId } from '@/util/authUtils';
 
 const TourPage = () => {
   const { toast } = useToast()
@@ -24,25 +24,7 @@ const TourPage = () => {
     queryFn: () => getUsersTours(currentUserId || ''),
   });
 
-  console.log("data", data, currentUserId);
-
   const queryClient = useQueryClient();
-
-  // const [filteredTours, setFilteredTours] = useState([]);
-
-  // useEffect(() => {
-  //   if (data) {
-  //     if (currentUserRole === "admin") {
-  //       setFilteredTours(data.data.tours);
-  //     } else {
-  //       const userTours = data.data.tours.filter(tour => tour.author.some(author => author._id === currentUserId));
-  //       setFilteredTours(userTours);
-  //     }
-  //   }
-  // }, [data, currentUserRole, currentUserId]);
-
-
-
 
   const mutation = useMutation({
     mutationFn: deleteTour,

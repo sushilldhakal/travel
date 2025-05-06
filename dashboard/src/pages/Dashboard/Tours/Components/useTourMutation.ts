@@ -7,13 +7,9 @@ export const useTourMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { tourId } = useParams<{ tourId: string }>();
-  console.log("tour id", tourId);
 
   return useMutation({
     mutationFn: (data: FormData) => {
-      // Log the data entries to debug
-      console.log("FormData in mutation function:", Object.fromEntries(data.entries()));
-      
       if (tourId) {
         // If tourId is present, update the existing tour
         return updateTour(tourId, data);

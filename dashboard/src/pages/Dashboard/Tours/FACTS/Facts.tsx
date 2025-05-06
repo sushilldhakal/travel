@@ -1,9 +1,8 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUserFacts, deleteFacts } from "@/http";
+import { useQueryClient } from "@tanstack/react-query";
+import { deleteFacts } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import AddFact from "./AddFacts";
-import { getUserId } from "@/util/AuthLayout";
-import { FactData } from "@/Provider/types";
+import { getUserId } from "@/util/authUtils";
 import SingleFact from "./SingleFacts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Plus, Search } from "lucide-react";
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { useFacts } from "./useFacts";
 
 const TourFacts = () => {
     const userId = getUserId();
@@ -19,12 +19,7 @@ const TourFacts = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddFactOpen, setIsAddFactOpen] = useState(false);
 
-    // Fetch all facts for the user
-    const { data: facts, isLoading, isError } = useQuery<FactData[], Error>({
-        queryKey: ['facts', userId],
-        queryFn: () => userId ? getUserFacts(userId) : Promise.reject('No user ID provided'),
-        enabled: !!userId,
-    });
+    const { data: facts, isLoading, isError } = useFacts(userId);
 
     const handleDeleteFacts = async (factId: string) => {
         try {

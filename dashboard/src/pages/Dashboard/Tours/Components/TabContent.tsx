@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { JSONContent } from "novel";
 import { tabs } from './tabs';
-import { FactData, FaqData } from '@/Provider/types';
+import { FactData, FaqData, Itinerary } from '@/Provider/types';
 import { Option } from '@/userDefinedComponents/MultipleSelector';
 import { useForm } from 'react-hook-form';
 
@@ -15,18 +15,29 @@ import TourFacts from './TourFacts';
 import TourFaqs from './TourFaqs';
 import TourInclusionsExclusions from './TourInclusionsExclusions';
 import TourReviews from './TourReviews';
-import TourLocation from './TourLocation';
 
 // Define interfaces for better type safety
 interface GalleryItem {
     _id?: string;
     image: string;
 }
-interface DivType {
-    day: string;
-    title: string;
+
+
+// Define pricing and location types for better type safety
+interface PricingOption {
+    id?: string;
+    type: string;
+    price: number;
     description: string;
-    dateTime: Date;
+}
+
+interface LocationItem {
+    lat: string;
+    lng: string;
+    street: string;
+    city: string;
+    state: string;
+    country: string;
 }
 
 interface TabContentProps {
@@ -34,14 +45,14 @@ interface TabContentProps {
     singleTourData?: Record<string, unknown>;
     categories?: { name: string; _id: string; isActive?: boolean }[];
     facts?: FactData[];
-    faq?: FaqData[];
+    faqs?: FaqData[];
     tripCode: string | undefined;
     handleGenerateCode: () => string;
     form: ReturnType<typeof useForm>;
     editorContent: JSONContent;
     onEditorContentChange: (content: JSONContent) => void;
-    itineraryFields: DivType[];
-    itineraryAppend: (value: Partial<DivType> | Partial<DivType>[]) => void;
+    itineraryFields: Itinerary[];
+    itineraryAppend: (value: Partial<Itinerary> | Partial<Itinerary>[]) => void;
     itineraryRemove: (index: number) => void;
     factsFields: { id: string; type: string; description: string }[];
     factsAppend: (value: { type: string; description: string }) => void;
@@ -49,15 +60,20 @@ interface TabContentProps {
     faqFields: { id: string; question: string; answer: string }[];
     faqAppend: (value: { question: string; answer: string }) => void;
     faqRemove: (index: number) => void;
-    pricingFields?: any[];
-    pricingAppend?: (value: any) => void;
+    pricingFields?: PricingOption[];
+    pricingAppend?: (value: Partial<PricingOption> | Partial<PricingOption>[]) => void;
     pricingRemove?: (index: number) => void;
-    tourMutation: (data: FormData) => void;
-    singleTour: boolean;
-    locationFields?: { id: string; name: string; coordinates: { lat: number; lng: number } }[];
-    locationAppend?: (value: { name: string; coordinates: { lat: number; lng: number } }) => void;
+    locationFields?: LocationItem[];
+    locationAppend?: (value: Partial<LocationItem> | Partial<LocationItem>[]) => void;
     locationRemove?: (index: number) => void;
-    location?: { name: string; coordinates: { lat: number; lng: number } }[];
+    location?: LocationItem;
+    handleCoverImageDrop?: (file: File) => void;
+    coverImage?: string;
+    pdfFile?: string;
+    handleRemovePdf?: () => void;
+    // Additional props that might be passed but not used directly
+    tourMutation?: unknown;
+    [key: string]: unknown; // Index signature to allow for additional props
 }
 
 const TabContent: React.FC<TabContentProps> = ({
@@ -65,7 +81,6 @@ const TabContent: React.FC<TabContentProps> = ({
     singleTourData,
     categories,
     facts,
-    faq,
     tripCode,
     handleGenerateCode,
     form,
@@ -77,16 +92,16 @@ const TabContent: React.FC<TabContentProps> = ({
     factsFields,
     factsAppend,
     factsRemove,
+    faq,
     faqFields,
     faqAppend,
     faqRemove,
     pricingFields,
     pricingAppend,
     pricingRemove,
-    locationFields,
-    locationAppend,
-    locationRemove,
-    location
+    dateRangeFields,
+    dateRangeAppend,
+    dateRangeRemove,
 }) => {
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [imageArray, setImageArray] = useState<GalleryItem[]>([]);
@@ -129,7 +144,7 @@ const TabContent: React.FC<TabContentProps> = ({
     const watchedFacts = form.watch('facts');
     const watchedFaq = form.watch('faqs');
     const watchedPricing = form.watch('pricingGroups');
-    const watchedLocation = form.watch('locations');
+    const watchedDateRange = form.watch('dateRanges');
 
     const handleGalleryImage = (imageUrl: string) => {
         setImageArray((prevImageArray) => {
@@ -184,10 +199,14 @@ const TabContent: React.FC<TabContentProps> = ({
             {tab.id === 'pricing' && (
                 <TourPricingDates
                     form={form}
-                    pricingFields={pricingFields}
-                    pricingAppend={pricingAppend}
-                    pricingRemove={pricingRemove}
+                    pricingFields={pricingFields as unknown as PricingOption[]}
+                    pricingAppend={pricingAppend as unknown as (value: Partial<PricingOption> | Partial<PricingOption>[]) => void}
+                    pricingRemove={pricingRemove as unknown as (index: number | number[]) => void}
                     watchedPricing={watchedPricing}
+                    dateRangeFields={dateRangeFields}
+                    dateRangeAppend={dateRangeAppend}
+                    dateRangeRemove={dateRangeRemove}
+                    watchedDateRange={watchedDateRange}
                 />
             )}
 
@@ -231,16 +250,7 @@ const TabContent: React.FC<TabContentProps> = ({
                 />
             )}
 
-            {tab.id === 'location' && (
-                <TourLocation
-                    form={form}
-                    locationFields={locationFields || []}
-                    locationAppend={locationAppend || (() => { })}
-                    locationRemove={locationRemove || (() => { })}
-                    location={location || []}
-                    watchedLocation={watchedLocation || []}
-                />
-            )}
+
             {tab.id === 'faqs' && (
                 <TourFaqs
                     form={form}

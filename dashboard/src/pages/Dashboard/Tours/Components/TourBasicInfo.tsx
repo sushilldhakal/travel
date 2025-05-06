@@ -13,7 +13,7 @@ import GalleryPage from '@/pages/Dashboard/Gallery/GalleryPage';
 import MultipleSelector, { Option } from '@/userDefinedComponents/MultipleSelector';
 import { UseFormReturn } from 'react-hook-form';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 
 interface TourBasicInfoProps {
@@ -50,6 +50,8 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
     handleRemovePdf
 }) => {
 
+    const params = useParams();
+    const singleTour = params.tourId !== undefined;
     return (
         <Card className="shadow-sm">
             <CardHeader className="bg-secondary border-b pb-6">
@@ -76,32 +78,52 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                             </FormItem>
                         )}
                     />
+
                     <FormField
                         control={form.control}
                         name="code"
                         render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Trip Code</FormLabel>
-                                <div className="flex gap-2">
-                                    <FormControl>
-                                        <Input
-                                            {...field}
-                                            placeholder="e.g. SGLP-2023"
-                                            // value={code}
-                                            onChange={field.onChange}
-                                        />
-                                    </FormControl>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                            const generatedCode = handleGenerateCode();
-                                            field.onChange(generatedCode);
-                                        }}
-                                    >
-                                        Generate
-                                    </Button>
-                                </div>
+                            <FormItem className='relative'>
+                                <FormLabel>Trip Code:</FormLabel>
+                                {
+                                    singleTour ?
+
+                                        <FormControl className="relative">
+                                            <Input
+                                                type="text"
+                                                className="w-full uppercase"
+                                                {...field}
+                                                placeholder='Trip Code'
+                                                disabled
+                                            />
+
+                                        </FormControl> :
+                                        <>
+                                            <FormControl>
+                                                <Input
+                                                    type="text"
+                                                    className="w-full uppercase"
+                                                    {...field}
+                                                    placeholder='Trip Code'
+                                                    // value={tripCode}
+                                                    disabled
+
+                                                />
+                                            </FormControl>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    const generatedCode = handleGenerateCode();
+                                                    field.onChange(generatedCode);
+                                                }}
+                                            >
+                                                Generate
+                                            </Button>
+                                        </>
+
+                                }
+
                                 <FormMessage />
                             </FormItem>
                         )}

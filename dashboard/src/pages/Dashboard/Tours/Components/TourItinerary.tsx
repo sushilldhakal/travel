@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Trash2, PlusCircle, Calendar, ArrowRight, MapPin, Globe, Map, Pin } from 'lucide-react';
@@ -11,18 +11,22 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Editor from '@/userDefinedComponents/editor/advanced-editor';
 import { Textarea } from '@/components/ui/textarea';
-
-interface DivType {
-    day: string;
-    title: string;
-    description: string;
-    dateTime: Date;
-}
+import { Destination, Itinerary } from '@/Provider/types';
+import RichTextRenderer from '@/components/RichTextRenderer';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { useDestination } from '../Destination/useDestination';
+import { getUserId } from '@/util/authUtils';
 
 interface TourItineraryProps {
     form: UseFormReturn<any>;
-    itineraryFields: DivType[];
-    itineraryAppend: (value: Partial<DivType>) => void;
+    itineraryFields: Itinerary[];
+    itineraryAppend: (value: Partial<Itinerary>) => void;
     itineraryRemove: (index: number) => void;
     watchedItinerary: any[];
 }
@@ -34,6 +38,10 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
     itineraryRemove,
     watchedItinerary
 }) => {
+
+    const userId = getUserId();
+    const { data: destinations } = useDestination(userId);
+
     return (
         <div className="space-y-8">
             {/* Itinerary Section */}
@@ -69,6 +77,24 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                             <span>Add Day</span>
                         </Button>
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="outline"
+
+                        render={({ field }) => (
+                            <FormItem className="mt-4 mb-4">
+                                <FormLabel>Outline</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                        {...field}
+                                        placeholder="Write your outline here..."
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
                     {itineraryFields && itineraryFields.length > 0 ? (
                         <div className="space-y-4">
@@ -164,63 +190,81 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                                     <FormField
                                                         control={form.control}
                                                         name={`itinerary.${index}.description`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="md:col-span-2">
-                                                                <FormLabel>Description</FormLabel>
-                                                                <FormControl>
-                                                                    <div className="prose min-h-[140px] max-w-full rounded-md border border-input">
-                                                                        <Editor
-                                                                            initialValue={(() => {
-                                                                                try {
-                                                                                    // If the field value is already JSON, parse it
-                                                                                    if (field.value && field.value.startsWith('{')) {
-                                                                                        return JSON.parse(field.value);
-                                                                                    }
-                                                                                    // If it's plain text or empty, create a default document
-                                                                                    return field.value
-                                                                                        ? {
-                                                                                            type: "doc",
-                                                                                            content: [{
-                                                                                                type: "paragraph",
-                                                                                                content: [{ type: "text", text: field.value }]
-                                                                                            }]
+                                                        render={({ field }) => {
+                                                            // Create a preview section with RichTextRenderer
+                                                            const hasContent = field.value && field.value.length > 2;
+
+                                                            return (
+                                                                <FormItem className="md:col-span-2">
+                                                                    <FormLabel>Description</FormLabel>
+                                                                    <FormControl>
+                                                                        <div className="space-y-3">
+                                                                            <div className="prose min-h-[140px] max-w-full rounded-md border border-input">
+                                                                                <Editor
+                                                                                    initialValue={(() => {
+                                                                                        try {
+                                                                                            // If the field value is already JSON, parse it
+                                                                                            if (field.value && field.value.startsWith('{')) {
+                                                                                                return JSON.parse(field.value);
+                                                                                            }
+                                                                                            // If it's plain text or empty, create a default document
+                                                                                            return field.value
+                                                                                                ? {
+                                                                                                    type: "doc",
+                                                                                                    content: [{
+                                                                                                        type: "paragraph",
+                                                                                                        content: [{ type: "text", text: field.value }]
+                                                                                                    }]
+                                                                                                }
+                                                                                                : {
+                                                                                                    type: "doc",
+                                                                                                    content: [{
+                                                                                                        type: "paragraph",
+                                                                                                        content: [{ type: "text", text: "" }]
+                                                                                                    }]
+                                                                                                };
+                                                                                        } catch (e) {
+                                                                                            // Return default empty document on error
+                                                                                            return {
+                                                                                                type: "doc",
+                                                                                                content: [{
+                                                                                                    type: "paragraph",
+                                                                                                    content: [{ type: "text", text: "" }]
+                                                                                                }]
+                                                                                            };
                                                                                         }
-                                                                                        : {
-                                                                                            type: "doc",
-                                                                                            content: [{
-                                                                                                type: "paragraph",
-                                                                                                content: [{ type: "text", text: "" }]
-                                                                                            }]
-                                                                                        };
-                                                                                } catch (e) {
-                                                                                    // Return default empty document on error
-                                                                                    return {
-                                                                                        type: "doc",
-                                                                                        content: [{
-                                                                                            type: "paragraph",
-                                                                                            content: [{ type: "text", text: "" }]
-                                                                                        }]
-                                                                                    };
-                                                                                }
-                                                                            })()}
-                                                                            onContentChange={(content) => {
-                                                                                const contentString = JSON.stringify(content);
-                                                                                form.setValue(`itinerary.${index}.description`, contentString, {
-                                                                                    shouldDirty: true,
-                                                                                    shouldTouch: true,
-                                                                                    shouldValidate: true
-                                                                                });
-                                                                                field.onChange(contentString);
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                    Describe the activities and schedule for this day
-                                                                </p>
-                                                            </FormItem>
-                                                        )}
+                                                                                    })()}
+                                                                                    onContentChange={(content) => {
+                                                                                        const contentString = JSON.stringify(content);
+                                                                                        form.setValue(`itinerary.${index}.description`, contentString, {
+                                                                                            shouldDirty: true,
+                                                                                            shouldTouch: true,
+                                                                                            shouldValidate: true
+                                                                                        });
+                                                                                        field.onChange(contentString);
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+
+                                                                            {hasContent && (
+                                                                                <Card className="p-3 bg-secondary/30">
+                                                                                    <CardHeader className="p-2 pb-1">
+                                                                                        <CardTitle className="text-sm font-medium text-muted-foreground">Preview</CardTitle>
+                                                                                    </CardHeader>
+                                                                                    <CardContent className="p-2 pt-0">
+                                                                                        <RichTextRenderer content={field.value} className="prose-sm" />
+                                                                                    </CardContent>
+                                                                                </Card>
+                                                                            )}
+                                                                        </div>
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                        Describe the activities and schedule for this day
+                                                                    </p>
+                                                                </FormItem>
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                             </AccordionContent>
@@ -291,6 +335,36 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                             )}
                         />
                     </div>
+
+
+
+                    <FormField
+                        control={form.control}
+                        name="destination"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Destination</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a destination" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {destinations?.map((destination: Destination) => (
+                                            <SelectItem disabled={destination.isActive === false} key={destination._id} value={destination._id}>
+                                                {destination.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                    You can manage your destination in your destination section
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
                     <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
                         <div className="flex items-center mb-4">

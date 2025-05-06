@@ -4,70 +4,85 @@ import { Form } from "@/components/ui/form";
 import { Skeleton } from '@/components/ui/skeleton';
 import Loader from '@/userDefinedComponents/Loader';
 import TabContent from './Components/TabContent';
-import { defaultValue } from '@/lib/default-value';
 import { useFormHandlers } from './Components/useFormHandlers';
 import { useTourMutation } from './Components/useTourMutation';
-import { tabs } from './Components/tabs';
 import { LoaderCircle } from 'lucide-react';
 import TabNavigation from './Components/TabNavigation';
 import { Button } from '@/components/ui/button';
-import makeid from './Components/randomId';
-import { getUserId } from '@/util/AuthLayout';
-import { useCategories } from './Components/useCategories';
-import { useFacts } from './Components/useFacts';
-import { useFaq } from './Components/useFaq';
+import makeId from './Components/randomId';
+import { getUserId } from '@/util/authUtils';
+import { useFacts } from './FACTS/useFacts';
+import { useFaq } from './FAQ/useFaq';
+import { JSONContent } from 'novel';
+import { FieldValues, useForm } from 'react-hook-form';
+import { useCategories } from './Category/useCategories';
+import { FactData, FaqData, Tour } from '@/Provider/types';
 
-const AddTour: React.FC = () => {
+// Define interfaces for proper typing - matching the TabContent expected types
+interface ItineraryItem {
+  day: string;
+  title: string;
+  description: string;
+  dateTime: Date;
+}
+
+interface FactItem {
+  id: string;
+  type: string;
+  description: string;
+}
+
+interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+function AddTour() {
   const [tripCode, setTripCode] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
-  const [editorContent, setEditorContent] = useState({});
+  const [editorContent, setEditorContent] = useState<JSONContent>({});
   const userId = getUserId();
   const { mutate: createTour, isPending } = useTourMutation();
 
-  const { form,
+  const {
+    form,
     onSubmit,
+    handleSubmit,
     itineraryFields,
     itineraryAppend,
     itineraryRemove,
-    factsFields,
-    factsAppend,
-    factsRemove,
+    factFields: factsFields,
+    factAppend: factsAppend,
+    factRemove: factsRemove,
     faqFields,
     faqAppend,
     faqRemove,
-    pricingFields,
-    pricingAppend,
-    pricingRemove
+    pricingOptionsFields,
+    pricingOptionsAppend,
+    pricingOptionsRemove,
   } = useFormHandlers(editorContent);
+
   const { data: categories } = useCategories(userId);
   const { data: facts } = useFacts(userId);
   const { data: faq } = useFaq(userId);
 
   const location = useLocation();
 
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     let foundTab = tabs[0].id;
-  //     for (const tab of tabs) {
-  //       const element = document.getElementById(tab.id);
-  //       if (element && element.getBoundingClientRect().top <= window.innerHeight / 2) {
-  //         foundTab = tab.id;
-  //       }
-  //     }
-  //     setActiveTab(foundTab);
-  //   };
-
-  //   window.addEventListener('scroll', handleScroll);
-  //   return () => {
-  //     window.removeEventListener('scroll', handleScroll);
-  //   };
-  // }, []);
-
   useEffect(() => {
     if (location.hash) {
       setActiveTab(location.hash.substring(1));
     }
   }, [location.hash]);
+
+  const handleGenerateCode = () => {
+    const newCode = makeId(6);
+    setTripCode(newCode);
+    return newCode;
+  };
+
+
+  console.log("FAQS", faq);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -80,15 +95,116 @@ const AddTour: React.FC = () => {
         </div>
       )}
       <Form {...form}>
-        <form onSubmit={(e) => {
+        <form onSubmit={(e: React.FormEvent) => {
           e.preventDefault();
-          console.log("form", form.getValues());
-          form.handleSubmit(
-            (values) => {
-              onSubmit(values, createTour); // your submit logic
+          handleSubmit(
+            (values: Tour) => {
+              // Create a clone of values with proper types for submission
+              const formValues = {
+                // Basic fields - convert from field constructors to actual values
+                title: String(values.title || ""),
+                code: String(values.code || ""),
+                tourStatus: String(values.tourStatus || "Draft"),
+                excerpt: String(values.excerpt || ""),
+                description: values.description || "",
+                coverImage: String(values.coverImage || ""),
+                file: values.file || null,
+                outline: String(values.outline || ""),
+                enquiry: Boolean(values.enquiry),
+                isSpecialOffer: Boolean(values.isSpecialOffer),
+
+                // Convert nested objects
+                pricing: {
+                  price: parseFloat(String(values.pricing?.price || 0)),
+                  pricePerPerson: Boolean(values.pricing?.pricePerPerson),
+                  pricingOptionsEnabled: Boolean(values.pricing?.pricingOptionsEnabled),
+                  paxRange: Array.isArray(values.pricing?.paxRange)
+                    ? values.pricing.paxRange.map((n: any) => parseInt(String(n)))
+                    : [1, 10],
+                  groupSize: parseInt(String(values.pricing?.groupSize || 1)),
+                  discount: {
+                    discountEnabled: Boolean(values.pricing?.discount?.discountEnabled),
+                    discountPrice: parseFloat(String(values.pricing?.discount?.discountPrice || 0)),
+                    dateRange: values.pricing?.discount?.dateRange || { from: new Date(), to: new Date() }
+                  },
+                  pricingOptions: Array.isArray(values.pricing?.pricingOptions)
+                    ? values.pricing.pricingOptions.map((opt: any) => ({
+                      ...opt,
+                      price: parseFloat(String(opt.price || 0)),
+                      name: String(opt.name || ""),
+                      category: String(opt.category || ""),
+                      customCategory: String(opt.customCategory || ""),
+                    }))
+                    : []
+                },
+
+                dates: {
+                  days: parseInt(String(values.dates?.days || 0)),
+                  nights: parseInt(String(values.dates?.nights || 0)),
+                  fixedDeparture: Boolean(values.dates?.fixedDeparture),
+                  multipleDates: Boolean(values.dates?.multipleDates),
+                  scheduleType: (values.dates?.scheduleType || "flexible") as "fixed" | "flexible" | "recurring",
+                  singleDateRange: values.dates?.singleDateRange || { from: new Date(), to: new Date() },
+                  departures: Array.isArray(values.dates?.departures)
+                    ? values.dates.departures.map((dep: any) => ({
+                      ...dep,
+                      id: String(dep.id || Date.now()),
+                      label: String(dep.label || ""),
+                      capacity: parseInt(String(dep.capacity || 0)),
+                      isRecurring: Boolean(dep.isRecurring),
+                      recurrencePattern: String(dep.recurrencePattern || "weekly") as
+                        "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly",
+                    }))
+                    : []
+                },
+
+                // Array fields
+                itinerary: Array.isArray(values.itinerary)
+                  ? values.itinerary.map((item: any) => ({
+                    ...item,
+                    day: String(item.day || ""),
+                    title: String(item.title || ""),
+                    description: String(item.description || ""),
+                  }))
+                  : [],
+
+                facts: Array.isArray(values.facts)
+                  ? values.facts.map((fact: FactData) => ({
+                    ...fact,
+                    field_type: String(fact.field_type || "Plain Text") as "Plain Text" | "Single Select" | "Multi Select",
+                  }))
+                  : [],
+
+                faqs: Array.isArray(values.faqs)
+                  && values.faqs.map((faq: FaqData) => ({
+                    ...faq,
+                    question: String(faq.question || ""),
+                    answer: String(faq.answer || ""),
+                  })),
+
+                // Location fields
+                location: values.location ? {
+                  lat: parseFloat(String(values.location.lat || 0)),
+                  lng: parseFloat(String(values.location.lng || 0)),
+                  country: String(values.location.country || ""),
+                  city: String(values.location.city || ""),
+                  street: String(values.location.street || ""),
+                  state: String(values.location.state || ""),
+                } : undefined,
+
+                // Other fields
+                map: String(values.map || ""),
+                destination: String(values.destination || ""),
+                include: String(values.include || ""),
+                exclude: String(values.exclude || ""),
+                category: Array.isArray(values.category) ? values.category : [],
+                gallery: Array.isArray(values.gallery) ? values.gallery : []
+              };
+
+              onSubmit(formValues, createTour);
             },
-            (errors) => {
-              console.log("Form Errors:", errors); // log errors
+            (errors: any) => {
+              console.log("Form Errors:", errors);
             }
           )();
         }}>
@@ -100,49 +216,46 @@ const AddTour: React.FC = () => {
                 </span>
               </Button>
             </Link>
-            <Button type="submit" size="sm">
-              {isPending && <LoaderCircle className="animate-spin" />}
-              <span className="ml-2">Create Tour</span>
+            <Button size="sm" type="submit" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Saving
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
           </div>
-          <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-            <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
-              <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-              <div className="py-4">
-                <Button type="submit" disabled={isPending} className='pr-6 ml-4'>
-                  {isPending && <LoaderCircle className="animate-spin" />}
-                  <span className="ml-2">Create Tour</span>
-                </Button>
+          <div className="flex">
+            <div className="hidden lg:block md:w-60 xl:w-72 ml-3 mt-5 border-r pr-5">
+              <div className="sticky top-16">
+                <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
               </div>
-            </aside>
-            <div className="grid gap-3 lg:col-span-1">
+            </div>
+            <div className="flex-1 lg:pl-6 mt-3">
               <TabContent
-                form={form}
                 activeTab={activeTab}
-                tripCode={tripCode}
-                tourMutation={createTour}
-                handleGenerateCode={() => {
-                  const newCode = makeid(6);
-                  setTripCode(newCode);
-                  form.setValue('code', newCode);
-                }}
+                form={form as unknown as ReturnType<typeof useForm<FieldValues>>}
                 editorContent={editorContent}
                 onEditorContentChange={setEditorContent}
-                itineraryFields={itineraryFields}
-                itineraryAppend={itineraryAppend}
+                tripCode={tripCode}
+                handleGenerateCode={handleGenerateCode}
+                itineraryFields={itineraryFields as unknown as ItineraryItem[]}
+                itineraryAppend={itineraryAppend as unknown as (value: Partial<ItineraryItem> | Partial<ItineraryItem>[]) => void}
                 itineraryRemove={itineraryRemove}
-                factsFields={factsFields}
-                factsAppend={factsAppend}
+                factsFields={factsFields as unknown as FactItem[]}
+                factsAppend={factsAppend as unknown as (value: { type: string; description: string }) => void}
                 factsRemove={factsRemove}
-                faqFields={faqFields}
-                faqAppend={faqAppend}
+                faqFields={faqFields as unknown as FaqItem[]}
+                faqAppend={faqAppend as unknown as (value: { question: string; answer: string }) => void}
                 faqRemove={faqRemove}
                 categories={categories}
                 facts={facts}
                 faq={faq}
-                pricingFields={pricingFields}
-                pricingAppend={pricingAppend}
-                pricingRemove={pricingRemove}
+                pricingFields={pricingOptionsFields}
+                pricingAppend={pricingOptionsAppend}
+                pricingRemove={pricingOptionsRemove}
               />
             </div>
           </div>

@@ -8,16 +8,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useBreadcrumbs } from '@/Provider/BreadcrumbsProvider';
+import { Breadcrumb as BreadcrumbType } from '@/Provider/types';
 
-interface BreadcrumbItemProps {
-  title: string;
-  href?: string;
-  type?: 'link' | 'page';
-}
 
-const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
+
+const generateBreadcrumbItems = (pathname: string): BreadcrumbType[] => {
   const pathSegments = pathname.split('/').filter(Boolean);
-  const breadcrumbItems: BreadcrumbItemProps[] = [];
+  const breadcrumbItems: BreadcrumbType[] = [];
 
   pathSegments.forEach((segment, index) => {
     const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
@@ -25,7 +22,7 @@ const generateBreadcrumbItems = (pathname: string): BreadcrumbItemProps[] => {
     title = title.replace(/\b\w/g, char => char.toUpperCase());
 
     breadcrumbItems.push({
-      title,
+      label: title,
       href,
       type: index < pathSegments.length - 1 ? 'link' : 'page',
     });
@@ -41,7 +38,7 @@ const Breadcrumbs = () => {
   useEffect(() => {
     const newBreadcrumbs = generateBreadcrumbItems(location.pathname).map(item => ({
       ...item,
-      label: item.title
+      label: item.label
     }));
     updateBreadcrumbs(newBreadcrumbs);
   }, [location.pathname, updateBreadcrumbs]);

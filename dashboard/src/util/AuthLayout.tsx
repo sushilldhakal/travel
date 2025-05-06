@@ -1,49 +1,11 @@
 import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { getAccessToken, getAuthUserRoles, AccessTokenType } from './authUtils';
 import { jwtDecode } from 'jwt-decode';
-import { ReactNode } from 'react';
 
-export const isValidToken = (token: string | null): boolean => {
-    if (!token) return false;
-    const parts = token.split('.');
-    return parts.length === 3;
-};
+export type { AccessTokenType } from './authUtils';
 
-const getAccessToken = (): string | null => {
-    return localStorage.getItem('token-store');
-};
-
-type AccessTokenType = {
-    email: string;
-    isLoggedIn: boolean;
-    sub: string;
-    roles: string;
-};
-
-
-export const getAuthUserRoles = (): string | null => {
-    const accessToken = getAccessToken();
-    if (!isValidToken(accessToken)) return null;
-
-    try {
-        const decoded = jwtDecode<AccessTokenType>(accessToken!);
-        const currentTime = Date.now() / 1000; // Convert milliseconds to seconds
-
-        if (decoded?.exp < currentTime) {
-            localStorage.removeItem("token-store");
-        }
-        return decoded.roles;
-    } catch (e) {
-        console.error('Failed to decode token:', e);
-        return null;
-    }
-};
-
-interface AdminRouteProps {
-    children?: ReactNode;
-}
-
-export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+export const AdminProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const accessToken = getAccessToken();
 
     if (!accessToken) {
@@ -60,26 +22,17 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return children ? <>{children}</> : <Outlet />;
 };
 
-export const getUserId = (): string | null => {
-    const accessToken = getAccessToken();
-    if (!isValidToken(accessToken)) return null;
-
-    try {
-        const decoded = jwtDecode<AccessTokenType>(accessToken!);
-        return decoded.sub;
-    } catch (e) {
-        console.error('Failed to decode token:', e);
-        return null;
-    }
-};
-
-
+// For backward compatibility - maintain the original name
+export const AdminRoute = AdminProtectedRoute;
 
 const AuthLayout: React.FC = () => {
+    const location = useLocation();
     const accessToken = getAccessToken();
-    if (!isValidToken(accessToken)) {
+
+    if (!accessToken) {
         return <Outlet />;
     }
+
     const roles = getAuthUserRoles();
     if (!roles) {
         return <Navigate to="/auth/login" state={{ path: location.pathname }} />;
@@ -90,8 +43,6 @@ const AuthLayout: React.FC = () => {
     } else {
         return <Navigate to="/auth/login" state={{ path: location.pathname }} />;
     }
-
-    return <Outlet />;
 };
 
 export default AuthLayout;

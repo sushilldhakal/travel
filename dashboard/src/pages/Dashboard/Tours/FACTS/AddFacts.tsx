@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { addFacts } from "@/http";
 import { toast } from "@/components/ui/use-toast";
-import { useState } from "react";
-import { getUserId } from "@/util/AuthLayout";
+import { useState, useCallback } from "react";
+import { getUserId } from "@/util/authUtils";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import AllIcons from "./AllIcons";
 import {
@@ -30,6 +30,7 @@ import Icon from "@/userDefinedComponents/Icon";
 import { Badge } from "@/components/ui/badge";
 import { FolderPlus, Save, X } from "lucide-react";
 
+
 interface FactFormData {
     name: string;
     field_type: string;
@@ -38,7 +39,7 @@ interface FactFormData {
     userId: string | null;
 }
 
-
+// Optimized AddFacts.tsx to prevent unnecessary re-renders
 const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
     const userId = getUserId();
     const [valuesTag, setValuesTag] = useState<string[]>([]);
@@ -100,10 +101,11 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
         }
     };
 
-    const handleIconSelect = (iconName: string) => {
+    const handleIconSelect = useCallback((iconName: string) => {
         setSelectedIcon(iconName);
+        form.setValue('icon', iconName); // Make sure to set the form value too
         setIsOpen(false); // Close the dialog
-    };
+    }, [form]);
 
     return (
         <Form {...form}>
@@ -122,7 +124,10 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
                             <FolderPlus className="h-5 w-5 text-primary" />
                             Create Facts
                         </CardTitle>
-                        <CardDescription>Add a new Fact to your store.</CardDescription>
+                        <CardDescription>Add a new Fact to your store.
+
+
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4">
@@ -184,33 +189,43 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
                                         )}
                                     />
                                 )}
+
                                 <FormField
                                     control={form.control}
                                     name="icon"
-                                    render={({ field }) => (
+                                    render={() => (
                                         <FormItem>
                                             <FormLabel>Icon</FormLabel>
-                                            {/* show selected icon here */}
                                             <FormControl>
                                                 <div className="flex items-center">
                                                     {selectedIcon && (
-                                                        <div className="mr-2" >
-                                                            <Icon name={selectedIcon} size={24} />
+                                                        <div className="mr-2 flex items-center justify-center">
+                                                            <Icon
+                                                                name={selectedIcon}
+                                                                size={24}
+                                                                className="text-primary"
+                                                            />
+                                                            <span className="ml-2 text-xs text-muted-foreground">
+                                                                {selectedIcon}
+                                                            </span>
                                                         </div>
                                                     )}
                                                     <Dialog open={isOpen} onOpenChange={setIsOpen}>
                                                         <DialogTrigger asChild>
                                                             <Button variant="outline">Choose Icons </Button>
                                                         </DialogTrigger>
-                                                        <DialogContent className="h-[80vh] max-w-[1000px]">
+                                                        <DialogContent className="h-[80vh] max-w-[90vw]">
                                                             <DialogHeader>
                                                                 <DialogTitle>Icons</DialogTitle>
                                                                 <DialogDescription>
                                                                     Add Icons to facts
                                                                 </DialogDescription>
                                                             </DialogHeader>
-                                                            <div className="grid gap-4 py-4  overflow-y-auto">
-                                                                <AllIcons onSelectIcon={handleIconSelect} />
+                                                            <div className="grid gap-4 py-4 overflow-y-auto">
+                                                                {/* Pass the memoized callback to avoid re-rendering ListIcon */}
+                                                                <AllIcons
+                                                                    onSelectIcon={handleIconSelect}
+                                                                />
                                                             </div>
                                                             <DialogFooter>
                                                             </DialogFooter>
@@ -225,36 +240,23 @@ const AddFact = ({ onFactAdded }: { onFactAdded: () => void }) => {
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="flex justify-between border-t px-6 py-4 bg-secondary/50">
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                form.reset();
-                                onFactAdded();
-                            }}
-                            className="gap-1.5"
-                        >
-                            <X className="h-3.5 w-3.5" />
-                            Cancel
+                    <CardFooter className="flex justify-between">
+                        <Button variant="outline" className="flex gap-2" onClick={() => {
+                            form.reset();
+                            setValuesTag([]);
+                            setSelectedIcon(null);
+                        }}>
+                            <X className="h-4 w-4" /> Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            size="sm"
-                            className="gap-1.5"
-                        >
-                            <Save className="h-3.5 w-3.5" />
-                            Create Category
+                        <Button type="submit" className="flex gap-2 bg-green-700 text-white">
+                            <Save className="h-4 w-4" />
+                            Create Facts
                         </Button>
-
-
                     </CardFooter>
                 </Card>
             </form>
         </Form>
-    );
-};
+    )
+}
 
 export default AddFact;

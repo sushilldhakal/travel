@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 import { FileText, MapPin, Image as ImageIcon, Save, Trash2, X, FolderPlus } from "lucide-react";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import { addDestination, getUserToursTitle } from "@/http";
 import GalleryPage from "../../Gallery/GalleryPage";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
@@ -49,7 +49,6 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
         enabled: !!userId,
     });
 
-    console.log("this is the list of titles", tourTitles?.data.data);
 
     const form = useForm<DestinationFormData>({
         defaultValues: {
@@ -281,7 +280,6 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                                                 // Ensure only the string values (IDs) are passed to RHF
                                                                 const ids = selectedValues.map(val => typeof val === 'string' ? val : val.value);
                                                                 field.onChange(ids);
-                                                                console.log("Selected IDs:", ids);
                                                             }}
                                                             placeholder="Select options"
                                                             className="w-full"

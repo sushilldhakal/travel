@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Calendar, DollarSign, Clock, RefreshCw, Lock, ChevronDown } from 'lucide-react';
+import { PlusCircle, Trash2, Calendar, DollarSign, Clock, Lock, ChevronDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { UseFormReturn, useFieldArray } from 'react-hook-form';
+import { useFieldArray } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -14,12 +14,9 @@ import { Separator } from '@/components/ui/separator';
 import { DatePickerWithRange } from '@/components/ui/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 
-interface PricingOption {
+export interface PricingOption {
   id?: string;
   name: string;
   category: string;
@@ -29,34 +26,78 @@ interface PricingOption {
   discountPrice: number;
   discountDateRange?: DateRange;
   paxRange: [number, number];
+  type?: string;
+  description?: string;
 }
 
-interface DateRangeItem {
+export interface SelectedPricingOption {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+}
+
+export interface DateRange {
   id?: string;
-  label: string;
-  dateRange?: DateRange;
-  selectedPricingOptions: string[];
-  isRecurring?: boolean;
-  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
-  recurrenceEndDate?: Date;
-  priceLockedUntil?: Date;
+  startDate: Date;
+  endDate: Date;
+  recurring?: boolean;
+  label?: string;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
 }
 
-interface TourPricingDatesProps {
-  form: UseFormReturn<any>;
+export interface DateRangeItemType {
+  startDate: Date;
+  endDate: Date;
+  id?: string;
 }
 
-const TourPricingDates = ({ form }: TourPricingDatesProps) => {
-  const { fields: pricingFields, append: pricingAppend, remove: pricingRemove } = useFieldArray({
+export interface TourPricingDatesProps {
+  pricingFields: PricingOption[];
+  pricingAppend: (value: Partial<PricingOption> | Partial<PricingOption>[]) => void;
+  pricingRemove: (index: number | number[]) => void;
+  form: any;
+  watchedPricing?: any;
+}
+
+const TourPricingDates = ({
+  form,
+  pricingFields: externalPricingFields,
+  pricingAppend: externalPricingAppend,
+  pricingRemove: externalPricingRemove,
+  watchedPricing,
+  dateRangeFields,
+  dateRangeAppend,
+  dateRangeRemove,
+  watchedDateRange,
+}: TourPricingDatesProps) => {
+  // Use external fields if provided, otherwise use local field array
+  const { fields: localPricingFields, append: localPricingAppend, remove: localPricingRemove } = useFieldArray({
     control: form.control,
     name: "pricingOptions",
   });
-  const [selectedDateRange, setSelectedDateRange] = React.useState<DateRange | undefined>(undefined);
-  const watchedPricing = form.watch('pricingOptions') || [];
+
+  // Use the appropriate field arrays based on what's passed in
+  const pricingFields = externalPricingFields || localPricingFields;
+  const pricingAppend = externalPricingAppend || localPricingAppend;
+  const pricingRemove = externalPricingRemove || localPricingRemove;
+
+
+
+
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRangeItemType | null>(null);
+  // Only define local watchedPricing if not passed in from props
+  const localWatchedPricing = form.watch('pricingOptions') || [];
+  const actualWatchedPricing = watchedPricing || localWatchedPricing;
   const watchedPricePerType = form.watch('pricePerType');
-  const watchedPricingOptionsEnabled = form.watch('pricingOptionsEnabled');
   const watchedTourDatesRange = form.watch('tourDates.dateRange');
-  const watchedIsRecurring = form.watch('tourDates.isRecurring');
+  const watchedIsRecurring = form.watch('tourDates.isRecurring') as boolean;
+  const watchedDateRanges = form.watch('dateRanges') || [];
+  const watchedFixedDeparture = form.watch('fixedDeparture');
+  const watchedMultipleDates = form.watch('multipleDates');
 
   // Auto-calculate days and nights when date range changes for Non Fixed Departure
   useEffect(() => {
@@ -76,16 +117,50 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
     }
   }, [watchedTourDatesRange, form]);
 
+  useEffect(() => {
+    if (selectedDateRange) {
+      // Use the selected date range for UI updates or form value settings
+    }
+  }, [selectedDateRange]);
+
+  useEffect(() => {
+    if (watchedIsRecurring) {
+      // Could update UI or form values based on this
+    }
+  }, [watchedIsRecurring]);
+
+  const handleDateChange = useCallback((date: Date) => {
+    if (date) {
+      form.setValue('dates.startDate', date);
+      form.setValue('dates.endDate', date);
+      setSelectedDateRange({
+        startDate: date,
+        endDate: date,
+      });
+    }
+  }, [form, setSelectedDateRange]);
+
+  useEffect(() => {
+    // Connect handleDateChange to a calendar component or date picker
+    const fixedDate = form.watch('fixedDate');
+    if (fixedDate && fixedDate instanceof Date) {
+      handleDateChange(fixedDate);
+    }
+  }, [form, handleDateChange]);
+
   const addPricingOption = () => {
     pricingAppend({
       name: '',
       category: 'adult',
       customCategory: '',
       price: 0,
-      discountEnabled: false,
+      discountEnabled: Boolean(false),
       discountPrice: 0,
-      discountDateRange: undefined,
-      paxRange: [1, 1]
+      discountDateRange: {
+        from: new Date(),
+        to: new Date(),
+      },
+      paxRange: [1, 10] // Default range from 1 to 10
     });
   };
 
@@ -104,7 +179,10 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
           from: new Date(),
           to: new Date(new Date().setDate(new Date().getDate() + 7))
         },
-        selectedPricingOptions: []
+        selectedPricingOptions: [],
+        isRecurring: false,
+        recurrencePattern: "weekly", // Add default recurrence pattern
+        recurrenceEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)) // Set default end date to one year from now
       }
     ]);
   };
@@ -116,15 +194,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
     form.setValue('dateRanges', updatedDateRanges);
   };
 
-  const handleDateChange = (range: DateRange) => {
-    setSelectedDateRange(range);
-    form.setValue('dates.startDate', range.from);
-    form.setValue('dates.endDate', range.to);
-  };
 
-  const watchedDateRanges = form.watch('dateRanges') || [];
-  const watchedFixedDeparture = form.watch('fixedDeparture');
-  const watchedMultipleDates = form.watch('multipleDates');
 
   return (
     <div id="pricing" className="space-y-8">
@@ -239,7 +309,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
 
             <FormField
               control={form.control}
-              name="basePrice"
+              name="price"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Base Price per person</FormLabel>
@@ -302,20 +372,30 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                 <FormField
                   control={form.control}
                   name="discountDateRange"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Discount Period</FormLabel>
-                      <DatePickerWithRange
-                        date={field.value}
-                        setDate={(date) => field.onChange(date)}
-                        className="w-full"
-                      />
-                      <FormMessage />
-                      <p className="text-xs text-muted-foreground">
-                        Select when this discount will start and end. If no date range is selected it will assume that the discount will applies with entire range of dates when this tour is available.
-                      </p>
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Parse the date values or use defaults
+                    const dateValue = {
+                      from: field.value?.from ? new Date(field.value.from) : undefined,
+                      to: field.value?.to ? new Date(field.value.to) : undefined
+                    };
+
+                    return (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Discount Period</FormLabel>
+                        <DatePickerWithRange
+                          date={dateValue}
+                          setDate={(date) => {
+                            field.onChange(date);
+                          }}
+                          className="w-full"
+                        />
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground">
+                          Select when this discount will start and end. If no date range is selected it will assume that the discount will applies with entire range of dates when this tour is available.
+                        </p>
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
             )}
@@ -353,10 +433,10 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                 </Button>
 
               </div>
-              {watchedPricingOptionsEnabled && (
+              {form.watch('pricingOptionsEnabled') && (
                 <div className="space-y-4 mt-4">
                   {pricingFields.length > 0 ? (
-                    pricingFields.map((field, index) => (
+                    pricingFields.map((field: PricingOption, index: number) => (
                       <Accordion
                         type="single"
                         collapsible
@@ -369,23 +449,23 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center">
                                 <span className="font-medium">
-                                  {watchedPricing[index]?.name || `Option ${index + 1}`}
+                                  {actualWatchedPricing[index]?.name || `Option ${index + 1}`}
                                 </span>
-                                {watchedPricing[index]?.category && (
+                                {actualWatchedPricing[index]?.category && (
                                   <Badge variant="outline" className="ml-2">
-                                    {watchedPricing[index]?.category === 'custom'
-                                      ? watchedPricing[index]?.customCategory
-                                      : watchedPricing[index]?.category}
+                                    {actualWatchedPricing[index]?.category === 'custom'
+                                      ? actualWatchedPricing[index]?.customCategory
+                                      : actualWatchedPricing[index]?.category}
                                   </Badge>
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Badge>
-                                  ${watchedPricing[index]?.price || 0}
+                                  ${actualWatchedPricing[index]?.price || 0}
                                 </Badge>
-                                {watchedPricing[index]?.discountEnabled && (
+                                {actualWatchedPricing[index]?.discountEnabled && (
                                   <Badge variant="secondary">
-                                    Discount: ${watchedPricing[index]?.discountPrice || 0}
+                                    Discount: ${actualWatchedPricing[index]?.discountPrice || 0}
                                   </Badge>
                                 )}
                               </div>
@@ -446,7 +526,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                 )}
                               />
 
-                              {watchedPricing[index]?.category === 'custom' && (
+                              {actualWatchedPricing[index]?.category === 'custom' && (
                                 <FormField
                                   control={form.control}
                                   name={`pricingOptions.${index}.customCategory`}
@@ -501,7 +581,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                 )}
                               />
 
-                              {watchedPricing[index]?.discountEnabled && (
+                              {actualWatchedPricing[index]?.discountEnabled && (
                                 <div className="space-y-4">
                                   <FormField
                                     control={form.control}
@@ -527,20 +607,30 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                   <FormField
                                     control={form.control}
                                     name={`pricingOptions.${index}.discountDateRange`}
-                                    render={({ field }) => (
-                                      <FormItem className="flex flex-col">
-                                        <FormLabel>Discount Period</FormLabel>
-                                        <DatePickerWithRange
-                                          date={field.value}
-                                          setDate={(date) => field.onChange(date)}
-                                          className="w-full"
-                                        />
-                                        <FormMessage />
-                                        <p className="text-sm text-muted-foreground">
-                                          Select when this discount will start and end
-                                        </p>
-                                      </FormItem>
-                                    )}
+                                    render={({ field }) => {
+                                      // Parse the date values or use defaults
+                                      const dateValue = {
+                                        from: field.value?.from ? new Date(field.value.from) : undefined,
+                                        to: field.value?.to ? new Date(field.value.to) : undefined
+                                      };
+
+                                      return (
+                                        <FormItem className="flex flex-col">
+                                          <FormLabel>Discount Period</FormLabel>
+                                          <DatePickerWithRange
+                                            date={dateValue}
+                                            setDate={(date) => {
+                                              field.onChange(date);
+                                            }}
+                                            className="w-full"
+                                          />
+                                          <FormMessage />
+                                          <p className="text-sm text-muted-foreground">
+                                            Select when this discount will start and end
+                                          </p>
+                                        </FormItem>
+                                      );
+                                    }}
                                   />
                                 </div>
                               )}
@@ -617,109 +707,6 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
         </CardContent>
       </Card>
 
-      {/* Recurring Tour Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Recurring Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FormField
-            control={form.control}
-            name="tourDates.isRecurring"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    Recurring Tour
-                  </FormLabel>
-                  <FormDescription>
-                    Enable to set up automatic recurring dates
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {watchedIsRecurring && (
-            <div className="mt-4 space-y-4">
-              <FormField
-                control={form.control}
-                name="tourDates.recurrencePattern"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Recurrence Pattern</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select recurrence pattern" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tourDates.recurrenceEndDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>End Date (Optional)</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>No end date (runs indefinitely)</span>
-                            )}
-                            <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Price Lock Section */}
       <Collapsible className="mb-6 rounded-lg border">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
@@ -732,41 +719,14 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
         <CollapsibleContent className="p-4 pt-0 space-y-4">
           <FormField
             control={form.control}
-            name="tourDates.priceLockedUntil"
+            name="priceLockedUntil"
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Lock Prices Until</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>No lock date set</span>
-                        )}
-                        <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DateTimePicker {...field} showTime={false} />
                 <FormDescription>
-                  Optional - Prices will remain fixed until this date
+                  Optional - Prices will remain fixed until this date. This is useful for tours that have a fixed price for a certain period.<br />
+                  Tour booking wont be shown to user after this date.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -909,7 +869,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                       Add Date Range
                     </Button>
 
-                    {watchedDateRanges.map((dateRange, index) => (
+                    {watchedDateRanges.map((dateRange: DateRange, index: number) => (
                       <Accordion key={dateRange.id || index} type="single" collapsible className="border rounded-md">
                         <AccordionItem value={`date-${index}`} className="border-none">
                           <AccordionTrigger className="px-4 py-2 hover:no-underline">
@@ -1023,33 +983,24 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                     render={({ field }) => (
                                       <FormItem className="flex flex-col">
                                         <FormLabel>Recurrence End Date</FormLabel>
-                                        <DatePickerWithRange
+
+                                        <DateTimePicker
+                                          value={field.value}
+                                          onChange={(date) => field.onChange(date)}
+                                          showTime={false}
+                                          className="w-full"
+                                        />
+                                        {/* <DatePickerWithRange
                                           date={field.value}
                                           setDate={(date) => field.onChange(date)}
                                           className="w-full"
-                                        />
+                                        /> */}
                                         <FormMessage />
                                       </FormItem>
                                     )}
                                   />
                                 </div>
                               )}
-
-                              <FormField
-                                control={form.control}
-                                name={`dateRanges.${index}.priceLockedUntil`}
-                                render={({ field }) => (
-                                  <FormItem className="flex flex-col">
-                                    <FormLabel>Price Locked Until</FormLabel>
-                                    <DatePickerWithRange
-                                      date={field.value}
-                                      setDate={(date) => field.onChange(date)}
-                                      className="w-full"
-                                    />
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
 
                               <FormField
                                 control={form.control}
@@ -1061,10 +1012,37 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                       <Select
                                         onValueChange={(value) => {
                                           const currentOptions = field.value || [];
-                                          if (currentOptions.includes(value)) {
-                                            field.onChange(currentOptions.filter(option => option !== value));
+
+                                          // Find the full option object from actualWatchedPricing
+                                          const selectedOption = actualWatchedPricing.find(
+                                            (opt: PricingOption) => opt.name === value
+                                          );
+
+                                          if (!selectedOption) return;
+
+                                          // Create option object with id and name
+                                          const optionObject: SelectedPricingOption = {
+                                            id: selectedOption.id || Date.now().toString(),
+                                            name: selectedOption.name,
+                                            category: selectedOption.category,
+                                            price: selectedOption.price
+                                          };
+
+                                          // Check if this option is already selected
+                                          const isSelected = currentOptions.some(
+                                            (opt: string | SelectedPricingOption) =>
+                                              typeof opt === 'object' && opt.name === value
+                                          );
+
+                                          if (isSelected) {
+                                            // Remove the option
+                                            field.onChange(currentOptions.filter(
+                                              (opt: string | SelectedPricingOption) =>
+                                                typeof opt === 'object' ? opt.name !== value : opt !== value
+                                            ));
                                           } else {
-                                            field.onChange([...currentOptions, value]);
+                                            // Add the new option object
+                                            field.onChange([...currentOptions, optionObject]);
                                           }
                                         }}
                                       >
@@ -1072,7 +1050,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                           <SelectValue placeholder="Select pricing options" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          {watchedPricing && Array.isArray(watchedPricing) && watchedPricing.map((option, idx) => (
+                                          {actualWatchedPricing && Array.isArray(actualWatchedPricing) && actualWatchedPricing.map((option, idx) => (
                                             <SelectItem
                                               key={idx}
                                               value={option.name || `Option ${idx + 1}`}
@@ -1086,7 +1064,7 @@ const TourPricingDates = ({ form }: TourPricingDatesProps) => {
                                     <div className="flex flex-wrap gap-2 mt-2">
                                       {field.value && field.value.map((option, idx) => (
                                         <Badge key={idx} variant="secondary" className="gap-1">
-                                          {option}
+                                          {typeof option === 'object' ? option.name : option}
                                           <button
                                             type="button"
                                             className="ml-1 h-4 w-4 rounded-full text-xs"

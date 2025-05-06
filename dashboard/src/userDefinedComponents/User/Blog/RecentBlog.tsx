@@ -13,35 +13,10 @@ import { format } from "date-fns";
 import { Heart, Eye, MessageSquare } from 'lucide-react';
 import useTokenStore from '@/store/store';
 import { toast } from '@/components/ui/use-toast';
-import { getUserId } from '@/util/AuthLayout';
+import { getUserId } from '@/util/authUtils';
+import { Post, PostResponse } from '@/Provider/types';
 
-interface Post {
-    _id: string;
-    title: string;
-    content: string;
-    author: {
-        _id: string;
-        name: string;
-    };
-    tags: string[];
-    image: string;
-    status: 'Published' | 'Draft';
-    likes: number;
-    comments: string[];
-    enableComments: boolean;
-    views: number;
-    createdAt: string;
-    updatedAt: string;
-    liked?: boolean;
-}
 
-interface PostResponse {
-    page: number;
-    limit: number;
-    totalPages: number;
-    totalItems: number;
-    posts: Post[];
-}
 
 const RecentBlog: React.FC = () => {
     const navigate = useNavigate();

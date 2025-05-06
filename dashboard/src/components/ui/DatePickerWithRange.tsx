@@ -30,6 +30,16 @@ export function DatePickerWithRange({
         to: undefined,
     };
 
+    // Create a ref to track if the component has been mounted
+    const hasBeenMounted = React.useRef(false);
+
+    // Effect to make sure we handle dates correctly even after remounting
+    React.useEffect(() => {
+        // Only set date if from or to has changed and component has been mounted
+
+        hasBeenMounted.current = true;
+    }, [date]);
+
     return (
         <div className={cn("grid gap-2", className)}>
             <Popover>

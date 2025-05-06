@@ -1,4 +1,5 @@
-export default function makeid(length: number) {
+export default function makeId(length: number) {
+  const prefix = 'BnT';
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     const charactersLength = characters.length;
@@ -7,5 +8,5 @@ export default function makeid(length: number) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
       counter += 1;
     }
-    return result;
+    return prefix+"-"+result;
   }

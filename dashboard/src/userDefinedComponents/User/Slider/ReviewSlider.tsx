@@ -16,36 +16,9 @@ import {
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 import Autoplay from "embla-carousel-autoplay"
+import { Review } from "@/Provider/types"
 
-interface Review {
-    _id: string;
-    rating: number;
-    comment: string;
-    user: {
-        _id: string;
-        name: string;
-        email?: string;
-        roles?: string;
-        profilePicture?: string;
-    };
-    status: string;
-    createdAt: string;
-    likes?: number;
-    views?: number;
-    replies?: Array<{
-        _id: string;
-        comment: string;
-        user: {
-            _id: string;
-            name: string;
-        };
-        createdAt: string;
-        likes?: number;
-        views?: number;
-    }>;
-    tourId?: string;
-    tourTitle?: string;
-}
+
 
 const ReviewSlider = () => {
     const [api, setApi] = React.useState<CarouselApi>()

@@ -10,7 +10,7 @@ import { addCategory } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import GalleryPage from "../../Gallery/GalleryPage";
 import { Badge } from "@/components/ui/badge";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";

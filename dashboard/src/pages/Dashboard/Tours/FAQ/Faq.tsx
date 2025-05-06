@@ -1,9 +1,8 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUserFaq, deleteFaq } from "@/http";
+import { useQueryClient } from "@tanstack/react-query";
+import { deleteFaq } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import AddFaq from "./AddFaq";
-import { getUserId } from "@/util/AuthLayout";
-import { FaqData } from "@/Provider/types";
+import { getUserId } from "@/util/authUtils";
 import SingleFaq from "./SingleFaq";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpCircle, Plus, Search } from "lucide-react";
@@ -11,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFaq } from "./useFaq";
 
 const TourFaqs = () => {
     const userId = getUserId();
@@ -18,12 +18,7 @@ const TourFaqs = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddFaqOpen, setIsAddFaqOpen] = useState(false);
 
-    // Fetch all faqs for the user
-    const { data: faqs, isLoading, isError } = useQuery<FaqData[], Error>({
-        queryKey: ['faqs', userId],
-        queryFn: () => userId ? getUserFaq(userId) : Promise.reject('No user ID provided'),
-        enabled: !!userId,
-    });
+    const { data: faqs, isLoading, isError } = useFaq(userId);
 
     const handleDeleteFaqs = async (faqId: string) => {
         try {

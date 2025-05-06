@@ -1,4 +1,4 @@
-import { getAuthUserRoles } from '@/layouts/AuthLayout';
+import { getAuthUserRoles } from '@/util/authUtils';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 

@@ -3,7 +3,7 @@ import { UserMenuItems } from "@/lib/MenuItems";
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { ModeToggle } from "../../ModeToggle";
 import { Link, useNavigate } from "react-router-dom";
-import { isValidToken } from "@/util/AuthLayout";
+import { isValidToken } from "@/util/authUtils";
 import { useEffect, useState, useRef } from "react";
 import useTokenStore from "@/store/store";
 import { jwtDecode } from "jwt-decode";

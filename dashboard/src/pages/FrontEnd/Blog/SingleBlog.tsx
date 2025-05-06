@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Heart, Eye, MessageSquare, Share2, ArrowLeft } from 'lucide-react';
 import useTokenStore from '@/store/store';
 import { toast } from '@/components/ui/use-toast';
-import { getUserId } from '@/util/AuthLayout';
+import { getUserId } from '@/util/authUtils';
 
 interface Author {
   _id: string;
@@ -84,21 +84,21 @@ const SingleBlog: React.FC = () => {
     queryKey: ['post', id],
     queryFn: async () => {
       if (!id) throw new Error("Post ID is required");
-      
+
       try {
         // Add a timestamp to prevent caching
         const timestamp = new Date().getTime();
         const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/posts/${id}?t=${timestamp}`);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Error response:', errorText);
           throw new Error(`Failed to fetch post: ${response.status} ${response.statusText}`);
         }
-        
+
         const responseData = await response.json();
         console.log('API Response:', responseData);
-        
+
         // Transform the data if needed
         return {
           ...responseData,

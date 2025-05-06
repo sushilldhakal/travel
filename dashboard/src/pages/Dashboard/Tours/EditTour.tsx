@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
 import { getSingleTour, deleteTour } from '@/http';
 import { useToast } from '@/components/ui/use-toast';
-import { Breadcrumb, Tour, TourData } from '@/Provider/types';
+import { Breadcrumb, FactData, FaqData, Itinerary, Tour, TourData, Category } from '@/Provider/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { LoaderCircle } from 'lucide-react';
 import { Form } from "@/components/ui/form"
@@ -28,12 +28,14 @@ import { tabs } from './Components/tabs';
 import { useFormHandlers } from './Components/useFormHandlers';
 import TabNavigation from './Components/TabNavigation';
 import { useTourMutation } from './Components/useTourMutation';
-import { useCategories } from './Components/useCategories';
-import { getUserId } from '@/util/AuthLayout';
-import { useFacts } from './Components/useFacts';
-import { useFaq } from './Components/useFaq';
-import { TourUserAvatar } from '@/userDefinedComponents/Avatar/TourUserAvatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getUserId } from '@/util/authUtils';
+import { useFacts } from './FACTS/useFacts';
+import { useFaq } from './FAQ/useFaq';
+import { useCategories } from './Category/useCategories';
+
+// Define interfaces for proper typing - matching the TabContent expected types
+
+
 const EditTour: React.FC = () => {
     const { tourId } = useParams<{ tourId: string }>();
     const { updateBreadcrumbs } = useBreadcrumbs();
@@ -43,15 +45,13 @@ const EditTour: React.FC = () => {
     const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('overview');
     const { toast } = useToast()
-    const [editorContent, setEditorContent] = useState<JSONContent>();
+    const [editorContent, setEditorContent] = useState<JSONContent>(defaultValue);
     const userId = getUserId();
     const { data: initialTourData, isLoading, isError, error } = useQuery<TourData, Error>({
         queryKey: ['tours', tourId],
         queryFn: () => tourId ? getSingleTour(tourId) : Promise.reject('No tour ID provided'),
         enabled: !!tourId,
-
     });
-
     useEffect(() => {
         if (initialTourData && tourId) {
             const breadcrumbs = initialTourData.breadcrumbs;
@@ -65,7 +65,6 @@ const EditTour: React.FC = () => {
 
             // Get the tour data from the response
             const tourData = initialTourData.tour || initialTourData;
-
             // Set the tour data in state
             setSingleTourData(tourData);
             setSingleTour(true);
@@ -73,51 +72,47 @@ const EditTour: React.FC = () => {
     }, [updateBreadcrumbs, initialTourData, tourId]);
 
     const { mutate: tourMutation, isPending } = useTourMutation();
-    const { form,
+    const {
+        form,
         onSubmit,
         itineraryFields,
         itineraryAppend,
         itineraryRemove,
-        factsFields,
-        factsAppend,
-        factsRemove,
+        factFields: factsFields,
+        factAppend: factsAppend,
+        factRemove: factsRemove,
         faqFields,
         faqAppend,
         faqRemove,
-        pricingFields,
-        pricingAppend,
-        pricingRemove
+        pricingOptionsFields: pricingFields,
+        pricingOptionsAppend: pricingAppend,
+        pricingOptionsRemove: pricingRemove,
+        dateRangeFields,
+        dateRangeAppend,
+        dateRangeRemove,
     } = useFormHandlers(editorContent);
 
     const { data: categories } = useCategories(userId);
     const { data: facts } = useFacts(userId);
-    const { data: faq } = useFaq(userId);
+    const { data: faqs } = useFaq(userId);
 
-    const defaultItinerary = [
+    const defaultItinerary = useMemo(() => [
         {
             day: '',
             title: '',
             description: '',
             dateTime: new Date(),
         }
-    ];
+    ], []);
 
-    const defaultCategory = [
+    const defaultCategory = useMemo(() => [
         {
             label: '',
             value: '',
         }
-    ];
+    ], []);
 
-    const defaultDates = {
-        tripDuration: '',
-        dateRange: {
-            from: undefined,
-            to: undefined
-        }
-    };
-
-    const defaultLocation = [
+    const defaultLocation = useMemo(() => [
         {
             city: '',
             country: '',
@@ -126,125 +121,235 @@ const EditTour: React.FC = () => {
             lat: '',
             lng: '',
         }
-    ]
+    ], []);
+
+    const defaultFacts = useMemo(() => [
+        {
+            title: '',
+            value: [] as string[]
+        }
+    ], []);
+
+    const defaultFaqs = useMemo(() => [
+        {
+            question: '',
+            answer: '',
+        }
+    ], []);
 
     useEffect(() => {
         if (singleTourData && categories) {
-            const defaultValues = {
-                title: singleTourData.title || '',
-                description: singleTourData.description || '',
-                code: singleTourData.code || '',
-                tourStatus: singleTourData.tourStatus || '',
-                coverImage: singleTourData.coverImage || '',
-                file: singleTourData.file || '',
-                price: typeof singleTourData.price === 'number' ? singleTourData.price : singleTourData.price,
-                outline: singleTourData.outline || '',
-                include: singleTourData?.include || '',
-                exclude: singleTourData?.exclude || '',
-                category: Array.isArray(singleTourData.category)
-                    ? singleTourData.category.map(item => {
-                        // If item is already in the {label, value} format
-                        if (item && typeof item === 'object' && 'value' in item) {
-                            // Find the matching category to get its proper name
-                            const matchedCategory = categories.find(cat => cat._id === item.value || cat.value === item.value);
-                            return {
-                                label: matchedCategory?.name || 'Category',
-                                value: item.value
-                            };
+            const mappedCategory = singleTourData?.category?.map((item: Category) => ({
+                label: item.categoryName || item.label || "",
+                value: item.categoryId || item.value || item._id || "",
+            })) || defaultCategory;
+
+            const mappedItinerary = singleTourData?.itinerary?.map((item) => ({
+                day: item.day,
+                title: item.title,
+                description: item.description,
+                dateTime: item.date ? new Date(item.date) : new Date(),
+            })) || defaultItinerary;
+
+            const mappedFacts = singleTourData.facts?.map(item => {
+                // Initialize formatted value
+                let formattedValue = item?.value;
+
+                // Process based on field type
+                if (item?.field_type === 'Multi Select') {
+                    // Multi Select expects an array of objects with label/value
+                    if (Array.isArray(item?.value)) {
+                        // If it's already an array of objects, use it directly
+                        if (item.value.length > 0 && typeof item.value[0] === 'object') {
+                            // Ensure proper typing with explicit cast
+                            formattedValue = item.value as Array<{ label: string; value: string }>;
                         }
-                        // If item has categoryId and categoryName properties
-                        else if (item && typeof item === 'object' && 'categoryId' in item) {
-                            return {
-                                label: item.categoryName || '',
-                                value: item.categoryId || '',
-                            };
-                        }
-                        // If item is just a string (category ID)
-                        else if (typeof item === 'string') {
-                            const matchedCategory = categories.find(cat => cat._id === item || cat.value === item);
-                            return {
-                                label: matchedCategory?.name || 'Category',
-                                value: item
-                            };
-                        }
-                        return item;
-                    }).filter(Boolean)
-                    : defaultCategory,
-                itinerary: singleTourData.itinerary?.map(item => ({
-                    day: item.day || '',
-                    title: item.title || '',
-                    description: item.description || '',
-                    dateTime: item.dateTime ? new Date(item.dateTime) : new Date()
-                })) || defaultItinerary,
-
-                dates: singleTourData?.dates ? {
-                    tripDuration: singleTourData.dates.tripDuration || '',
-                    dateRange: {
-                        from: singleTourData.dates.startDate ? new Date(singleTourData.dates.startDate) : undefined,
-                        to: singleTourData.dates.endDate ? new Date(singleTourData.dates.endDate) : undefined,
-                    }
-                } : defaultDates,
-
-                location: {
-                    city: singleTourData?.location?.city || '',
-                    country: singleTourData?.location?.country || '',
-                    street: singleTourData?.location?.street || '',
-                    state: singleTourData?.location?.state || '',
-                    lat: singleTourData?.location?.lat ? String(singleTourData.location.lat) : '',
-                    lng: singleTourData?.location?.lng ? String(singleTourData.location.lng) : '',
-                } || defaultLocation,
-
-                faqs: singleTourData.faqs?.map(item => ({
-                    question: item?.question || '',
-                    answer: item?.answer || '',
-                })),
-                map: singleTourData?.map || '',
-                facts: singleTourData.facts?.map(item => {
-                    // Flatten nested arrays based on field_type
-                    let formattedValue = item?.value;
-
-                    if (item?.field_type === 'Multi Select') {
-                        if (Array.isArray(item?.value) && Array.isArray(item.value[0])) {
-                            formattedValue = item.value[0].map(val => ({
+                        // If it's a nested array, use the first item
+                        else if (item.value.length > 0 && Array.isArray(item.value[0])) {
+                            // Convert string array to object array
+                            const innerArray = item.value[0] as string[];
+                            formattedValue = innerArray.map(val => ({
                                 label: val,
                                 value: val
                             }));
-                        } else {
-                            formattedValue = [];
                         }
-                    } else if (item?.field_type === 'Plain Text' || item?.field_type === 'Single Select') {
-                        if (Array.isArray(item?.value) && Array.isArray(item.value[0])) {
-                            formattedValue = item.value[0];
-                        } else {
-                            formattedValue = [];
+                        // Otherwise, convert string values to objects
+                        else {
+                            formattedValue = item.value.map(val => ({
+                                label: String(val),
+                                value: String(val)
+                            }));
                         }
                     } else {
                         formattedValue = [];
                     }
+                } else if (item?.field_type === 'Plain Text' || item?.field_type === 'Single Select') {
+                    // Plain Text/Single Select expects a string array
+                    if (Array.isArray(item?.value)) {
+                        // Ensure we have a string array by mapping values to strings
+                        formattedValue = item.value.map(val => String(val));
+                    } else {
+                        formattedValue = [];
+                    }
+                }
 
-                    return {
-                        title: item?.title || '',
-                        field_type: item?.field_type || '',
-                        value: formattedValue,
-                        icon: item?.icon || ''
-                    };
-                }) || []
-            }
-            console.log("default value ", defaultValues)
-            form.reset(defaultValues);
+                return {
+                    title: item?.title || '',
+                    field_type: item?.field_type || '',
+                    value: formattedValue,
+                    icon: item?.icon || ''
+                };
+            }) || []
+
+            const mappedFaqs = singleTourData?.faqs?.map((item: FaqData) => ({
+                question: item.question,
+                answer: item.answer,
+            })) || defaultFaqs;
+
+            // Parse pricing options with proper field names
+            const mappedPricingOptions = singleTourData.pricingOptions
+                ? Array.isArray(singleTourData.pricingOptions)
+                    ? singleTourData.pricingOptions
+                    : typeof singleTourData.pricingOptions === 'string'
+                        ? JSON.parse(singleTourData.pricingOptions)
+                        : []
+                : [];
+
+            // Transform pricing options to match the form field structure
+            const formattedPricingOptions = mappedPricingOptions.map((option: Record<string, unknown>) => ({
+                name: option.name || option.optionName || '',
+                category: option.category || 'adult',
+                customCategory: option.customCategory || '',
+                price: parseFloat(String(option.price || option.optionPrice || 0)),
+                discountEnabled: Boolean(option.discountEnabled),
+                discountPrice: parseFloat(String(option.discountPrice || 0)),
+                discountDateRange: option.discountDateRange ? {
+                    from: option.discountDateRange && typeof option.discountDateRange === 'object' && 'from' in option.discountDateRange && option.discountDateRange.from
+                        ? new Date(option.discountDateRange.from as string)
+                        : option.discountDateRange && typeof option.discountDateRange === 'object' && 'startDate' in option.discountDateRange && option.discountDateRange.startDate
+                            ? new Date(option.discountDateRange.startDate as string)
+                            : new Date(),
+                    to: option.discountDateRange && typeof option.discountDateRange === 'object' && 'to' in option.discountDateRange && option.discountDateRange.to
+                        ? new Date(option.discountDateRange.to as string)
+                        : option.discountDateRange && typeof option.discountDateRange === 'object' && 'endDate' in option.discountDateRange && option.discountDateRange.endDate
+                            ? new Date(option.discountDateRange.endDate as string)
+                            : new Date()
+                } : { from: new Date(), to: new Date() },
+                paxRange: Array.isArray(option.paxRange) ?
+                    [parseInt(String(option.paxRange[0] || 1)), parseInt(String(option.paxRange[1] || 10))] :
+                    [1, 10]
+            }));
+
+
+            // Create proper defaults for dates and pricing fields
+
+            // Format pricing data using the new unified schema
+            const formattedPricing = {
+                price: parseFloat(String(singleTourData.price || 0)),
+                pricePerPerson: singleTourData.pricePerType === "person",
+                pricingOptionsEnabled: Boolean(singleTourData.pricingOptionsEnabled),
+                paxRange: [
+                    parseInt(String(singleTourData.minSize || 1)),
+                    parseInt(String(singleTourData.maxSize || 10))
+                ],
+                groupSize: parseInt(String(singleTourData.groupSize || 1)),
+                discount: {
+                    discountEnabled: Boolean(singleTourData.discountEnabled),
+                    discountPrice: parseFloat(String(singleTourData.discountPrice || 0)),
+                    dateRange: singleTourData?.discountDateRange ? {
+                        from: singleTourData.discountDateRange && typeof singleTourData.discountDateRange === 'object' && 'from' in singleTourData.discountDateRange && singleTourData.discountDateRange.from
+                            ? new Date(singleTourData.discountDateRange.from as string)
+                            : singleTourData.discountDateRange && typeof singleTourData.discountDateRange === 'object' && 'startDate' in singleTourData.discountDateRange && singleTourData.discountDateRange.startDate
+                                ? new Date(singleTourData.discountDateRange.startDate as string)
+                                : new Date(),
+                        to: singleTourData.discountDateRange && typeof singleTourData.discountDateRange === 'object' && 'to' in singleTourData.discountDateRange && singleTourData.discountDateRange.to
+                            ? new Date(singleTourData.discountDateRange.to as string)
+                            : singleTourData.discountDateRange && typeof singleTourData.discountDateRange === 'object' && 'endDate' in singleTourData.discountDateRange && singleTourData.discountDateRange.endDate
+                                ? new Date(singleTourData.discountDateRange.endDate as string)
+                                : new Date()
+                    } : { from: new Date(), to: new Date() }
+                },
+                pricingOptions: formattedPricingOptions,
+                priceLockedUntil: singleTourData.priceLockedUntil ? new Date(singleTourData.priceLockedUntil as string) : undefined
+            };
+
+            // Format dates data using the new unified schema
+            const formattedDates = {
+                days: singleTourData?.dates?.tripDuration ? parseInt(singleTourData.dates.tripDuration.split(' ')[0]) || 0 : 0,
+                nights: singleTourData?.dates?.tripDuration ? (parseInt(singleTourData.dates.tripDuration.split(' ')[0]) - 1) || 0 : 0,
+                fixedDeparture: Boolean(singleTourData.fixedDeparture),
+                multipleDates: Boolean(singleTourData.multipleDates),
+                scheduleType: singleTourData.multipleDates
+                    ? 'recurring'
+                    : singleTourData.fixedDeparture
+                        ? 'fixed'
+                        : 'flexible',
+                singleDateRange: {
+                    from: singleTourData?.dates?.startDate ? new Date(singleTourData.dates.startDate) : new Date(),
+                    to: singleTourData?.dates?.endDate ? new Date(singleTourData.dates.endDate) : new Date()
+                },
+                departures: Array.isArray(singleTourData.dateRanges)
+                    ? singleTourData.dateRanges.map((range: any) => ({
+                        id: range.id || String(Date.now()),
+                        label: range.label || '',
+                        dateRange: range.dateRange || { from: new Date(), to: new Date() },
+                        isRecurring: Boolean(range.isRecurring),
+                        recurrencePattern: range.recurrencePattern || 'weekly',
+                        recurrenceEndDate: range.recurrenceEndDate ? new Date(range.recurrenceEndDate) : undefined,
+                        selectedPricingOptions: Array.isArray(range.selectedPricingOptions) ? range.selectedPricingOptions : [],
+                        capacity: parseInt(String(range.capacity || 0))
+                    }))
+                    : []
+            };
+
+            // Set form values using the actual values rather than constructors
+            form.reset({
+                title: singleTourData.title || "",
+                excerpt: singleTourData.excerpt || "",
+                description: singleTourData.description || "",
+                code: singleTourData.code || "",
+                tourStatus: singleTourData.tourStatus || "",
+                coverImage: singleTourData.coverImage || "",
+                file: singleTourData.file || "",
+                outline: singleTourData.outline || "",
+                include: singleTourData.include || "",
+                exclude: singleTourData.exclude || "",
+                category: mappedCategory,
+                itinerary: mappedItinerary,
+                faqs: mappedFaqs,
+                facts: mappedFacts,
+                location: singleTourData?.location
+                    ? {
+                        lat: parseFloat(String(singleTourData.location.latitude || 0)),
+                        lng: parseFloat(String(singleTourData.location.longitude || 0)),
+                        country: singleTourData.location.country || "",
+                        city: singleTourData.location.city || "",
+                        street: singleTourData.location.street || "",
+                        state: singleTourData.location.state || "",
+                    }
+                    : defaultLocation[0],
+
+                // Use the new unified schema objects
+                pricing: formattedPricing,
+                dates: formattedDates,
+
+                // Set enquiry and isSpecialOffer flags
+                enquiry: Boolean(singleTourData.enquiry),
+                isSpecialOffer: Boolean(singleTourData.isSpecialOffer),
+
+                // Set map value
+                map: singleTourData.map || "",
+                destination: singleTourData.destination || ""
+            } as any); // Use a type assertion here to avoid strict typing on form reset
 
             try {
                 const parsedDescription = JSON.parse(singleTourData.description || '');
-                setEditorContent(parsedDescription);
+                setEditorContent(parsedDescription as JSONContent);
             } catch (error) {
-                console.error('Failed to parse description:', error);
-                setEditorContent(defaultValue); // Set to default if parsing fails
+                setEditorContent(singleTourData.description as unknown as JSONContent);
             }
-
         }
-    }, [singleTourData, form, categories]);
-
-
+    }, [singleTourData, form, categories, defaultCategory, defaultFacts, defaultFaqs, defaultItinerary, defaultLocation]);
 
     const deleteMutation = useMutation({
         mutationFn: () => {
@@ -268,12 +373,6 @@ const EditTour: React.FC = () => {
         }
     });
 
-    const handleEditorContentChange = (content: JSONContent) => {
-        setEditorContent(content);
-    };
-
-
-
     const handleDeleteTour = async () => {
         if (singleTour) {
             deleteMutation.mutate();
@@ -283,7 +382,6 @@ const EditTour: React.FC = () => {
 
     const location = useLocation();
 
-
     useEffect(() => {
         if (location.hash) {
             setActiveTab(location.hash.substring(1));
@@ -292,7 +390,6 @@ const EditTour: React.FC = () => {
 
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return <div>Select a tab to see its content</div>;
-
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -341,8 +438,208 @@ const EditTour: React.FC = () => {
                         console.log("Form for API", form.getValues());
                         form.handleSubmit(
                             (values) => {
-                                onSubmit(values, tourMutation); // your submit logic
-                                console.log("Form for API", form.getValues());
+                                // Parse string JSON fields that come from form data
+                                // This ensures complex nested objects are properly handled
+                                const parsePricingOptions = () => {
+                                    if (!values.pricingOptions) return [];
+
+                                    try {
+                                        // Handle both string and array cases
+                                        const options = typeof values.pricingOptions === 'string'
+                                            ? JSON.parse(values.pricingOptions)
+                                            : values.pricingOptions;
+
+                                        // Ensure we return a properly typed array with correct field names
+                                        return (options as Array<Record<string, unknown>>).map(option => {
+                                            // Map optionName to name and optionPrice to price if old format
+                                            const name = option.name || option.optionName || '';
+                                            const price = parseFloat(String(option.price || option.optionPrice || 0));
+
+                                            return {
+                                                name,
+                                                category: String(option.category || 'adult'),
+                                                customCategory: String(option.customCategory || ''),
+                                                price,
+                                                discountEnabled: convertToBoolean(option.discountEnabled),
+                                                discountPrice: parseFloat(String(option.discountPrice || 0)),
+                                                discountDateRange: option.discountDateRange ? {
+                                                    from: option.discountDateRange && typeof option.discountDateRange === 'object' && 'from' in option.discountDateRange && option.discountDateRange.from
+                                                        ? new Date(option.discountDateRange.from as string)
+                                                        : option.discountDateRange && typeof option.discountDateRange === 'object' && 'startDate' in option.discountDateRange && option.discountDateRange.startDate
+                                                            ? new Date(option.discountDateRange.startDate as string)
+                                                            : new Date(),
+                                                    to: option.discountDateRange && typeof option.discountDateRange === 'object' && 'to' in option.discountDateRange && option.discountDateRange.to
+                                                        ? new Date(option.discountDateRange.to as string)
+                                                        : option.discountDateRange && typeof option.discountDateRange === 'object' && 'endDate' in option.discountDateRange && option.discountDateRange.endDate
+                                                            ? new Date(option.discountDateRange.endDate as string)
+                                                            : new Date()
+                                                } : { from: new Date(), to: new Date() },
+                                                paxRange: Array.isArray(option.paxRange) ?
+                                                    [parseInt(String(option.paxRange[0] || 1)), parseInt(String(option.paxRange[1] || 10))] :
+                                                    [1, 10]
+                                            };
+                                        });
+                                    } catch (e) {
+                                        console.error("Error parsing pricingOptions:", e);
+                                        return [];
+                                    }
+                                };
+
+                                const parseDiscountDateRange = () => {
+                                    if (!values.discountDateRange) return { from: new Date(), to: new Date() };
+                                    try {
+                                        // Handle both string and object cases
+                                        const discountDateRange = values.discountDateRange;
+                                        if (typeof discountDateRange === 'string') {
+                                            const parsed = JSON.parse(discountDateRange);
+                                            return {
+                                                from: parsed.from ? new Date(parsed.from) : parsed.startDate ? new Date(parsed.startDate) : new Date(),
+                                                to: parsed.to ? new Date(parsed.to) : parsed.endDate ? new Date(parsed.endDate) : new Date()
+                                            };
+                                        } else {
+                                            return {
+                                                from: discountDateRange.from ? new Date(discountDateRange.from) :
+                                                    discountDateRange.startDate ? new Date(discountDateRange.startDate) : new Date(),
+                                                to: discountDateRange.to ? new Date(discountDateRange.to) :
+                                                    discountDateRange.endDate ? new Date(discountDateRange.endDate) : new Date()
+                                            };
+                                        }
+                                    } catch (e) {
+                                        console.error("Error parsing discountDateRange:", e);
+                                        // Return a valid object with defaults if parsing fails
+                                        return { from: new Date(), to: new Date() };
+                                    }
+                                };
+
+                                const parseTourDates = () => {
+                                    if (!values.tourDates) return { days: 0, nights: 0, dateRange: { from: new Date(), to: new Date() }, isRecurring: false };
+
+                                    try {
+                                        const tourDatesStr = typeof values.tourDates === 'string'
+                                            ? values.tourDates
+                                            : JSON.stringify(values.tourDates);
+                                        const parsed = JSON.parse(tourDatesStr);
+
+                                        // Format tourDates to match API expectations
+                                        const dateRange = parsed.dateRange || {};
+                                        return {
+                                            days: Number(parsed.days || 0),
+                                            nights: Number(parsed.nights || 0),
+                                            isRecurring: Boolean(parsed.isRecurring),
+                                            dateRange: {
+                                                from: dateRange.startDate ? new Date(dateRange.startDate) : dateRange.from ? new Date(dateRange.from) : new Date(),
+                                                to: dateRange.endDate ? new Date(dateRange.endDate) : dateRange.to ? new Date(dateRange.to) : new Date()
+                                            }
+                                        };
+                                    } catch (e) {
+                                        console.error("Error parsing tourDates:", e);
+                                        return {
+                                            days: 0,
+                                            nights: 0,
+                                            dateRange: { from: new Date(), to: new Date() },
+                                            isRecurring: false
+                                        };
+                                    }
+                                };
+
+                                // Convert dateRanges to the expected format with proper typing
+                                const parseDateRanges = () => {
+                                    if (!values.dateRanges) return [];
+
+                                    try {
+                                        const ranges = typeof values.dateRanges === 'string'
+                                            ? JSON.parse(values.dateRanges)
+                                            : values.dateRanges;
+
+                                        return (ranges as Array<Record<string, unknown>>).map((range) => {
+                                            const dateRange = range.dateRange || {};
+                                            return {
+                                                id: range.id || String(Math.random()),
+                                                label: range.label || '',
+                                                dateRange: {
+                                                    from: dateRange.startDate ? new Date(dateRange.startDate) : dateRange.from ? new Date(dateRange.from) : new Date(),
+                                                    to: dateRange.endDate ? new Date(dateRange.endDate) : dateRange.to ? new Date(dateRange.to) : new Date()
+                                                },
+                                                selectedPricingOptions: Array.isArray(range.selectedPricingOptions) ? range.selectedPricingOptions : [],
+                                                isRecurring: Boolean(range.isRecurring)
+                                            };
+                                        });
+                                    } catch (e) {
+                                        console.error("Error parsing dateRanges:", e);
+                                        return [];
+                                    }
+                                };
+
+                                // Process facts to ensure Multi Select values are properly handled
+                                const processedFacts = values.facts?.map(fact => {
+                                    // Handle Multi Select facts which might have stringified JSON values
+                                    if (fact.field_type === "Multi Select" && typeof fact.value === 'string') {
+                                        try {
+                                            return {
+                                                ...fact,
+                                                value: JSON.parse(fact.value),
+                                                field_type: fact.field_type
+                                            };
+                                        } catch (e) {
+                                            console.error("Error parsing fact value:", e);
+                                            return fact;
+                                        }
+                                    }
+                                    return {
+                                        ...fact,
+                                        field_type: fact.field_type
+                                    };
+                                });
+
+                                // Convert string number values to actual numbers
+                                const convertToNumber = (value: any) => {
+                                    if (value === undefined || value === null || value === '') return undefined;
+                                    const num = Number(value);
+                                    return isNaN(num) ? value : num;
+                                };
+
+                                // Type-safe conversion for boolean values
+                                const convertToBoolean = (value: unknown): boolean => {
+                                    if (typeof value === 'boolean') return value;
+                                    if (typeof value === 'string') return value.toLowerCase() === 'true';
+                                    return Boolean(value);
+                                };
+
+                                // Ensure values are properly typed and parsed for submission
+                                const formValues = {
+                                    ...values,
+                                    price: convertToNumber(values.price),
+                                    minSize: convertToNumber(values.minSize),
+                                    maxSize: convertToNumber(values.maxSize),
+                                    groupSize: convertToNumber(values.groupSize),
+                                    discountPrice: convertToNumber(values.discountPrice),
+                                    discountEnabled: convertToBoolean(values.discountEnabled),
+                                    pricingOptionsEnabled: convertToBoolean(values.pricingOptionsEnabled),
+                                    fixedDeparture: convertToBoolean(values.fixedDeparture),
+                                    multipleDates: convertToBoolean(values.multipleDates),
+                                    enquiry: convertToBoolean(values.enquiry),
+                                    pricePerType: values.pricePerType || 'person',
+                                    facts: processedFacts,
+                                    discountDateRange: parseDiscountDateRange(),
+                                    tourDates: parseTourDates(),
+                                    dateRanges: parseDateRanges(),
+                                    location: values.location ? {
+                                        ...values.location,
+                                        lat: convertToNumber(values.location.lat),
+                                        lng: convertToNumber(values.location.lng)
+                                    } : undefined,
+                                    // Parse the complex nested objects
+                                    pricingOptions: parsePricingOptions(),
+                                    // Handle fixedDate properly according to schema
+                                    fixedDate: values.fixedDate ? (
+                                        typeof values.fixedDate === 'string' ?
+                                            JSON.parse(values.fixedDate) :
+                                            values.fixedDate
+                                    ) : { dateRange: { from: new Date(), to: new Date() } }
+                                };
+
+                                console.log("Processed form values:", formValues);
+                                onSubmit(formValues as any, tourMutation);
                             },
                             (errors) => {
                                 console.log("Form Errors:", errors); // log errors
@@ -375,60 +672,44 @@ const EditTour: React.FC = () => {
                         </div>
                         <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
                             <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
-                                {/* Tour Creator Info Card */}
-                                {singleTourData?.user && (
-                                    <Card className="mb-6">
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="text-sm font-medium">Tour Creator</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="flex items-center space-x-4">
-                                                <TourUserAvatar
-                                                    userId={singleTourData.user.toString()}
-                                                    size="md"
-                                                    showName={true}
-                                                    userName={singleTourData.userName || 'Tour Creator'}
-                                                />
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
                                 <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
                                 <div className="py-4">
                                     <Button type="submit"
                                         disabled={isPending}
                                         className='pr-6 ml-4'
                                     >
-                                        {isPending && <LoaderCircle className="animate-spin" />}
+                                        {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                         <span className="ml-2">Save</span>
                                     </Button>
                                 </div>
                             </aside>
+
                             <div className="grid gap-3 lg:col-span-1">
                                 <TabContent
-                                    form={form}
                                     activeTab={activeTab}
-                                    tabs={tabs}
-                                    singleTour={singleTour}
-                                    tourMutation={tourMutation}
-                                    singleTourData={singleTourData}
-                                    editorContent={editorContent} // Pass editor content to TabContent
-                                    onEditorContentChange={handleEditorContentChange}
-                                    itineraryFields={itineraryFields}
-                                    itineraryAppend={itineraryAppend}
+                                    setActiveTab={setActiveTab}
+                                    form={form}
+                                    editorContent={editorContent}
+                                    setEditorContent={setEditorContent}
+                                    itineraryFields={itineraryFields as unknown as Itinerary[]}
+                                    itineraryAppend={itineraryAppend as unknown as (value: Partial<Itinerary> | Partial<Itinerary>[]) => void}
                                     itineraryRemove={itineraryRemove}
-                                    factsFields={factsFields}
-                                    factsAppend={factsAppend}
+                                    factsFields={factsFields as unknown as FactData[]}
+                                    factsAppend={factsAppend as unknown as (value: Partial<FactData>) => void}
                                     factsRemove={factsRemove}
-                                    faqFields={faqFields}
-                                    faqAppend={faqAppend}
+                                    faqFields={faqFields as unknown as FaqData[]}
+                                    faqAppend={faqAppend as unknown as (value: Partial<FaqData>) => void}
                                     faqRemove={faqRemove}
-                                    pricingFields={pricingFields}
-                                    pricingAppend={pricingAppend}
+                                    pricingFields={pricingFields as unknown as any[]}
+                                    pricingAppend={pricingAppend as unknown as (value: any) => void}
                                     pricingRemove={pricingRemove}
+                                    dateRangeFields={dateRangeFields as unknown as any[]}
+                                    dateRangeAppend={dateRangeAppend as unknown as (value: any) => void}
+                                    dateRangeRemove={dateRangeRemove}
+                                    singleTourData={singleTourData as unknown as Record<string, unknown>}
                                     categories={categories}
                                     facts={facts}
-                                    faq={faq}
+                                    faqs={faqs}
                                 />
                             </div>
                         </div>

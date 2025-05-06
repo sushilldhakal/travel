@@ -127,7 +127,7 @@ const SingleCategory = ({
         onChange('');
     };
 
-    const handleEditClick = (e) => {
+    const handleEditClick = (e: React.MouseEvent) => {
         e.preventDefault();
         if (category) {
             // Initialize form with category data

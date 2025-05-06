@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { addFaq } from "@/http";
 import { toast } from "@/components/ui/use-toast";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import { Textarea } from "@/components/ui/textarea";
 import { HelpCircle, MessageCircle, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";

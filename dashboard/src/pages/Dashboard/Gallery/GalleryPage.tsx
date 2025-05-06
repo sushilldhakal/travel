@@ -5,7 +5,7 @@ import { addMedia, deleteMedia, getAllMedia } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImageResource } from "@/Provider/types";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDetail from "./ImageDetail";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -56,7 +56,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
             setIsGalleryPage(false);
         }
     }, [location.pathname]);
-    
+
     const {
         data,
         isLoading,
@@ -75,7 +75,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         },
         initialPageParam: 1,
     });
-    
+
     const allMedia = useMemo(() => {
         const mediaUrls = new Set<string>();
         const mergedMedia: ImageResource[] = [];
@@ -92,7 +92,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         });
         return mergedMedia;
     }, [data, tab]);
-    
+
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
             if (!userId) throw new Error('User ID is null');
@@ -233,7 +233,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
         setTab(value);
         setSelectedMediaUrls([]);
     }
-    
+
     const handleClose = () => {
         //@ts-expect-error
         setSelectedImage(null);
@@ -252,7 +252,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                         </CardContent>
                     </Card>
                 ) : null}
-                
+
                 <ImageGrid
                     images={allMedia}
                     onImageSelect={handleImageSelect}
@@ -266,7 +266,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                     setSelectedMediaUrls={setSelectedMediaUrls}
                 />
             </div>
-            
+
             {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length === 0 ? (
                 <Card className="shadow-sm border-border">
                     <CardHeader className="pb-3">
@@ -279,7 +279,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                         <CardDescription>Edit details for the selected item</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ImageDetail 
+                        <ImageDetail
                             files={files}
                             setFiles={setFiles}
                             setSelectedImage={setSelectedImage}
@@ -292,7 +292,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                     </CardContent>
                 </Card>
             ) : null}
-            
+
             {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length > 0 && (
                 <Card className="shadow-sm border-border">
                     <CardHeader className="pb-3">
@@ -370,15 +370,15 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                 </CardTitle>
                 <CardDescription>Manage your media files for tours and content</CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
-                <Tabs 
-                    value={tab} 
-                    onValueChange={onTabChange} 
+                <Tabs
+                    value={tab}
+                    onValueChange={onTabChange}
                     className="w-full"
                 >
                     <TabsList className="w-full md:w-auto grid grid-cols-3 md:inline-flex mb-4">
-                        <TabsTrigger 
+                        <TabsTrigger
                             value="images"
                             onClick={() => handleTabClick('images')}
                             className={cn("flex items-center gap-2", tab === 'images' ? 'text-primary' : '')}
@@ -386,16 +386,16 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                             <Image className="h-4 w-4" />
                             Images
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="videos" 
+                        <TabsTrigger
+                            value="videos"
                             onClick={() => handleTabClick('videos')}
                             className={cn("flex items-center gap-2", tab === 'videos' ? 'text-primary' : '')}
                         >
                             <FileVideo className="h-4 w-4" />
                             Videos
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="pdfs" 
+                        <TabsTrigger
+                            value="pdfs"
                             onClick={() => handleTabClick('pdfs')}
                             className={cn("flex items-center gap-2", tab === 'pdfs' ? 'text-primary' : '')}
                         >
@@ -403,7 +403,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
                             PDFs
                         </TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="images" className="mt-0">
                         {renderTabContent()}
                     </TabsContent>

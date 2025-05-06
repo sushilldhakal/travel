@@ -22,3 +22,5 @@ export * from './mediaApi';
 export * from './subscriberApi';
 export * from './aiApi';
 export * from './destinationApi';
+export * from './tourSettingApi';
+export * from './companyApi';

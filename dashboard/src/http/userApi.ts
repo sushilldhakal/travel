@@ -119,3 +119,15 @@ export const updateUser = async (userId: string, data: { name: string; email: st
     }
 };
     
+export const approveSellerApplication = async (userId: string) => {
+    try {
+        const response = await api.patch(`/api/users/${userId}/approve-seller`);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            throw new Error(`Error updating user: ${error.response?.data.message || error.message}`);
+        } else {
+            throw new Error(`Error updating user: ${String(error)}`);
+        }
+    }
+};

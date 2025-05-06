@@ -13,10 +13,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { Edit, FileText, MapPin, Image as ImageIcon, Save, Trash2, X } from "lucide-react";
 import { getDestination, updateDestination, deleteDestination, getUserToursTitle } from "@/http";
-import { getUserId } from "@/util/AuthLayout";
+import { getUserId } from "@/util/authUtils";
 import GalleryPage from "../../Gallery/GalleryPage";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
-import { JSONContent } from "novel";
 import { MultiSelect, SelectValue } from "@/components/ui/MultiSelect";
 
 interface SingleDestinationProps {
@@ -42,10 +41,7 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
     const [isEditMode, setIsEditMode] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
-    const [descriptionContent, setDescriptionContent] = useState<JSONContent>({
-        type: "doc",
-        content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
-    });
+    const [descriptionContent, setDescriptionContent] = useState('');
 
     const form = useForm({
         defaultValues: {
@@ -77,6 +73,7 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
         queryFn: () => getUserToursTitle(userId!),
         enabled: !!userId,
     });
+
 
     // Update destination mutation
     const updateMutation = useMutation({
@@ -179,15 +176,29 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
     }) => {
         const formData = new FormData();
         formData.append('name', values.name);
-        formData.append('description', values.description);
+        formData.append('description', JSON.stringify(descriptionContent));
         formData.append('coverImage', values.coverImage);
         formData.append('isActive', values.isActive.toString());
         formData.append('country', values.country);
         formData.append('region', values.region);
         formData.append('city', values.city);
-        values.featuredTours.forEach((id) => formData.append('featuredTours[]', id));
-        if (userId) formData.append('userId', userId);
+        // Compare featuredTours only if changed
+        const originalTours = destination.featuredTours || [];
+        const updatedTours = values.featuredTours || [];
 
+        const originalTourIds = originalTours.map(tour => tour.id); // Get only the ids
+        const updatedTourIds = updatedTours.map(tour => tour.id); // Get only the ids
+
+        // Check if arrays of tour ids are different
+        const areToursDifferent = originalTourIds.length !== updatedTourIds.length ||
+            !originalTourIds.every((tourId) => updatedTourIds.includes(tourId));
+
+        if (areToursDifferent) {
+            updatedTourIds.forEach((tourId) => {
+                formData.append('featuredTours[]', tourId); // Append only the ids
+            });
+        }
+        if (userId) formData.append('userId', userId);
         updateMutation.mutate(formData);
     };
 
@@ -346,8 +357,6 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                                     // It's a flat array
                                                     fieldValue = field.value;
                                                 }
-                                                console.log("fieldValue", fieldValue);
-
                                                 // If fieldValue contains objects instead of strings, extract the IDs
                                                 if (fieldValue.length > 0 && typeof fieldValue[0] === 'object') {
                                                     fieldValue = fieldValue.map((item: TourObject) => item._id || item.id || '');

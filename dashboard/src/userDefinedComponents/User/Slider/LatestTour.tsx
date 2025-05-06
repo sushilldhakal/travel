@@ -9,17 +9,9 @@ import {
     CarouselItem,
 } from "@/components/ui/carousel"
 import { useEffect, useState } from "react";
+import { Tour } from "@/Provider/types";
 
-interface Tour {
-    _id: string;
-    title: string;
-    coverImage: string;
-    duration: string;
-    outline: string;
-    price: number;
-    originalPrice?: number;
-    createdAt: string;
-}
+
 
 const LatestTour = () => {
     const [api, setApi] = useState<any>()

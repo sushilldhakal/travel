@@ -1,3 +1,4 @@
+import React, { memo, useCallback, useMemo, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -9,7 +10,6 @@ import { FactData } from "@/Provider/types";
 import Icon from "@/userDefinedComponents/Icon";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
     Dialog,
@@ -24,26 +24,39 @@ import { Edit, FileText, Save, Tag, TagsIcon, Trash2, Type, X } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { getUserId } from "@/util/authUtils";
+
+// Extended interface for FactData to include id and handle value type variations
+interface FactDataWithId extends FactData {
+    id?: string;
+    _id?: string;
+    value: string[] | string | { label: string; value: string }[];
+}
 
 interface SingleFactProps {
-    fact?: FactData;
+    fact?: FactDataWithId;
     DeleteFact?: (id: string) => void;
 }
 
 // Extended interface to handle the nested API response
 interface FactApiResponse {
-    facts?: FactData;
+    facts?: FactDataWithId;
     [key: string]: unknown;
 }
 
-const SingleFact = ({
+// Create a memoized SingleFact component to prevent unnecessary re-renders
+const SingleFact = memo(({
     fact,
     DeleteFact,
 }: SingleFactProps) => {
+
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [valuesTag, setValuesTag] = useState<string[]>([]);
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+
+    // Get user ID for cache invalidation
+    const userId = getUserId();
 
     const queryClient = useQueryClient();
     const form = useForm({
@@ -52,114 +65,84 @@ const SingleFact = ({
             field_type: fact?.field_type || '',
             value: Array.isArray(fact?.value) ? fact.value : [],
             icon: fact?.icon || '',
-            userId: '',
         },
     });
 
     const { watch } = form;
     const fieldType = watch('field_type');
 
+    // Memoize initial form setup to avoid expensive operations
+    const setupFormFromFact = useCallback((factData: FactDataWithId) => {
+        form.setValue('name', factData.name);
+        form.setValue('field_type', factData.field_type);
+        form.setValue('icon', factData.icon || '');
+
+        // Handle fact values (tags for Single/Multi Select)
+        let parsedValues: string[] = [];
+
+        if (Array.isArray(factData.value)) {
+            parsedValues = [...factData.value];
+        } else if (typeof factData.value === 'string') {
+            try {
+                const parsed = JSON.parse(factData.value);
+                if (Array.isArray(parsed)) {
+                    parsedValues = parsed;
+                }
+            } catch (e) {
+                // Silent error - use empty array
+            }
+        }
+
+        form.setValue('value', parsedValues);
+        setValuesTag(parsedValues);
+        setSelectedIcon(factData.icon || null);
+    }, [form]);
+
     // Initialize tags when fact data is available or when entering edit mode
     useEffect(() => {
         if (fact && !isEditMode) {
-            // Initialize selected icon from fact data when not in edit mode
             setSelectedIcon(fact.icon || null);
         }
     }, [fact, isEditMode]);
 
-    // Handle entering edit mode
-    const enterEditMode = () => {
-        if (fact) {
-            console.log("Entering edit mode with fact:", fact);
-            // Set form values from fact data
-            form.setValue('name', fact.name);
-            form.setValue('field_type', fact.field_type);
-            form.setValue('icon', fact.icon || '');
-
-            // Handle fact values (tags for Single/Multi Select)
-            if (Array.isArray(fact.value)) {
-                console.log("Setting tag values:", fact.value);
-                const tagValues = [...fact.value]; // Create a copy to avoid reference issues
-                form.setValue('value', tagValues);
-                setValuesTag(tagValues);
-            } else if (typeof fact.value === 'string') {
-                // Handle case where value might be a string that needs to be parsed
-                try {
-                    const parsedValue = JSON.parse(fact.value);
-                    if (Array.isArray(parsedValue)) {
-                        console.log("Parsed tag values from string:", parsedValue);
-                        form.setValue('value', parsedValue);
-                        setValuesTag(parsedValue);
-                    }
-                } catch (e) {
-                    // If parsing fails, just use empty array
-                    console.log("Failed to parse value, using empty array");
-                    form.setValue('value', []);
-                    setValuesTag([]);
-                }
-            } else {
-                console.log("No valid tag values found, using empty array");
-                form.setValue('value', []);
-                setValuesTag([]);
+    // Fetch single fact data if factId is provided and we're in edit mode
+    const { data: factSingle, isLoading, isError, refetch } = useQuery<FactApiResponse>({
+        queryKey: ['singleFact', fact?.id || fact?._id],
+        queryFn: () => {
+            const factId = fact?.id || fact?._id;
+            if (factId) {
+                return getSingleFacts(factId);
             }
-
-            setSelectedIcon(fact.icon || null);
-            setIsEditMode(true);
-        }
-    };
-
-    // Fetch single fact data if factId is provided
-    const { data: factSingle, isLoading, isError } = useQuery<FactApiResponse>({
-        queryKey: ['singleFact', fact?.id],
-        queryFn: () => fact?.id ? getSingleFacts(fact?.id) : Promise.reject('No fact ID provided'),
-        enabled: isEditMode && !!fact?.id,
+            return Promise.reject('No fact ID provided');
+        },
+        enabled: !!(fact?.id || fact?._id), // Always fetch the fact data, not just in edit mode
+        staleTime: 0, // Don't cache the data, always refetch on mount
     });
 
-    // Update form values when fact data is loaded
+    // Update form values when fact data is loaded - combined with other effects for efficiency
     useEffect(() => {
         if (factSingle && isEditMode) {
-            console.log("Loaded fact data:", factSingle);
-
             // Extract the actual fact data from the nested response structure
             const factData = factSingle.facts || factSingle;
-
-            form.setValue('name', factData.name);
-            form.setValue('field_type', factData.field_type);
-            form.setValue('icon', factData.icon || '');
-
-            // Handle fact values (tags for Single/Multi Select)
-            if (Array.isArray(factData.value)) {
-                console.log("Setting tag values from fetched data:", factData.value);
-                const tagValues = [...factData.value]; // Create a copy to avoid reference issues
-                form.setValue('value', tagValues);
-                setValuesTag(tagValues);
-            } else if (typeof factData.value === 'string') {
-                // Handle case where value might be a string that needs to be parsed
-                try {
-                    const parsedValue = JSON.parse(factData.value);
-                    if (Array.isArray(parsedValue)) {
-                        console.log("Parsed tag values from string:", parsedValue);
-                        form.setValue('value', parsedValue);
-                        setValuesTag(parsedValue);
-                    }
-                } catch (e) {
-                    // If parsing fails, just use empty array
-                    console.log("Failed to parse value, using empty array");
-                    form.setValue('value', []);
-                    setValuesTag([]);
-                }
-            } else {
-                console.log("No valid tag values found, using empty array");
-                form.setValue('value', []);
-                setValuesTag([]);
-            }
-
-            setSelectedIcon(factData.icon || null);
+            setupFormFromFact(factData as FactDataWithId);
         }
-    }, [factSingle, isEditMode, form]);
+    }, [factSingle, isEditMode, setupFormFromFact]);
 
+    // Handle entering edit mode - memoized to prevent recreation
+    const enterEditMode = useCallback(() => {
+        if (fact) {
+            // We need to ensure we have the latest data before setting up the form
+            refetch().then(() => {
+                const factData = factSingle?.facts || factSingle || fact;
+                setupFormFromFact(factData as FactDataWithId);
+                setIsEditMode(true);
+            });
+        }
+    }, [fact, setupFormFromFact, factSingle, refetch]);
+
+    // Memoize update mutation to prevent recreation on every render
     const updateFactMutation = useMutation({
-        mutationFn: (factData: FormData) => updateFacts(factData, fact?.id || ''),
+        mutationFn: (factData: FormData) => updateFacts(factData, fact?.id || fact?._id || ''),
         onSuccess: () => {
             toast({
                 title: 'Fact updated successfully',
@@ -167,9 +150,25 @@ const SingleFact = ({
                 variant: 'default',
             });
             setIsEditMode(false);
+
+            // Force refetch the current fact data
+            refetch();
+
+            // Also invalidate other queries that match both the case-sensitive keys
             queryClient.invalidateQueries({
-                queryKey: ['facts'], // Match the query key used in useQuery
+                queryKey: ['facts'], // lowercase f used in some components
             });
+
+            queryClient.invalidateQueries({
+                queryKey: ['Facts'], // capital F used in useFacts.ts
+            });
+
+            // Also invalidate with user ID since it's used in the Facts list
+            if (userId) {
+                queryClient.invalidateQueries({
+                    queryKey: ['Facts', userId],
+                });
+            }
         },
         onError: (e) => {
             toast({
@@ -177,11 +176,12 @@ const SingleFact = ({
                 description: 'An error occurred while saving changes.',
                 variant: 'destructive',
             });
-            console.log("error on facts update", e)
+            console.error("Error on facts update", e);
         },
     });
 
-    const handleUpdateFact = async () => {
+    // Memoize handlers to prevent recreation on every render
+    const handleUpdateFact = useCallback(async () => {
         const formData = new FormData();
         formData.append('name', form.getValues('name') || '');
         formData.append('field_type', form.getValues('field_type') || '');
@@ -189,17 +189,19 @@ const SingleFact = ({
         // Handle tags based on field type
         if (fieldType === 'Single Select' || fieldType === 'Multi Select') {
             const values = form.getValues('value');
-            console.log("Submitting tag values:", values);
 
             if (Array.isArray(values) && values.length > 0) {
+                // Use JSON.stringify for complex objects to ensure we only send strings to FormData
                 values.forEach((item, index) => {
-                    formData.append(`value[${index}]`, item);
+                    // Handle both string and object values
+                    const itemValue = typeof item === 'object' && item !== null ? item.value : String(item);
+                    formData.append(`value[${index}]`, itemValue);
                 });
             } else if (valuesTag.length > 0) {
                 // Fallback to valuesTag if form value is not an array
-                console.log("Using valuesTag fallback:", valuesTag);
                 valuesTag.forEach((item, index) => {
-                    formData.append(`value[${index}]`, item);
+                    const itemValue = typeof item === 'object' && item !== null ? item.value : String(item);
+                    formData.append(`value[${index}]`, itemValue);
                 });
             } else {
                 // Empty array case
@@ -220,69 +222,75 @@ const SingleFact = ({
                 variant: 'destructive',
             });
         }
-    };
+    }, [fieldType, form, selectedIcon, updateFactMutation, valuesTag]);
 
-    const handleDeleteFact = (factId: string) => {
+    const handleDeleteFact = useCallback((factId: string) => {
         if (DeleteFact && factId) {
             DeleteFact(factId);
         }
-    };
+    }, [DeleteFact]);
 
-    const handleEditClick = () => {
+    const handleEditClick = useCallback(() => {
         enterEditMode();
-    };
+    }, [enterEditMode]);
 
-    const handleCancelClick = () => {
+    const handleCancelClick = useCallback(() => {
         setIsEditMode(false);
         form.reset({
             name: fact?.name || '',
             field_type: fact?.field_type || '',
             value: Array.isArray(fact?.value) ? fact.value : [],
             icon: fact?.icon || '',
-            userId: '',
         });
 
         // Reset tag values and selected icon
-        if (Array.isArray(fact?.value)) {
-            setValuesTag(fact.value);
-        } else if (typeof fact?.value === 'string') {
-            try {
-                const parsedValue = JSON.parse(fact.value);
-                if (Array.isArray(parsedValue)) {
-                    setValuesTag(parsedValue);
-                } else {
-                    setValuesTag([]);
-                }
-            } catch (e) {
-                setValuesTag([]);
-            }
-        } else {
-            setValuesTag([]);
-        }
-        setSelectedIcon(fact?.icon || null);
-    };
+        if (fact) {
+            let parsedValues: string[] = [];
 
-    const handleIconSelect = (iconName: string) => {
+            if (Array.isArray(fact.value)) {
+                parsedValues = fact.value;
+            } else if (typeof fact.value === 'string') {
+                try {
+                    const parsed = JSON.parse(fact.value);
+                    if (Array.isArray(parsed)) {
+                        parsedValues = parsed;
+                    }
+                } catch (e) {
+                    // Silent error - use empty array
+                }
+            }
+
+            setValuesTag(parsedValues);
+            setSelectedIcon(fact.icon || null);
+        }
+    }, [fact, form]);
+
+    const handleIconSelect = useCallback((iconName: string) => {
         setSelectedIcon(iconName);
         setIsOpen(false); // Close the dialog
-    };
+    }, []);
 
-    if (isLoading) return (
+    // Memoize loading and error states
+    const loadingComponent = useMemo(() => (
         <Card className="shadow-sm animate-pulse">
             <CardContent className="p-6 space-y-4">
                 <div className="h-5 bg-muted rounded w-3/4"></div>
                 <div className="h-20 bg-muted rounded w-full"></div>
             </CardContent>
         </Card>
-    );
+    ), []);
 
-    if (isError) return (
+    const errorComponent = useMemo(() => (
         <Card className="shadow-sm border-destructive/50 bg-destructive/5">
             <CardContent className="p-6">
-                <p className="text-destructive">Failed to load fact data</p>
+                <p className="text-destructive">Error loading fact details. Please try again later.</p>
             </CardContent>
         </Card>
-    );
+    ), []);
+
+    // Return early for loading/error states
+    if (isLoading) return loadingComponent;
+    if (isError) return errorComponent;
 
     return (
         <Form {...form}>
@@ -361,7 +369,6 @@ const SingleFact = ({
                                         control={form.control}
                                         name="value"
                                         render={({ field }) => {
-                                            console.log("Rendering tag field with values:", valuesTag, field.value);
                                             return (
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-1.5">
@@ -375,7 +382,6 @@ const SingleFact = ({
                                                                 "Enter options (press Enter after each)" :
                                                                 "Enter multiple options (press Enter after each)"}
                                                             onChange={(newTags) => {
-                                                                console.log("Tags changed to:", newTags);
                                                                 setValuesTag(newTags); // Update the state with new tags
                                                                 field.onChange(newTags); // Update the form field value
                                                             }}
@@ -414,20 +420,23 @@ const SingleFact = ({
                                                     )}
                                                     <Dialog open={isOpen} onOpenChange={setIsOpen}>
                                                         <DialogTrigger asChild>
-                                                            <Button variant="outline" size="sm">
-                                                                {selectedIcon ? 'Change Icon' : 'Choose Icon'}
+                                                            <Button
+                                                                variant="outline"
+                                                                className="ml-2"
+                                                                onClick={() => setIsOpen(true)}
+                                                            >
+                                                                Select Icon
                                                             </Button>
                                                         </DialogTrigger>
-                                                        <DialogContent className="h-[80vh] max-w-[1000px]">
+                                                        <DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
                                                             <DialogHeader>
-                                                                <DialogTitle>Select Icon</DialogTitle>
+                                                                <DialogTitle>Select an Icon</DialogTitle>
                                                                 <DialogDescription>
-                                                                    Choose an icon to represent this fact
+                                                                    Choose an icon for this fact
                                                                 </DialogDescription>
                                                             </DialogHeader>
-                                                            <div className="grid gap-4 py-4 overflow-y-auto">
-                                                                <AllIcons onSelectIcon={handleIconSelect} />
-                                                            </div>
+                                                            {/* Fix props type by properly typing AllIcons component */}
+                                                            {React.createElement(AllIcons, { onSelectIcon: handleIconSelect })}
                                                         </DialogContent>
                                                     </Dialog>
                                                 </div>
@@ -467,15 +476,18 @@ const SingleFact = ({
                                                 </span>
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {fact.value.map((item: string, index: number) => (
-                                                    <Badge
-                                                        key={index}
-                                                        variant="outline"
-                                                        className="bg-secondary/70"
-                                                    >
-                                                        {item}
-                                                    </Badge>
-                                                ))}
+                                                {fact.value.map((item, index) => {
+                                                    // Handle both string and object values
+                                                    const tagValue = typeof item === 'object' && item !== null
+                                                        ? item.label || item.value
+                                                        : String(item);
+
+                                                    return (
+                                                        <Badge key={index} variant="secondary" className="mr-1 mb-1">
+                                                            {tagValue}
+                                                        </Badge>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -538,6 +550,9 @@ const SingleFact = ({
             </form>
         </Form>
     );
-};
+});
+
+// Add display name for debugging
+SingleFact.displayName = 'SingleFact';
 
 export default SingleFact;

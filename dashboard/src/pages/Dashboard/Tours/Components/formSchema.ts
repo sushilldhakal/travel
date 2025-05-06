@@ -7,90 +7,33 @@ const itineraryItemSchema = z.object({
     description: z.string().optional(),
     dateTime: z.date().optional(),
 });
-
 // Define the schema for the itinerary as an array of itinerary items
 const itinerarySchema = z.array(itineraryItemSchema);
 
-const optionSchema = z.object({
+// Schema for facts
+const factSchema = z.object({
+  title: z.string().optional(),
+  field_type: z.enum(['Plain Text', 'Single Select', 'Multi Select']).optional(),
+  value: z.union([
+      z.array(z.string()),  // For Plain Text or Single Select, where value is an array of strings
+      z.array(z.object({
+          label: z.string(),  // For Multi Select, where value is an object with `label`, `value`, and optional `disable`
+          value: z.string(),
+      })),
+  ]).optional(),
+  icon: z.string().optional(),
+});
+// Schema for FAQs
+const faqSchema = z.object({
+  question: z.string().optional(),
+  answer: z.string().optional(),
+});
+
+const categorySchema = z.object({
     label: z.string(),
     value: z.string(),
     disable: z.boolean().optional(),
   });
-
-  const recurringTourSchema = z.object({
-    isRecurring: z.boolean().default(false),
-    recurrencePattern: z.enum(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    recurrenceEndDate: z.date().optional(),
-    priceLockedUntil: z.date().optional(),
-  }).superRefine((data, ctx) => {
-    if (data.isRecurring && !data.recurrencePattern) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Recurrence pattern is required',
-        path: ['recurrencePattern']
-      });
-    }
-    
-    if (data.priceLockedUntil && data.priceLockedUntil < new Date()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Lock date must be in the future',
-        path: ['priceLockedUntil']
-      });
-    }
-  });
-
-// Custom validation for DateRange type
-const dateRangeSchema = z.object({
-  from: z.date().optional(),
-  to: z.date().optional(),
-}).optional().refine(data => {
-  // If data exists, both from and to should be present
-  if (data && data.from && data.to) {
-    return data.from <= data.to; // from date should be before or equal to to date
-  }
-  return true; // If we don't have complete data, pass validation
-}, {
-  message: 'End date must be after start date',
-});
-
-// Schema for dates
-const datesSchema = z.object({
-    tripDuration: z.string().optional(),
-    dateRange: dateRangeSchema,
-});
-
-// Schema for facts
-const factSchema = z.object({
-    title: z.string().optional(),
-    field_type: z.enum(['Plain Text', 'Single Select', 'Multi Select']).optional(),
-    value: z.union([
-        z.array(z.string()),  // For Plain Text or Single Select, where value is an array of strings
-        z.array(z.object({
-            label: z.string(),  // For Multi Select, where value is an object with `label`, `value`, and optional `disable`
-            value: z.string(),
-        })),
-    ]).optional(),
-    icon: z.string().optional(),
-});
-
-// Schema for discount
-const discountSchema = z.object({
-    percentage: z.number().min(0).max(100, 'Percentage must be between 0 and 100').optional(),
-    startDate: z.date().optional(),
-    endDate: z.date().optional(),
-    isActive: z.boolean().optional(),
-    description: z.string().optional(),
-    discountCode: z.string().optional(),
-    maxDiscountAmount: z.number().min(0, 'Maximum discount amount must be positive').optional(),
-    dateRange: dateRangeSchema,
-});
-
-// Schema for FAQs
-const faqSchema = z.object({
-    question: z.string().optional(),
-    answer: z.string().optional(),
-});
 
 // Schema for gallery
 const gallerySchema = z.object({
@@ -103,73 +46,193 @@ const locationSchema = z.object({
     city: z.string().optional(),
     state: z.string().optional(),
     country: z.string().optional(),
-    lat: z.string().optional(),
-    lng: z.string().optional(),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
 });
 
-// Schema for date ranges
-const dateRangeItemSchema = z.object({
-    id: z.string().optional(),
-    label: z.string().optional(),
-    dateRange: dateRangeSchema,
-    selectedPricingOptions: z.array(z.string()).optional(),
+// Define the date range schema
+export const dateRangeSchema = z.object({
+  from: z.date().optional(),
+  to: z.date().optional(),
 });
 
-// Schema for pricing options
+// Alternate format for backward compatibility
+export const dateRangeAltSchema = z.object({
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+});
+
+// Combined schema that accepts either format
+export const flexibleDateRangeSchema = z.union([
+  dateRangeSchema,
+  dateRangeAltSchema
+]);
+
+
+// Schema for discount - used in the pricingOptionSchema
+export const discountSchema = z.object({
+  discountEnabled: z.boolean().default(false),
+  isActive: z.boolean().optional(),
+  percentageOrPrice: z.boolean().optional(),
+  percentage: z.number().min(0).max(100, 'Percentage must be between 0 and 100').optional(),
+  discountPrice: z.number().min(0, "Discount price must be a positive number").optional(),
+  description: z.string().optional(),
+  discountCode: z.string().optional(),
+  maxDiscountAmount: z.number().min(0, 'Maximum discount amount must be positive').optional(),
+  dateRange: flexibleDateRangeSchema,
+});
+
+const paxRangeSchema = z
+.tuple([z.number().min(1, "Minimum pax must be at least 1"), z.number().min(1, "Maximum pax must be at least 1")])
+.refine((data) => data[0] <= data[1], {
+  message: "Minimum pax must be less than or equal to maximum pax",
+  path: ["paxRange"],
+});
+
+
+// Define the pricing option schema
 const pricingOptionSchema = z.object({
-    id: z.string().optional(),
-    name: z.string().optional(),
-    category: z.string().optional(),
-    customCategory: z.string().optional(),
-    price: z.number().min(0).optional(),
-    discountEnabled: z.boolean().optional(),
-    discountPrice: z.number().min(0).optional(),
-    paxRange: z.tuple([z.number().min(1), z.number().min(1)]).optional(),
+  id: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  price: z.number().min(0, "Price must be a positive number"),
+  category: z.enum(["adult", "child", "senior", "student", "custom"]),
+  customCategory: z.string().optional(),
+  discountEnabled: z.boolean().default(false),
+  // Add a reference to the full discount schema for more comprehensive discount information
+  discount: discountSchema.optional(),
+  paxRange: paxRangeSchema.optional(),
+})
+
+// Create a consolidated pricing schema
+export const pricingSchema = z.object({
+  price: z.number().min(0, 'Price must be at least 0').optional(),
+  pricePerPerson: z.boolean().default(true),
+  paxRange: paxRangeSchema.optional(),
+  groupSize: z.number().min(1, "Group size must be at least 1").optional(),
+  
+  // Global discount
+  discount: discountSchema.optional(),
+  
+  // Advanced pricing options
+  pricingOptionsEnabled: z.boolean().default(false),
+  pricingOptions: z.array(pricingOptionSchema).optional(),
+  priceLockedUntil: z.date().optional()
 });
 
-export const formSchema = z.object({
-    title: z.string().min(2, 'Title must be at least 2 characters.'),
-    code: z.string().min(6, 'Trip code must be at least 6 characters.'),
-    description: z.string().min(2, 'Description must be at least 2 characters.'),
-    tourStatus: z.string(),
-    price: z.number().min(0, 'Price must be a positive number'),
-    coverImage: z.string().min(1, 'Please Select a Cover Image'),
-    file: z.string().optional(),
-    category:z.array(optionSchema).min(1),
-    outline: z.string().optional(),
-    itinerary: itinerarySchema.optional(), // Include the itinerary in the main schema
-    dates: datesSchema.optional(),
-    include: z.string().optional(),
-    exclude: z.string().optional(),
-    facts: z.array(factSchema).optional(),
-    faqs: z.array(faqSchema).optional(),
-    gallery: z.array(gallerySchema).optional(),
-    map: z.string().optional(),
-    location: locationSchema.optional(),
-    discount: discountSchema.optional(),
-    enquiry: z.boolean().optional(),
-    isSpecialOffer: z.boolean().optional(),
-    destination: z.string().optional(),
-    // Add new pricing fields
-    pricePerType: z.string().optional(),
-    basePrice: z.number().min(0).optional(),
-    groupSize: z.number().min(1).optional(),
-    discountEnabled: z.boolean().optional(),
-    discountPrice: z.number().min(0).optional(),
-    discountDateRange: dateRangeSchema,
-    pricingOptionsEnabled: z.boolean().optional(),
-    pricingOptions: z.array(pricingOptionSchema).optional(),
-    // Tour dates fields
-    fixedDeparture: z.boolean().optional(),
-    tourDates: z.object({
-        days: z.number().min(1).optional(),
-        nights: z.number().min(0).optional(),
-        dateRange: dateRangeSchema,
-    }).optional(),
-    // Fixed departure fields
-    multipleDates: z.boolean().optional(),
-    fixedDate: z.object({
-        dateRange: dateRangeSchema,
-    }).optional(),
-    dateRanges: z.array(dateRangeItemSchema).optional(),
+// Create a unified date schema that handles all scenarios
+export const tourDatesSchema = z.object({
+  // Base info for all tour types
+  days: z.number().min(0, "Days must be a positive number").optional(),
+  nights: z.number().min(0, "Nights must be a positive number").optional(),
+  
+  // Config flags
+  fixedDeparture: z.boolean().default(false),
+  multipleDates: z.boolean().default(false),
+  
+  // Single date range (for fixed departure without multiple dates)
+  singleDateRange: dateRangeSchema.optional(),
+  
+  // For multiple departures
+  departures: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    dateRange: flexibleDateRangeSchema,
+    isRecurring: z.boolean().default(false),
+    recurrencePattern: z.enum(["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"]).optional(),
+    recurrenceEndDate: z.date().optional(),
+    selectedPricingOptions: z.array(z.string()).optional(),
+    priceLockedUntil: z.date().optional(),
+    capacity: z.number().min(0, "Capacity must be a positive number").optional()
+  })).optional(),
+  
+  // Scheduling type
+  scheduleType: z.enum(["flexible", "fixed", "recurring"]).default("flexible")
+}).refine(
+  (data) => {
+    // If fixedDeparture is false, we only need days/nights
+    if (!data.fixedDeparture) {
+      return true;
+    }
+    
+    // If multipleDates is false, we need singleDateRange
+    if (!data.multipleDates) {
+      return !!data.singleDateRange;
+    }
+    
+    // If multipleDates is true, we need departures
+    return !!data.departures && data.departures.length > 0;
+  },
+  {
+    message: "Tour dates configuration is incomplete"
+  }
+);
+
+// Simplified base form schema with separate pricing and dates sections
+export const baseFormSchema = z.object({
+  // Basic info
+  title: z.string().min(2, 'Title must be at least 2 characters.'),
+  code: z.string().min(6, 'Trip code must be at least 6 characters.'),
+  category: z.array(categorySchema).optional(),
+  excerpt: z.string().optional(),
+  tourStatus: z.string().default('Draft'),
+  description: z.any(),
+  coverImage: z.string().optional(),
+  file: z.any().optional(),
+  enquiry: z.boolean().default(true),
+  outline: z.string().optional(),
+  
+  // Tour content
+  itinerary: itinerarySchema.optional(),
+  map: z.string().optional(),
+  destination: z.string().optional(),
+  location: locationSchema.optional(),
+  include: z.string().optional(),
+  exclude: z.string().optional(),
+  facts: z.array(factSchema).optional(),
+  gallery: z.array(gallerySchema).optional(),
+  faqs: z.array(faqSchema).optional(),
+  isSpecialOffer: z.boolean().default(false),
+  
+  // Use the new unified schemas
+  pricing: pricingSchema,
+  dates: tourDatesSchema
 });
+
+// Create the schema for adding new tours (with required fields)
+export const formSchema = baseFormSchema;
+
+// Create the schema for editing tours (all fields completely optional)
+export const editFormSchema = z.object({
+  // Basic info
+  title: z.string().optional(),
+  code: z.string().optional(),
+  description: z.any().optional(),
+  excerpt: z.string().optional(),
+  tourStatus: z.string().optional(),
+  price: z.number().optional(),
+  coverImage: z.string().optional(),
+  file: z.string().optional(),
+  category: z.any().optional(), // Use z.any() for maximum flexibility
+  outline: z.string().optional(),
+  itinerary: z.any().optional(),
+  include: z.string().optional(),
+  exclude: z.string().optional(),
+  facts: z.array(factSchema).optional(),
+  faqs: z.array(faqSchema).optional(),
+  gallery: z.array(gallerySchema).optional(),
+  map: z.string().optional(),
+  location: z.any().optional(),
+  discount: z.any().optional(),
+  enquiry: z.boolean().optional(),
+  isSpecialOffer: z.boolean().optional(),
+  destination: z.string().optional(),
+  
+  // Use the new unified schemas
+  pricing: z.any().optional(),
+  dates: z.any().optional()
+}).passthrough(); // Add passthrough to allow any other fields
+
+// Export the appropriate schema based on the operation
+export const getFormSchema = (isEditing: boolean) => {
+  return isEditing ? editFormSchema : formSchema;
+};

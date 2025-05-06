@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { addReply, getCommentsByPost, getCommentWithReplies, likeComment, viewComment } from "@/http"
 import { useParams } from "react-router-dom"
 import { timeAgo } from "@/util/timeAgo"
-import { getUserId } from "@/util/AuthLayout"
+import { getUserId } from "@/util/authUtils"
 
 interface Comment {
     _id: string

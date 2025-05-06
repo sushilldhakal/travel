@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { getAuthUserRoles } from '@/util/AuthLayout';
+import { getAuthUserRoles } from '@/util/authUtils';
 
 const PrivateRoutes: React.FC = () => {
     const [isAllowed, setIsAllowed] = useState<boolean>(false);

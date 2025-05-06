@@ -16,7 +16,7 @@ import {
 import { Heart, Eye, MessageSquare, Filter, Search, ChevronDown } from 'lucide-react';
 import useTokenStore from '@/store/store';
 import { toast } from '@/components/ui/use-toast';
-import { getUserId } from '@/util/AuthLayout';
+import { getUserId } from '@/util/authUtils';
 
 interface Post {
   _id: string;

@@ -1,37 +1,32 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUserCategories, deleteCategory } from "@/http";
+import { useQueryClient } from "@tanstack/react-query";
+import { deleteCategory } from "@/http";
 import { toast } from "@/components/ui/use-toast";
 import SingleCategory from "./SingleCategory";
 import AddCategory from "./AddCategory";
-import { getUserId } from "@/util/AuthLayout";
-import { CategoryData } from "@/Provider/types";
+import { getUserId } from "@/util/authUtils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-    CameraIcon, 
-    Folder, 
-    FolderPlus, 
-    Loader2, 
-    Plus, 
-    Search, 
-    X 
+import {
+    CameraIcon,
+    Folder,
+    FolderPlus,
+    Plus,
+    Search,
+    X
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useCategories } from "./useCategories";
 
 const TourCategory = () => {
     const userId = getUserId();
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    
+
     // Fetch all categories for the user
-    const { data: categories, isLoading, isError } = useQuery<CategoryData[], Error>({
-        queryKey: ['categories', userId],
-        queryFn: () => userId ? getUserCategories(userId) : Promise.reject('No user ID provided'),
-        enabled: !!userId,
-    });
+    const { data: categories, isLoading, isError } = useCategories(userId);
 
     // Filter categories based on search query
     const filteredCategories = categories?.filter(category => {
@@ -79,7 +74,7 @@ const TourCategory = () => {
                     <Folder className="h-6 w-6 text-primary" />
                     <h1 className="text-2xl font-bold tracking-tight">Tour Categories</h1>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -124,13 +119,13 @@ const TourCategory = () => {
             {isAddingCategory && (
                 <>
                     <Separator className="my-4" />
-                    <AddCategory 
+                    <AddCategory
                         onCategoryAdded={() => {
                             setIsAddingCategory(false);
                             if (userId) {
-                                queryClient.invalidateQueries(['categories', userId]);
+                                queryClient.invalidateQueries({ queryKey: ['categories', userId] });
                             }
-                        }} 
+                        }}
                     />
                 </>
             )}
@@ -149,10 +144,10 @@ const TourCategory = () => {
                         </div>
                         <h3 className="text-lg font-semibold mb-2 text-destructive">Failed to load categories</h3>
                         <p className="text-sm text-muted-foreground">There was an error loading your categories. Please try refreshing the page.</p>
-                        <Button 
-                            className="mt-4" 
+                        <Button
+                            className="mt-4"
                             variant="outline"
-                            onClick={() => queryClient.invalidateQueries(['categories', userId])}
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ['categories', userId] })}
                         >
                             Try Again
                         </Button>
@@ -178,8 +173,8 @@ const TourCategory = () => {
                         <p className="text-sm text-muted-foreground">
                             No categories match your search for "<span className="font-medium">{searchQuery}</span>".
                         </p>
-                        <Button 
-                            className="mt-4" 
+                        <Button
+                            className="mt-4"
                             variant="outline"
                             onClick={() => setSearchQuery("")}
                         >
@@ -195,8 +190,8 @@ const TourCategory = () => {
                         </div>
                         <h3 className="text-lg font-semibold mb-2">No categories yet</h3>
                         <p className="text-sm text-muted-foreground">You haven't created any categories yet. Get started by adding your first category.</p>
-                        <Button 
-                            className="mt-4" 
+                        <Button
+                            className="mt-4"
                             onClick={() => setIsAddingCategory(true)}
                         >
                             <Plus className="h-4 w-4 mr-1.5" />

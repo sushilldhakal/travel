@@ -1,4 +1,4 @@
-import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,18 +12,29 @@ import DashboardHeader from '@/userDefinedComponents/DashboardHeader';
 import GetTitle from '@/userDefinedComponents/GetTitle';
 import routePaths from '@/lib/routePath';
 import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useState, useCallback } from 'react';
+
 const DashboardLayout = () => {
   const { token, setToken } = useTokenStore((state) => state);
   const [navCollapse, setNavCollapse] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Memoize setNavCollapse to maintain referential equality
+  const memoizedSetNavCollapse = useCallback((value: boolean) => {
+    setNavCollapse(value);
+  }, []);
+
+  const handleNavigate = useCallback(() => {
+    memoizedSetNavCollapse(!navCollapse);
+  }, [navCollapse, memoizedSetNavCollapse]);
 
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
-        setNavCollapse(true);
+        memoizedSetNavCollapse(true);
       } else {
-        setNavCollapse(false);
+        memoizedSetNavCollapse(false);
       }
     };
 
@@ -35,7 +46,8 @@ const DashboardLayout = () => {
 
     // Clean up the event listener on component unmount
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [memoizedSetNavCollapse]);
+
   const handleLogout = () => {
     startTransition(() => {
       setToken('');
@@ -47,9 +59,6 @@ const DashboardLayout = () => {
   if (!token) {
     return <Navigate to="/" state={{ path: location.pathname }} />;
   }
-  const handleNavigate = () => {
-    setNavCollapse(!navCollapse);
-  };
 
   return (
     <BreadcrumbsProvider>
@@ -74,7 +83,7 @@ const DashboardLayout = () => {
             </div>
             <Navigation
               navCollapse={navCollapse}
-              setNavCollapse={setNavCollapse} />
+              setNavCollapse={memoizedSetNavCollapse} />
           </div>
         </div>
         <div className={`${navCollapse ? 'flex flex-col sm:gap-4 sm:py-4 sm:pl-14' : 'flex flex-col'}`}>
