@@ -1,5 +1,19 @@
 import routePaths from "./routePath";
-import { FilePlus, Footprints, Images,MapPinned, Layers3,StickyNote,MessagesSquare, LayoutDashboard, Lightbulb, ListCollapse, MailCheck, MessageCircleMore, Settings, Users } from "lucide-react";
+// Import icons from react-icons collections for better visual recognition
+import { 
+  FaHome, FaUsers, FaUserPlus, FaRegListAlt, 
+  FaClipboardList, FaMapMarkerAlt, FaLightbulb 
+} from "react-icons/fa";
+
+import { 
+  MdDashboard, MdTour, MdSettings, MdContactMail,
+  MdComment, MdRateReview, MdPostAdd, MdOutlineSubscriptions 
+} from "react-icons/md";
+
+import { BiSolidCategory } from "react-icons/bi";
+import { IoInformationCircle } from "react-icons/io5";
+import { BsFilePost, BsFileEarmarkPlus, BsQuestionCircle } from "react-icons/bs";
+import { RiGalleryFill } from "react-icons/ri";
   
 
 export const UserMenuItems = {
@@ -8,28 +22,28 @@ export const UserMenuItems = {
       id: "home",
       title: "Home",
       type: "item",
-      icon: LayoutDashboard,
+      icon: FaHome,
       url: routePaths.home.base,
     },
     {
       id: "tours",
       title: "Tours",
       type: "item",
-      icon: LayoutDashboard,
+      icon: MdTour,
       url: routePaths.home.tours,
     },
     {
       id: "about",
       title: "About Us",
       type: "item",
-      icon: LayoutDashboard,
+      icon: IoInformationCircle,
       url: routePaths.home.about,
     },
     {
       id: "contact",
       title: "Contact Us",
       type: "item",
-      icon: LayoutDashboard,
+      icon: MdContactMail,
       url: routePaths.home.contact,
     }
 
@@ -43,7 +57,7 @@ export const UserMenuItems = {
         id: "dashboard",
         title: "Dashboard",
         type: "item",
-        icon: LayoutDashboard,
+        icon: MdDashboard,
         url: routePaths.dashboard.home,
       },
       {
@@ -51,21 +65,21 @@ export const UserMenuItems = {
         id: "posts",
         title: "Posts",
         type: "item",
-        icon: StickyNote,
+        icon: BsFilePost,
         url: routePaths.dashboard.post,
         children: [
           {
             id: "postList",
             title: "All Post",
             type: "item",
-            icon: ListCollapse,
+            icon: FaRegListAlt,
             url: routePaths.dashboard.post, // Using the same routePath for tours list
           },
           {
             id: "createPost",
             title: "Add post",
             type: "item",
-            icon: FilePlus,
+            icon: BsFileEarmarkPlus,
             url: routePaths.dashboard.addPost,
           },
          
@@ -76,70 +90,70 @@ export const UserMenuItems = {
         id: "comments",
         title: "Comments",
         type: "item",
-        icon: MessagesSquare,
+        icon: MdComment,
         url: routePaths.dashboard.comment,
       },
       {
         id: "tours",
         title: "Tours",
         type: "item",
-        icon: Footprints,
+        icon: MdTour,
         url: routePaths.dashboard.tours,
         children: [
           {
             id: "tourlist",
             title: "All Tour",
             type: "item",
-            icon: ListCollapse,
+            icon: FaClipboardList,
             url: routePaths.dashboard.tours, // Using the same routePath for tours list
           },
           {
             id: "createtour",
             title: "Add Tour",
             type: "item",
-            icon: FilePlus,
+            icon: MdPostAdd,
             url: routePaths.dashboard.addTour,
           },
           {
             id: "destination",
             title: "Destination",
             type: "item",
-            icon: MapPinned,
+            icon: FaMapMarkerAlt,
             url:routePaths.dashboard.tourDestination, // This routePath should be added to routePaths if exists
           },
           {
             id: "category",
             title: "Category",
             type: "item",
-            icon: Layers3,
+            icon: BiSolidCategory,
             url:routePaths.dashboard.tourCategory, // This routePath should be added to routePaths if exists
           },
           {
             id: "fact",
             title: "Facts",
             type: "item",
-            icon: Lightbulb,
+            icon: FaLightbulb,
             url:routePaths.dashboard.tourFacts, // This routePath should be added to routePaths if exists
           },
           {
             id: "faq",
             title: "Faq",
             type: "item",
-            icon: MessageCircleMore,
+            icon: BsQuestionCircle,
             url:routePaths.dashboard.tourFaq, // This routePath should be added to routePaths if exists
           },
           {
             id: "reviews",
             title: "Reviews",
             type: "item",
-            icon: MessageCircleMore,
+            icon: MdRateReview,
             url:routePaths.dashboard.tourReviews, // This routePath should be added to routePaths if exists
           },
           {
             id: "tripsetting",
             title: "Setting",
             type: "item",
-            icon: Settings,
+            icon: MdSettings,
             url: routePaths.dashboard.tourSetting, // This routePath should be added to routePaths if exists
           },
         ],
@@ -148,29 +162,36 @@ export const UserMenuItems = {
         id: "gallery",
         title: "Gallery",
         type: "item",
-        icon: Images,
+        icon: RiGalleryFill,
         url: routePaths.dashboard.gallery,
       },
       {
         id: "user",
         title: "Users",
         type: "item",
-        icon: Users,
+        icon: FaUsers,
         url: routePaths.dashboard.users,
         children: [
           {
             id: "userlist",
             title: "All User",
             type: "item",
-            icon: ListCollapse,
+            icon: FaUsers,
             url: routePaths.dashboard.users, // Using the same routePath for users list
           },
           {
             id: "createuser",
             title: "Add User",
             type: "item",
-            icon: FilePlus,
+            icon: FaUserPlus,
             url: routePaths.dashboard.addUser,
+          },
+          {
+            id: "seller",
+            title: "Seller Applications",
+            type: "item",
+            icon: MdOutlineSubscriptions,
+            url: routePaths.dashboard.sellerApplications,
           },
         ],
       },
@@ -178,14 +199,14 @@ export const UserMenuItems = {
         id: "subscribers",
         title: "Subscribers",
         type: "item",
-        icon: MailCheck,
+        icon: MdOutlineSubscriptions,
         url: routePaths.dashboard.subscribers,
       },
       {
         id: "setting",
         title: "Setting",
         type: "item",
-        icon: Settings,
+        icon: MdSettings,
         url: routePaths.dashboard.setting,
       },
     ],

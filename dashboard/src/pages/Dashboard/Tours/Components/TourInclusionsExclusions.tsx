@@ -1,50 +1,14 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { UseFormReturn } from 'react-hook-form';
 import Editor from '@/userDefinedComponents/editor/advanced-editor';
 import { Check, PackagePlus, PackageMinus } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useTourContext } from '@/Provider/hooks/useTourContext';
 
-interface TourInclusionsExclusionsProps {
-    form: UseFormReturn<any>;
-}
 
-const TourInclusionsExclusions: React.FC<TourInclusionsExclusionsProps> = ({
-    form
-}) => {
-    // Handle initial values for the editors with proper default initialization
-    const includeContent = React.useMemo(() => {
-        try {
-            const includeValue = form.getValues('include');
-            return includeValue ? JSON.parse(includeValue) : {
-                type: "doc",
-                content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
-            };
-        } catch (e) {
-            // Return a valid empty editor document structure
-            return {
-                type: "doc",
-                content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
-            };
-        }
-    }, [form]);
-
-    const excludeContent = React.useMemo(() => {
-        try {
-            const excludeValue = form.getValues('exclude');
-            return excludeValue ? JSON.parse(excludeValue) : {
-                type: "doc",
-                content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
-            };
-        } catch (e) {
-            // Return a valid empty editor document structure
-            return {
-                type: "doc",
-                content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
-            };
-        }
-    }, [form]);
+const TourInclusionsExclusions = () => {
+    // Get editor content from unified context
+    const { form, inclusionsContent, setInclusionsContent, exclusionsContent, setExclusionsContent } = useTourContext();
 
     return (
         <Card className="shadow-sm">
@@ -67,21 +31,16 @@ const TourInclusionsExclusions: React.FC<TourInclusionsExclusionsProps> = ({
                     <FormField
                         control={form.control}
                         name="include"
-                        render={({ field }) => (
+                        render={() => (
                             <FormItem>
                                 <FormLabel>What's included in this tour?</FormLabel>
                                 <FormControl>
                                     <div className="prose min-h-[250px] max-w-full rounded-md border border-input">
                                         <Editor
-                                            initialValue={includeContent}
+                                            initialValue={inclusionsContent}
                                             onContentChange={(content) => {
-                                                const contentString = JSON.stringify(content);
-                                                form.setValue('include', contentString, {
-                                                    shouldDirty: true,
-                                                    shouldTouch: true,
-                                                    shouldValidate: true
-                                                });
-                                                field.onChange(contentString);
+                                                setInclusionsContent(content);
+                                                form.setValue('include', JSON.stringify(content));
                                             }}
                                         />
                                     </div>
@@ -106,21 +65,16 @@ const TourInclusionsExclusions: React.FC<TourInclusionsExclusionsProps> = ({
                     <FormField
                         control={form.control}
                         name="exclude"
-                        render={({ field }) => (
+                        render={() => (
                             <FormItem>
                                 <FormLabel>What's excluded from this tour?</FormLabel>
                                 <FormControl>
                                     <div className="prose min-h-[250px] max-w-full rounded-md border border-input">
                                         <Editor
-                                            initialValue={excludeContent}
+                                            initialValue={exclusionsContent}
                                             onContentChange={(content) => {
-                                                const contentString = JSON.stringify(content);
-                                                form.setValue('exclude', contentString, {
-                                                    shouldDirty: true,
-                                                    shouldTouch: true,
-                                                    shouldValidate: true
-                                                });
-                                                field.onChange(contentString);
+                                                setExclusionsContent(content);
+                                                form.setValue('exclude', JSON.stringify(content));
                                             }}
                                         />
                                     </div>

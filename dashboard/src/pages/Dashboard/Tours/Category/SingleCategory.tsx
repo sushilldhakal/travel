@@ -37,6 +37,7 @@ const SingleCategory = ({
 }: SingleCategoryProps) => {
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [uploadSubmit, setUploadSubmit] = useState(false);
 
     const queryClient = useQueryClient();
@@ -112,9 +113,27 @@ const SingleCategory = ({
         }
     };
 
-    const handleDeleteCategory = (categoryId: string) => {
-        if (DeleteCategory && categoryId) {
-            DeleteCategory(categoryId);
+    const handleDeleteCategory = () => {
+        // Open the confirmation dialog instead of deleting immediately
+        setDeleteDialogOpen(true);
+    };
+
+    // This function is called when the user confirms deletion in the dialog
+    const confirmDeleteCategory = () => {
+        if (DeleteCategory && category?.id) {
+            DeleteCategory(category.id);
+            setDeleteDialogOpen(false);
+            toast({
+                title: "Category deleted",
+                description: "The category has been deleted successfully."
+            });
+        } else {
+            toast({
+                title: "Error",
+                description: "Could not delete the category. Please try again.",
+                variant: "destructive"
+            });
+            setDeleteDialogOpen(false);
         }
     };
 
@@ -419,7 +438,7 @@ const SingleCategory = ({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => category?.id && handleDeleteCategory(category.id)}
+                                    onClick={() => handleDeleteCategory()}
                                     className="text-muted-foreground hover:text-destructive gap-1.5"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -427,9 +446,36 @@ const SingleCategory = ({
                                 </Button>
                             </>
                         )}
+
+
                     </CardFooter>
                 </Card>
             </form>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this category? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDeleteCategory}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Form>
     );
 };

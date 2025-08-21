@@ -1,12 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createTour, updateTour } from '@/http';
+// Import directly from tourApi to ensure we use multipart/form-data implementations
+import { createTour, updateTour } from '@/http/tourApi';
 import { useToast } from '@/components/ui/use-toast';
-import { useParams } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 
-export const useTourMutation = () => {
+interface UseTourMutationProps {
+  tourId?: string;
+}
+
+export const useTourMutation = ({ tourId }: UseTourMutationProps = {}) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { tourId } = useParams<{ tourId: string }>();
 
   return useMutation({
     mutationFn: (data: FormData) => {
@@ -26,10 +30,23 @@ export const useTourMutation = () => {
       });
     },
     onError: (error) => {
-      console.log("form error",error);
+      console.log("form error", error);
+      
+      let errorMessage = 'An error occurred while saving the tour. Please try again later.';
+      
+      if (error && isAxiosError(error)) {
+        // Extract more specific error information if available
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Failed to save tour',
-        description: 'An error occurred while saving the tour. Please try again later.',
+        description: errorMessage,
+        variant: "destructive"
       });
     },
   });

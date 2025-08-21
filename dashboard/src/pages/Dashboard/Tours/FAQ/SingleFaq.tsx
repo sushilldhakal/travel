@@ -13,6 +13,13 @@ import { Edit, HelpCircle, MessageCircle, Save, Trash2, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SingleFaqProps {
     faq?: FaqData;
@@ -25,6 +32,7 @@ const SingleFaq = ({
 }: SingleFaqProps) => {
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     const queryClient = useQueryClient();
     const form = useForm({
@@ -92,9 +100,27 @@ const SingleFaq = ({
         }
     };
 
-    const handleDeleteFaq = (faqId: string) => {
-        if (DeleteFaq && faqId) {
-            DeleteFaq(faqId);
+    const handleDeleteFaq = () => {
+        // Open confirmation dialog instead of deleting immediately
+        setDeleteDialogOpen(true);
+    };
+    
+    const confirmDeleteFaq = () => {
+        if (DeleteFaq && faq?.id) {
+            DeleteFaq(faq.id);
+            setDeleteDialogOpen(false);
+            toast({
+                title: 'FAQ deleted successfully',
+                description: 'The FAQ has been removed.',
+                variant: 'default',
+            });
+        } else {
+            toast({
+                title: 'Failed to delete FAQ',
+                description: 'An error occurred while deleting the FAQ.',
+                variant: 'destructive',
+            });
+            setDeleteDialogOpen(false);
         }
     };
 
@@ -245,7 +271,7 @@ const SingleFaq = ({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => faq?.id && handleDeleteFaq(faq?.id)}
+                                    onClick={handleDeleteFaq}
                                     className="text-muted-foreground hover:text-destructive gap-1.5"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -256,6 +282,32 @@ const SingleFaq = ({
                     </CardFooter>
                 </Card>
             </form>
+            {/* Delete confirmation dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this FAQ? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDeleteFaq}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Form>
     );
 };

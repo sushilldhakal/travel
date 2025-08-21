@@ -1,84 +1,131 @@
 @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar Styles for Sidebar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.5);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.8);
+}
+
+.scrollbar-track-slate-800::-webkit-scrollbar-track {
+  background-color: rgba(30, 41, 59, 0.3);
+}
+
+.scrollbar-thumb-slate-600::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.6);
+}
 
 
 
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142.1 76.2% 36.3%;
+    --background: 210 100% 98%; /* Light blue background */
+    --foreground: 210 20% 20%; /* Dark blue text */
+    --card: 210 100% 95%; /* Slightly lighter blue card */
+    --card-foreground: 210 20% 15%; /* Darker blue text */
+    --popover: 210 100% 98%; /* Light blue popover */
+    --popover-foreground: 210 20% 20%; /* Dark blue text */
+    --primary: 210 80% 50%; /* Vibrant blue primary */
+    --primary-foreground: 0 0% 100%; /* White text */
+    --secondary: 210 60% 90%; /* Light blue secondary */
+    --secondary-foreground: 210 20% 25%; /* Dark blue text */
+    --muted: 210 50% 92%; /* Muted blue */
+    --muted-foreground: 210 15% 50%; /* Muted blue text */
+    --accent: 210 70% 85%; /* Accent blue */
+    --accent-foreground: 210 25% 15%; /* Dark blue text */
+    --destructive: 0 84.2% 60.2%; /* Red destructive */
+    --destructive-foreground: 0 0% 98%; /* Light text */
+    --border: 210 40% 85%; /* Blue border */
+    --input: 210 40% 85%; /* Blue input border */
+    --ring: 210 80% 50%; /* Blue ring */
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 210 80% 50%; /* Blue chart color */
+    --chart-2: 173 58% 39%; /* Teal chart color */
+    --chart-3: 197 37% 24%; /* Dark blue chart color */
+    --chart-4: 43 74% 66%; /* Amber chart color */
+    --chart-5: 27 87% 67%; /* Orange chart color */
+    --sidebar-background: 210 100% 95%; /* Light blue sidebar */
+    --sidebar-foreground: 210 25% 25%; /* Dark blue text */
+    --sidebar-primary: 210 80% 50%; /* Vibrant blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text */
+    --sidebar-accent: 210 60% 90%; /* Light blue accent */
+    --sidebar-accent-foreground: 210 20% 20%; /* Dark blue text */
+    --sidebar-border: 210 50% 88%; /* Blue border */
+    --sidebar-ring: 210 80% 50%; /* Blue ring */
 
     --novel-highlight-default: #ffffff;
-    --novel-highlight-purple: #f6f3f8;
-    --novel-highlight-red: #fdebeb;
-    --novel-highlight-yellow: #fbf4a2;
-    --novel-highlight-blue: #c1ecf9;
-    --novel-highlight-green: #acf79f;
-    --novel-highlight-orange: #faebdd;
-    --novel-highlight-pink: #faf1f5;
-    --novel-highlight-gray: #f1f1ef;
+    --novel-highlight-purple: #dbeafe;
+    --novel-highlight-red: #fee2e2;
+    --novel-highlight-yellow: #fef9c3;
+    --novel-highlight-blue: #dbeafe;
+    --novel-highlight-green: #dcfce7;
+    --novel-highlight-orange: #ffedd5;
+    --novel-highlight-pink: #fce7f3;
+    --novel-highlight-gray: #e5e7eb;
   }
 
   .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 0 0% 95%;
-    --card: 24 9.8% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142.4 71.8% 29.2%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 210 20% 10%; /* Dark slate blue background */
+    --foreground: 210 10% 90%; /* Light slate text */
+    --card: 210 20% 12%; /* Slightly lighter slate card */
+    --card-foreground: 210 10% 90%; /* Light slate text */
+    --popover: 210 25% 8%; /* Darker slate popover */
+    --popover-foreground: 210 10% 92%; /* Light text */
+    --primary: 142.1 70.6% 45.3%; /* Emerald green primary */
+    --primary-foreground: 144.9 80.4% 10%; /* Dark text */
+    --secondary: 210 15% 18%; /* Slate secondary */
+    --secondary-foreground: 210 10% 92%; /* Light text */
+    --muted: 210 15% 15%; /* Muted slate */
+    --muted-foreground: 210 8% 65%; /* Muted light text */
+    --accent: 210 15% 20%; /* Slate accent */
+    --accent-foreground: 210 10% 94%; /* Light text */
+    --destructive: 0 62.8% 30.6%; /* Red destructive */
+    --destructive-foreground: 0 85.7% 97.3%; /* Light text */
+    --border: 210 15% 20%; /* Slate border */
+    --input: 210 15% 20%; /* Slate input border */
+    --ring: 142.4 71.8% 29.2%; /* Emerald ring */
+    --chart-1: 220 70% 50%; /* Blue chart color */
+    --chart-2: 160 60% 45%; /* Teal chart color */
+    --chart-3: 30 80% 55%; /* Orange chart color */
+    --chart-4: 280 65% 60%; /* Purple chart color */
+    --chart-5: 340 75% 55%; /* Pink chart color */
+    --sidebar-background: 210 20% 12%; /* Dark slate sidebar */
+    --sidebar-foreground: 210 10% 85%; /* Light slate text */
+    --sidebar-primary: 142.1 70.6% 45.3%; /* Emerald green */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text */
+    --sidebar-accent: 210 15% 18%; /* Slate accent */
+    --sidebar-accent-foreground: 210 10% 90%; /* Light text */
+    --sidebar-border: 210 15% 20%; /* Slate border */
+    --sidebar-ring: 142.4 71.8% 29.2%; /* Emerald ring */
 
     --novel-highlight-default: #000000;
-    --novel-highlight-purple: #3f2c4b;
-    --novel-highlight-red: #5c1a1a;
-    --novel-highlight-yellow: #5c4b1a;
-    --novel-highlight-blue: #1a3d5c;
-    --novel-highlight-green: #1a5c20;
-    --novel-highlight-orange: #5c3a1a;
-    --novel-highlight-pink: #5c1a3a;
-    --novel-highlight-gray: #3a3a3a;
+    --novel-highlight-purple: #1e1b4b;
+    --novel-highlight-red: #7f1d1d;
+    --novel-highlight-yellow: #713f12;
+    --novel-highlight-blue: #1e3a8a;
+    --novel-highlight-green: #14532d;
+    --novel-highlight-orange: #c2410c;
+    --novel-highlight-pink: #831843;
+    --novel-highlight-gray: #374151;
   }
 } 
 

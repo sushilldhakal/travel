@@ -1,57 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { X, Image as ImageIcon, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { X, Plus, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import clsx from 'clsx';
+import { useFormContext } from 'react-hook-form';
+import { GalleryItem } from '@/Provider/types';
 import GalleryPage from '@/pages/Dashboard/Gallery/GalleryPage';
-import { UseFormReturn } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
 
-import clsx from "clsx";
 
-interface GalleryItem {
-    _id?: string;
-    image: string | { image: string };
-}
-
-interface TourGalleryProps {
-    form: UseFormReturn<any>;
-    imageDialogOpen: boolean;
-    setImageDialogOpen: (open: boolean) => void;
-    imageArray: GalleryItem[];
-    handleGalleryImage: (imageUrl: string) => void;
-    handleRemoveImageGallery: (index: number) => void;
-}
-
-const TourGallery: React.FC<TourGalleryProps> = ({
-    form,
-    imageDialogOpen,
-    setImageDialogOpen,
-    imageArray,
-    handleGalleryImage,
-    handleRemoveImageGallery
-}) => {
-    const [imageLoadStatus, setImageLoadStatus] = useState<Record<number, 'loading' | 'error' | 'success'>>({});
+const TourGallery: React.FC = () => {
+    const { watch, setValue } = useFormContext();
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [open, setOpen] = useState(false);
 
-    // Update form values when imageArray changes
+    // This can now handle both strings and gallery item objects
+    const [imageArray, setImageArray] = useState<(string | GalleryItem)[]>([]);
+    const [imageLoadStatus, setImageLoadStatus] = useState<{ [key: number]: 'success' | 'error' }>({});
+
+    // Sync gallery from form values to local state
     useEffect(() => {
-        // Reset the form gallery field to ensure clean state
-        form.setValue('gallery', []);
-
-        // Set values for each image in the array
-        imageArray.forEach((imageItem, index) => {
-            if (imageItem) {
-                form.setValue(`gallery.${index}.image`, imageItem);
-                // Initialize loading state for new images
-                setImageLoadStatus(prev => ({ ...prev, [index]: 'loading' }));
-            }
-        });
-    }, [imageArray, form]);
+        const galleryValue = watch('gallery');
+        if (galleryValue && Array.isArray(galleryValue) && galleryValue.length > 0) {
+            setImageArray(galleryValue);
+        }
+    }, [watch]);
 
 
 
-    // Handle image load events
     const handleImageLoad = (index: number) => {
         setImageLoadStatus(prev => ({ ...prev, [index]: 'success' }));
     };
@@ -60,6 +37,57 @@ const TourGallery: React.FC<TourGalleryProps> = ({
         setImageLoadStatus(prev => ({ ...prev, [index]: 'error' }));
     };
 
+
+
+    const handleGalleryImage = (imageUrl: string | string[]) => {
+        setImageArray((prevImageArray) => {
+            // Ensure we're working with an array of URLs
+            const newImageUrls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+            
+            // Get current image URLs to check for duplicates
+            const existingUrls = prevImageArray.map(item => 
+                typeof item === 'string' ? item : item.image
+            );
+            
+            // Filter out any URLs that already exist in the gallery
+            const uniqueNewUrls = newImageUrls.filter(url => 
+                !existingUrls.includes(url)
+            );
+            
+            // If no new unique images, return the current array
+            if (uniqueNewUrls.length === 0) {
+                return prevImageArray;
+            }
+            
+            // Create gallery items from unique new images
+            // IMPORTANT: Don't use _id for new items as MongoDB needs a specific format
+            const newGalleryItems = uniqueNewUrls.map(url => ({
+                // Use a temporary client-side ID that won't be sent to the server
+                // The server will generate proper ObjectIds
+                tempId: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                image: url,
+                sortOrder: 0,
+                isFeatured: false
+            }));
+
+            // Update form's gallery value with deduped array
+            const updatedArray = [...prevImageArray, ...newGalleryItems];
+            setValue('gallery', updatedArray, { shouldDirty: true });
+            console.log('Added images:', newGalleryItems);
+            return updatedArray;
+        });
+    };
+
+    const handleRemoveImageGallery = (index: number, event?: React.MouseEvent) => {
+        event?.preventDefault();
+        // Update the state array
+        setImageArray((prevImageArray) => {
+            const filtered = prevImageArray.filter((_, i) => i !== index);
+            // Update form's gallery value
+            setValue('gallery', filtered, { shouldDirty: true });
+            return filtered;
+        });
+    };
 
     const goNext = () => {
         setSelectedIndex((prev) => (prev + 1) % imageArray.length);
@@ -70,6 +98,7 @@ const TourGallery: React.FC<TourGalleryProps> = ({
             prev === 0 ? imageArray.length - 1 : prev - 1
         );
     };
+
 
     return (
         <Card className="shadow-sm">
@@ -99,7 +128,7 @@ const TourGallery: React.FC<TourGalleryProps> = ({
                             <GalleryPage
                                 isGalleryPage={false}
                                 onImageSelect={(imageUrl) =>
-                                    handleGalleryImage(imageUrl)
+                                    imageUrl && handleGalleryImage(imageUrl)
                                 }
                             />
                         </DialogContent>
@@ -168,7 +197,7 @@ const TourGallery: React.FC<TourGalleryProps> = ({
                                 <GalleryPage
                                     isGalleryPage={false}
                                     onImageSelect={(imageUrl) =>
-                                        handleGalleryImage(imageUrl)
+                                        imageUrl && handleGalleryImage(imageUrl)
                                     }
                                 />
                             </DialogContent>
@@ -186,7 +215,7 @@ const TourGallery: React.FC<TourGalleryProps> = ({
                         <div className="relative w-full h-[60vh] flex items-center justify-center bg-muted rounded-md">
                             {imageArray[selectedIndex] ? (
                                 <img
-                                    src={typeof imageArray[selectedIndex] === 'string' ? imageArray[selectedIndex] : imageArray[selectedIndex].image}
+                                    src={typeof imageArray[selectedIndex] === 'string' ? imageArray[selectedIndex] : (imageArray[selectedIndex] as GalleryItem).image}
                                     alt={`Image ${selectedIndex}`}
                                     className="max-h-full max-w-full object-contain"
                                 />

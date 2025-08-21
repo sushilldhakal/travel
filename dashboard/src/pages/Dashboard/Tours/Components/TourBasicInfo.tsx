@@ -1,57 +1,71 @@
-import React from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { JSONContent } from "novel";
 import Editor from '@/userDefinedComponents/editor/advanced-editor';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Eye, FileText, HelpCircle, Paperclip, Trash2, X } from 'lucide-react';
+import { Eye, FileText, HelpCircle, Paperclip, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import GalleryPage from '@/pages/Dashboard/Gallery/GalleryPage';
 import MultipleSelector, { Option } from '@/userDefinedComponents/MultipleSelector';
-import { UseFormReturn } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { Link, useParams } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
+import { Category } from '@/Provider/types';
+import { useTourContext } from '@/Provider/hooks/useTourContext';
+import { useTourForm } from '@/Provider/hooks/useTourForm';
+import { useCategories } from '../Category/useCategories';
+import { getUserId } from '@/util/authUtils';
 
-interface TourBasicInfoProps {
-    form: UseFormReturn<any>;
-    tripCode: string | undefined;
-    handleGenerateCode: () => string;
-    editorContent: JSONContent;
-    onEditorContentChange: (content: JSONContent) => void;
-    categoryOptions: Option[];
-    imageDialogOpen: boolean;
-    setImageDialogOpen: (open: boolean) => void;
-    handleImageSelect: (imageUrl: string, onChange: (value: string) => void) => void;
-    handleRemoveImage: (onChange: (value: string) => void) => void;
-    pdfDialogOpen: boolean;
-    setPdfDialogOpen: (open: boolean) => void;
-    handlePdfSelect: (pdfUrl: string, onChange: (value: string) => void) => void;
-    handleRemovePdf: (onChange: (value: string) => void) => void;
-}
+const TourBasicInfo = () => {
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+    const { editorContent, setEditorContent } = useTourContext();
 
-const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
-    form,
-    tripCode,
-    handleGenerateCode,
-    editorContent,
-    onEditorContentChange,
-    categoryOptions,
-    imageDialogOpen,
-    setImageDialogOpen,
-    handleImageSelect,
-    handleRemoveImage,
-    pdfDialogOpen,
-    setPdfDialogOpen,
-    handlePdfSelect,
-    handleRemovePdf
-}) => {
+    // Get everything we need from the form context
+    const {
+        handleGenerateCode,
+        form
+    } = useTourForm();
 
     const params = useParams();
     const singleTour = params.tourId !== undefined;
+    const userId = getUserId();
+    const categoriesQuery = useCategories(userId);
+
+    // Convert categories to options array for the MultipleSelector component
+    const categoryOptions: Option[] = Array.isArray(categoriesQuery.data)
+        ? categoriesQuery.data.map((category) => ({
+            label: category.name || '',
+            value: category.id || '', // This handles null case by converting to empty string
+            ...(category.isActive === false ? { disable: true } : {})
+        }))
+        : [];
+
+    const handleImageSelect = (imageUrl: string | string[] | null, onChange: (value: string) => void) => {
+        if (imageUrl) {
+            onChange(imageUrl as string);
+            setImageDialogOpen(false);
+        }
+    };
+
+    const handleRemoveImage = (onChange: (value: string) => void) => {
+        onChange('');
+    };
+
+    const handlePdfSelect = (pdfUrl: string, onChange: (value: string) => void) => {
+        if (pdfUrl) {
+            onChange(pdfUrl);
+            setPdfDialogOpen(false); // Close the PDF dialog
+        }
+    };
+
+    const handleRemovePdf = (onChange: (value: string) => void) => {
+        onChange('');
+    };
+
     return (
         <Card className="shadow-sm">
             <CardHeader className="bg-secondary border-b pb-6">
@@ -85,10 +99,19 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                         render={({ field }) => (
                             <FormItem className='relative'>
                                 <FormLabel>Trip Code:</FormLabel>
-                                {
-                                    singleTour ?
-
-                                        <FormControl className="relative">
+                                {singleTour ? (
+                                    <FormControl className="relative">
+                                        <Input
+                                            type="text"
+                                            className="w-full uppercase"
+                                            {...field}
+                                            placeholder='Trip Code'
+                                            disabled
+                                        />
+                                    </FormControl>
+                                ) : (
+                                    <div className="flex space-x-2">
+                                        <FormControl>
                                             <Input
                                                 type="text"
                                                 className="w-full uppercase"
@@ -96,34 +119,23 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                 placeholder='Trip Code'
                                                 disabled
                                             />
-
-                                        </FormControl> :
-                                        <>
-                                            <FormControl>
-                                                <Input
-                                                    type="text"
-                                                    className="w-full uppercase"
-                                                    {...field}
-                                                    placeholder='Trip Code'
-                                                    // value={tripCode}
-                                                    disabled
-
-                                                />
-                                            </FormControl>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => {
+                                        </FormControl>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                if (typeof handleGenerateCode === 'function') {
                                                     const generatedCode = handleGenerateCode();
                                                     field.onChange(generatedCode);
-                                                }}
-                                            >
-                                                Generate
-                                            </Button>
-                                        </>
-
-                                }
-
+                                                } else {
+                                                    console.error('handleGenerateCode is not a function');
+                                                }
+                                            }}
+                                        >
+                                            Generate
+                                        </Button>
+                                    </div>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -140,11 +152,23 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                     <FormLabel>Category</FormLabel>
                                     <FormControl>
                                         <MultipleSelector
-                                            value={field.value || []}
-                                            onChange={field.onChange}
-                                            defaultOptions={categoryOptions}
-                                            placeholder="Select Category"
-                                            className="w-full"
+                                            value={field.value ?
+                                                field.value.map((cat: Category) => ({
+                                                    label: cat.name || '',
+                                                    value: cat.id || ''
+                                                })) : []
+                                            }
+                                            onChange={(selected) => {
+                                                // Convert back to the format your form expects
+                                                const selectedCategories = selected.map((option) => ({
+                                                    id: option.value,
+                                                    name: option.label,
+                                                    isActive: true
+                                                }));
+                                                field.onChange(selectedCategories);
+                                            }}
+                                            options={categoryOptions}
+                                            placeholder="Select categories..."
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -164,7 +188,7 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                 <Textarea
                                     className="min-h-32"
                                     {...field}
-                                    placeholder='Small Tour Description to be used in listing page'
+                                    placeholder='Tour Excerpt'
                                 />
                             </FormControl>
                             <FormMessage />
@@ -198,15 +222,16 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                 <FormField
                     control={form.control}
                     name="description"
-                    render={({ field }) => (
+                    render={() => (
                         <FormItem>
                             <FormLabel>Description</FormLabel>
                             <FormControl>
                                 <div className="prose min-h-[200px] max-w-full rounded-md border border-input">
                                     <Editor
+                                        key={editorContent ? JSON.stringify(editorContent) : 'empty-editor'}
                                         initialValue={editorContent}
                                         onContentChange={(content) => {
-                                            onEditorContentChange(content);
+                                            setEditorContent(content);
                                             form.setValue('description', JSON.stringify(content));
                                         }}
                                     />
@@ -219,35 +244,34 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
 
                 <div className="grid grid-flow-col grid-cols-2 gap-3">
                     <div className="w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-
                         <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                             <FormField
                                 control={form.control}
                                 name="coverImage"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Cover Image <br /></FormLabel>
+                                        <FormLabel>Cover Image<br /></FormLabel>
                                         {field.value ? (
                                             <div className="mt-2 relative">
-                                                <Link to={field.value} target="_blank" rel="noopener noreferrer">
+                                                <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5">
                                                     <img
                                                         src={field.value}
-                                                        alt="Selected Cover Image"
-                                                        className="rounded-md w-full "
-
+                                                        alt="Selected cover"
+                                                        className="object-cover w-full h-full"
                                                     />
-                                                </Link>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveImage(field.onChange)}
-                                                    className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
+                                                    className="absolute top-1 right-1 p-1 rounded-full bg-destructive/90 text-destructive-foreground hover:bg-destructive"
+                                                    aria-label="Remove image"
                                                 >
-                                                    <Trash2 />
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         ) : (
                                             <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-                                                <DialogTrigger >
+                                                <DialogTrigger>
                                                     <div
                                                         className={cn(
                                                             buttonVariants({
@@ -257,9 +281,10 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                         )}
                                                     >
                                                         <Paperclip className="size-4" />
-                                                        <span className="sr-only">Select your files</span>
+                                                        <span className="sr-only">Select an image</span>
                                                     </div>
-                                                    <span className="pl-2">Choose Image</span></DialogTrigger>
+                                                    <span className="pl-2">Choose Image</span>
+                                                </DialogTrigger>
                                                 <DialogContent
                                                     className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
                                                     onInteractOutside={(e) => {
@@ -271,6 +296,7 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                         <div className="upload dialog">
                                                             <GalleryPage
                                                                 isGalleryPage={false}
+                                                                activeTab="images"
                                                                 onImageSelect={(imageUrl) =>
                                                                     handleImageSelect(imageUrl, field.onChange)
                                                                 }
@@ -278,7 +304,7 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                         </div>
                                                     </DialogHeader>
                                                     <DialogDescription>
-                                                        Select a Image.
+                                                        Select an image for your tour cover.
                                                     </DialogDescription>
                                                 </DialogContent>
                                             </Dialog>
@@ -288,6 +314,7 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                             />
                         </div>
                     </div>
+
                     <div className='w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
                         <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                             <FormField
@@ -299,25 +326,11 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                         {field.value ? (
                                             <div className="mt-2 relative">
                                                 <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5 flex flex-col items-center justify-center p-4">
-                                                    <FileText className="h-16 w-16 text-primary/80 mb-2" />
-                                                    <iframe src={field.value} width="100%" height="300px" />
-
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-semibold">PDF Document</p>
-                                                    </div>
-
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="mt-3 text-xs gap-1 hover:bg-primary/10"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            window.open(field.value, '_blank');
-                                                        }}
-                                                    >
-                                                        <Eye className="h-3 w-3 mr-1" />
+                                                    <FileText className="h-12 w-12 text-primary" />
+                                                    <Link to={field.value} target="_blank" className="flex items-center mt-2 text-primary hover:underline">
+                                                        <Eye className="h-4 w-4 mr-1" />
                                                         View PDF
-                                                    </Button>
+                                                    </Link>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -330,7 +343,7 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                             </div>
                                         ) : (
                                             <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-                                                <DialogTrigger >
+                                                <DialogTrigger>
                                                     <div
                                                         className={cn(
                                                             buttonVariants({
@@ -342,7 +355,8 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                         <Paperclip className="size-4" />
                                                         <span className="sr-only">Select your files</span>
                                                     </div>
-                                                    <span className="pl-2">Choose PDF</span></DialogTrigger>
+                                                    <span className="pl-2">Choose PDF</span>
+                                                </DialogTrigger>
                                                 <DialogContent
                                                     className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
                                                     onInteractOutside={(e) => {
@@ -350,19 +364,19 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                                                     }}
                                                 >
                                                     <DialogHeader>
-                                                        <DialogTitle className="mb-3 text-left">Choose pdf From Gallery</DialogTitle>
+                                                        <DialogTitle className="mb-3 text-left">Choose PDF From Gallery</DialogTitle>
                                                         <div className="upload dialog">
                                                             <GalleryPage
                                                                 isGalleryPage={false}
                                                                 activeTab="pdfs"
                                                                 onImageSelect={(pdfUrl) =>
-                                                                    handlePdfSelect(pdfUrl, field.onChange)
+                                                                    handlePdfSelect(pdfUrl as string || '', field.onChange)
                                                                 }
                                                             />
                                                         </div>
                                                     </DialogHeader>
                                                     <DialogDescription>
-                                                        Select a Pdf.
+                                                        Select a PDF.
                                                     </DialogDescription>
                                                 </DialogContent>
                                             </Dialog>
@@ -374,12 +388,11 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                     </div>
                 </div>
 
-                <CardHeader>
-                    <CardTitle>Enquiry</CardTitle>
-                    <CardDescription>Turn on Enquiry for the tour.</CardDescription>
+                <CardHeader className="pt-6 pb-2">
+                    <CardTitle>Tour Settings</CardTitle>
+                    <CardDescription>Configure additional settings for the tour</CardDescription>
                 </CardHeader>
-                <CardContent>
-
+                <CardContent className="space-y-4">
                     <FormField
                         control={form.control}
                         name="enquiry"
@@ -387,15 +400,15 @@ const TourBasicInfo: React.FC<TourBasicInfoProps> = ({
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                     <FormLabel className="text-base">
-                                        Enquiry emails
+                                        Enable Enquiries
                                     </FormLabel>
                                     <FormDescription>
-                                        Lets users send you emails about tours details.
+                                        Allow users to send inquiries about this tour
                                     </FormDescription>
                                 </div>
                                 <FormControl>
                                     <Switch
-                                        checked={field.value}
+                                        checked={Boolean(field.value)}
                                         onCheckedChange={field.onChange}
                                     />
                                 </FormControl>

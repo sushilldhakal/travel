@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { addPost, deletePost, getSinglePost, updatePost } from "@/http";
+import { deletePost, getSinglePost, updatePost } from "@/http";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import Loader from "@/userDefinedComponents/Loader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoaderCircle, Paperclip, Trash2 } from "lucide-react";
+import { LoaderCircle, Paperclip, Trash2, FileText, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
@@ -19,9 +19,9 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import GalleryPage from "../Gallery/GalleryPage";
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
-import { Breadcrumb, Post, PostData } from "@/Provider/types";
+import { Breadcrumb, PostData } from "@/Provider/types";
 import { toast } from "@/components/ui/use-toast";
-import { JSONContent } from "novel";
+import type { JSONContent } from "novel";
 import { Switch } from "@/components/ui/switch";
 import Component from "./CommentComponents";
 import { UserAvatar } from "@/userDefinedComponents/Avatar";
@@ -47,7 +47,7 @@ const EditPost = () => {
     const { postId } = useParams<{ postId: string }>();
     const { updateBreadcrumbs } = useBreadcrumbs();
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
-    const [editorContent, setEditorContent] = useState<JSONContent>();
+    const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -89,9 +89,37 @@ const EditPost = () => {
                 tags: initialPostData.post?.tags || [],
             };
             form.reset(defaultValues);
-            setEditorContent(JSON.parse(initialPostData?.post?.content));
+            try {
+                const raw = initialPostData?.post?.content as unknown;
+                let parsed: JSONContent | null = null;
+                if (raw) {
+                    if (typeof raw === 'string') {
+                        let tmp: unknown = JSON.parse(raw);
+                        // Handle double-encoded JSON strings
+                        if (typeof tmp === 'string') {
+                            try {
+                                tmp = JSON.parse(tmp);
+                            } catch (dpErr) {
+                                console.warn('Double-parse of content failed:', dpErr);
+                            }
+                        }
+                        if (tmp && typeof tmp === 'object') {
+                            parsed = tmp as JSONContent;
+                        }
+                    } else if (typeof raw === 'object') {
+                        parsed = raw as JSONContent;
+                    }
+                }
+                console.log('Editor initial JSONContent:', parsed);
+                setEditorContent(parsed);
+            } catch (e) {
+                console.warn('Failed to parse post content for editor:', e);
+                setEditorContent(null);
+            }
         }
     }, [initialPostData, postId, updateBreadcrumbs, form]);
+
+    console.log("initialPostData", initialPostData)
 
     const mutation = useMutation({
         mutationFn: (data: FormData) => {
@@ -141,9 +169,10 @@ const EditPost = () => {
         }
     };
 
-    const handleImageSelect = (imageUrl: string, onChange: (value: string) => void) => {
-        if (imageUrl) {
-            onChange(imageUrl);
+    const handleImageSelect = (image: string | string[] | null, onChange: (value: string) => void) => {
+        const url = Array.isArray(image) ? (image[0] ?? '') : (image ?? '');
+        if (url) {
+            onChange(url);
             setImageDialogOpen(false);
         }
     };
@@ -191,16 +220,42 @@ const EditPost = () => {
                         )();
                     }}
                 >
-                    <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-                        <Button size="sm" variant={'destructive'} onClick={handleDeletePost}>
-                            <span className="ml-2">
-                                <span>Delete</span>
-                            </span>
-                        </Button>
-                        <Button type="submit" size="sm">
-                            {mutation.isPending && <LoaderCircle className="animate-spin" />}
-                            <span className="ml-2">Update Post</span>
-                        </Button>
+                    {/* Page Header Actions */}
+                    <div className="mb-6">
+                        <Card className="border shadow-sm">
+                            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <FileText className="h-4 w-4" />
+                                        <span>Post Editor</span>
+                                    </div>
+                                    <h1 className="text-lg font-semibold">Edit Post</h1>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant={'destructive'} onClick={handleDeletePost} disabled={deleteMutation.isPending}>
+                                        {deleteMutation.isPending ? (
+                                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                        )}
+                                        Delete
+                                    </Button>
+                                    <Button type="submit" size="sm" disabled={mutation.isPending}>
+                                        {mutation.isPending ? (
+                                            <>
+                                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save className="mr-2 h-4 w-4" />
+                                                Update Post
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                     <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3">
                         <div className="col-span-2 space-y-6 max-lg:col-span-3">
@@ -208,7 +263,14 @@ const EditPost = () => {
                                 <CardHeader>
                                     <div className="flex items-center space-x-4">
                                         {initialPostData?.post?.author && (
-                                            <UserAvatar userId={initialPostData.post.author.toString()} size="md" />
+
+                                            <UserAvatar
+                                                userId={initialPostData.post.author._id.toString()}
+                                                size="md"
+                                                alt={initialPostData.post.author.name || 'User avatar'}
+                                            />
+
+
                                         )}
                                         <div>
                                             <CardTitle>Edit Post</CardTitle>
@@ -233,14 +295,14 @@ const EditPost = () => {
                                                 </FormItem>
                                             )}
                                         />
-
                                         <Controller
                                             name="content"
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Editor
+                                                    key={editorContent ? `${JSON.stringify(editorContent).length}` : 'empty'}
                                                     initialValue={editorContent}
-                                                    onContentChange={(content) => {
+                                                    onContentChange={(content: JSONContent) => {
                                                         setEditorContent(content);
                                                         field.onChange(JSON.stringify(content));
                                                     }}
@@ -251,7 +313,6 @@ const EditPost = () => {
                                 </CardContent>
                             </Card>
                         </div>
-
                         <div className="col-span-1 space-y-6 max-lg:col-span-3">
                             <Card className="mt-6 p-5">
                                 <FormField
@@ -325,8 +386,8 @@ const EditPost = () => {
                                                         </DialogHeader>
                                                         <div className="mt-4">
                                                             <GalleryPage
-                                                                onImageSelect={(imageUrl) => handleImageSelect(imageUrl, field.onChange)}
-                                                                mediaType="images"
+                                                                isGalleryPage={false}
+                                                                onImageSelect={(image) => handleImageSelect(image, field.onChange)}
                                                             />
                                                         </div>
                                                     </DialogContent>
@@ -399,7 +460,7 @@ const EditPost = () => {
                     </div>
                 </form>
             </Form>
-            {initialPostData?.post?.enableComments && <Component postId={postId} />}
+            {initialPostData?.post?.enableComments && <Component />}
         </div>
     );
 };

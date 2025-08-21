@@ -16,6 +16,7 @@ const routePaths = {
     users: "/dashboard/users",
     gallery: "/dashboard/gallery",
     addUser: "/dashboard/users/add_user",
+    sellerApplications: "/dashboard/users/seller-applications",
     editUser: "/dashboard/users/:userId",
     tourSetting: "/dashboard/tours/tour_setting",
     tourCategory: "/dashboard/tours/tour_category",

@@ -3,15 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { addPost } from "@/http";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
+import type { JSONContent } from "novel";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import Loader from "@/userDefinedComponents/Loader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LoaderCircle, Paperclip, Trash2 } from "lucide-react";
+import { 
+  LoaderCircle, 
+  Paperclip, 
+  Trash2, 
+  FileText, 
+  Image as ImageIcon, 
+  Tags, 
+  MessageSquare, 
+  Save,
+  Eye,
+  Settings,
+  Hash
+} from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -96,15 +108,18 @@ const AddPost = () => {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col">
+        <div className="container mx-auto py-6 space-y-6 max-w-7xl">
             {mutation.isPending && (
-                <div className="flex flex-col space-y-3 ">
-                    <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
-                    <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                        <Loader />
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-card p-6 rounded-lg shadow-lg border">
+                        <div className="flex flex-col items-center space-y-4">
+                            <Loader />
+                            <p className="text-sm text-muted-foreground">Creating your post...</p>
+                        </div>
                     </div>
                 </div>
             )}
+            
             <Form {...form}>
                 <form
                     onSubmit={(e) => {
@@ -120,27 +135,51 @@ const AddPost = () => {
                         )();
                     }}
                 >
-                    <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-                        <Link to="/dashboard/posts">
-                            <Button size="sm" variant={'outline'}>
-                                <span className="ml-2">
-                                    <span>Discard</span>
-                                </span>
-                            </Button>
-                        </Link>
-                        <Button type="submit" size="sm">
-                            {mutation.isPending && <LoaderCircle className="animate-spin" />}
-                            <span className="ml-2">Create Post</span>
-                        </Button>
+                    {/* Page Header Actions */}
+                    <div className="mb-6">
+                        <Card className="border shadow-sm">
+                            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <FileText className="h-4 w-4" />
+                                        <span>Post Editor</span>
+                                    </div>
+                                    <h1 className="text-lg font-semibold">Create Post</h1>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Link to="/dashboard/posts">
+                                        <Button size="sm" variant={'outline'}>
+                                            Discard
+                                        </Button>
+                                    </Link>
+                                    <Button type="submit" size="sm" disabled={mutation.isPending}>
+                                        {mutation.isPending ? (
+                                            <>
+                                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save className="mr-2 h-4 w-4" />
+                                                Create Post
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                     <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3">
                         {/* Left side (2/3): Title and Content */}
                         <div className="col-span-2 space-y-6 max-lg:col-span-3">
-                            <Card className="mt-6">
+                            <Card>
                                 <CardHeader>
-                                    <CardTitle>Create a new Post</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-primary" />
+                                        Post Content
+                                    </CardTitle>
                                     <CardDescription>
-                                        Fill out the form below to create a new post.
+                                        Write your post title and content here.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -164,10 +203,10 @@ const AddPost = () => {
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Editor
-                                                    initialValue={editorContent}
-                                                    onContentChange={(content) => {
+                                                    initialValue={field.value || editorContent}
+                                                    onContentChange={(content: JSONContent) => {
                                                         setEditorContent(content);
-                                                        form.setValue('content', JSON.stringify(content)); // Update the form value
+                                                        field.onChange(content);
                                                     }}
                                                 />
                                             )}
@@ -179,13 +218,23 @@ const AddPost = () => {
 
                         {/* Right side (1/3): Status, Image, and Tags */}
                         <div className="col-span-1 space-y-6 max-lg:col-span-3">
-                            <Card className="mt-6 p-5">
-                                <FormField
-                                    control={form.control}
-                                    name="status"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Status</FormLabel>
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <Settings className="h-4 w-4 text-primary" />
+                                        Post Settings
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <FormField
+                                        control={form.control}
+                                        name="status"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Eye className="h-4 w-4" />
+                                                    Status
+                                                </FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
@@ -202,15 +251,26 @@ const AddPost = () => {
                                         </FormItem>
                                     )}
                                 />
+                                </CardContent>
                             </Card>
 
-                            <Card className="mt-6 p-5">
-                                <FormField
-                                    control={form.control}
-                                    name="image"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Image <br /></FormLabel>
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <ImageIcon className="h-4 w-4 text-primary" />
+                                        Featured Image
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <FormField
+                                        control={form.control}
+                                        name="image"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <ImageIcon className="h-4 w-4" />
+                                                    Cover Image
+                                                </FormLabel>
                                             {field.value ? (
                                                 <div className="mt-2 relative">
                                                     <Link to={field.value} target="_blank" rel="noopener noreferrer">
@@ -270,15 +330,26 @@ const AddPost = () => {
                                         </FormItem>
                                     )}
                                 />
+                                </CardContent>
                             </Card>
 
-                            <Card className="mt-6 p-5">
-                                <FormField
-                                    control={form.control}
-                                    name="tags"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Tags</FormLabel>
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <Hash className="h-4 w-4 text-primary" />
+                                        Tags
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <FormField
+                                        control={form.control}
+                                        name="tags"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Tags className="h-4 w-4" />
+                                                    Post Tags
+                                                </FormLabel>
                                             <FormControl>
                                                 <InputTags
                                                     value={field.value || []}
@@ -291,14 +362,18 @@ const AddPost = () => {
                                         </FormItem>
                                     )}
                                 />
+                                </CardContent>
                             </Card>
                         </div>
                     </div>
                     <div className="mx-auto grid w-full max-w-6xl items-start gap-6 mt-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Comments</CardTitle>
-                                <CardDescription>Turn on Comments for the post.</CardDescription>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MessageSquare className="h-5 w-5 text-primary" />
+                                    Comments
+                                </CardTitle>
+                                <CardDescription>Allow readers to comment on your post.</CardDescription>
                             </CardHeader>
                             <CardContent>
 

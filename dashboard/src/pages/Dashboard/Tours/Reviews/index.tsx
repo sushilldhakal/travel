@@ -1,20 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+
+import { DataTable } from '@/userDefinedComponents/DataTable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,10 +30,8 @@ import {
 } from '@/http';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import useTokenStore from '@/store/store';
-import { Loader2, Star, ThumbsUp, Eye, MessageSquare, RefreshCw, FileText } from 'lucide-react';
+import { Loader2, Star, RefreshCw } from 'lucide-react';
 
-// Define types
 interface Review {
   _id: string;
   user: {
@@ -75,105 +64,152 @@ interface Reply {
 
 const ReviewsManagement = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('pending');
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Token is used for authentication in the API calls
-  const token = useTokenStore(state => state.token);
-
-  const fetchReviews = useCallback(async () => {
-    setLoading(true);
-    try {
+  // Fetch all reviews using useQuery
+  const {
+    data: allReviewsData,
+    isLoading: loading,
+    refetch
+  } = useQuery({
+    queryKey: ['reviews', 'all'],
+    queryFn: async () => {
       const response = await getAllReviews();
-
       if (!response || !response.data) {
-        toast({
-          title: 'Error',
-          description: 'Failed to load reviews. Invalid response format.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
+        throw new Error('Failed to load reviews. Invalid response format.');
       }
+      return response.data.reviews || [];
+    },
+  });
 
-      // Extract reviews from the response data structure
-      const allReviews = response.data?.reviews || [];
+  console.log("allReviewsData", allReviewsData)
 
-      if (allReviews.length === 0) {
-        setReviews([]);
-        setLoading(false);
-        return;
-      }
-
-      let data;
-      if (activeTab === 'pending') {
-        // For pending tab, show all pending reviews
-        data = allReviews.filter((review: Review) => review.status === 'pending') || [];
-      } else if (activeTab === 'approved') {
-        // For approved tab, show all approved reviews
-        data = allReviews.filter((review: Review) => review.status === 'approved') || [];
-      } else if (activeTab === 'rejected') {
-        // For rejected tab, show all rejected reviews
-        data = allReviews.filter((review: Review) => review.status === 'rejected') || [];
-      } else {
-        // Default case - show all reviews
-        data = allReviews;
-      }
-
-      setReviews(data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load reviews. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+  // Memoized filtered reviews based on activeTab
+  const reviews = useMemo(() => {
+    if (!allReviewsData || !Array.isArray(allReviewsData)) return [];
+    if (activeTab === 'pending') {
+      return allReviewsData.filter((review: Review) => review.status === 'pending');
+    } else if (activeTab === 'approved') {
+      return allReviewsData.filter((review: Review) => review.status === 'approved');
+    } else if (activeTab === 'rejected') {
+      return allReviewsData.filter((review: Review) => review.status === 'rejected');
+    } else {
+      return allReviewsData;
     }
-  }, [activeTab]);
+  }, [allReviewsData, activeTab]);
 
-  useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+  // --- DataTable columns definition (matching TourPage style) ---
+  const columns: ColumnDef<Review>[] = [
+    {
+      accessorKey: 'tourTitle',
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Tour<ArrowUpDown className="ml-2 h-4 w-4" /></Button>
+      ),
+      cell: ({ row }) => (
+        <Button variant="link" className="text-left font-medium px-0" onClick={() => navigateToTour(row.original.tourId)}>
+          {row.getValue('tourTitle') || 'Unknown Tour'}
+        </Button>
+      ),
+    },
+    {
+      accessorKey: 'user',
+      header: 'Customer',
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <Avatar>
+            <AvatarImage src={row.original.user.avatar} />
+            <AvatarFallback>{row.original.user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{row.original.user.name}</p>
+            <p className="text-xs text-muted-foreground">{row.original.user.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'rating',
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Rating<ArrowUpDown className="ml-2 h-4 w-4" /></Button>
+      ),
+      cell: ({ row }) => renderStarRating(row.original.rating),
+    },
+    {
+      accessorKey: 'comment',
+      header: 'Comment',
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <div>
+            <p className="truncate">
+              {`${row.original.comment.split(' ').slice(0, 5).join(' ')}${row.original.comment.split(' ').length > 5 ? '...' : ''}`}
+            </p>
+
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Date<ArrowUpDown className="ml-2 h-4 w-4" /></Button>
+      ),
+      cell: ({ row }) => formatDistanceToNow(new Date(row.original.createdAt), { addSuffix: true }),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Status<ArrowUpDown className="ml-2 h-4 w-4" /></Button>
+      ),
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      id: 'engagement',
+      header: 'Engagement',
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <span className="text-xs">👍 {row.original.likes || 0}</span>
+          <span className="text-xs">👁️ {row.original.views || 0}</span>
+          <span className="text-xs">💬 {row.original.replies?.length || 0}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => (
+        <div className="flex space-x-2">
+          {row.original.status === 'pending' && (
+            <>
+              <Button size="sm" variant="outline" className="bg-green-100 hover:bg-green-200 text-green-800 border-green-300" onClick={() => handleStatusUpdate(row.original._id, row.original.tourId, 'approved')}>Approve</Button>
+              <Button size="sm" variant="outline" className="bg-red-100 hover:bg-red-200 text-red-800 border-red-300" onClick={() => handleStatusUpdate(row.original._id, row.original.tourId, 'rejected')}>Reject</Button>
+            </>
+          )}
+          <Button size="sm" variant="outline" onClick={() => openReplyDialog(row.original)}>Reply</Button>
+        </div>
+      ),
+    },
+  ];
 
   const handleStatusUpdate = async (reviewId: string, tourId: string, status: 'approved' | 'rejected') => {
     try {
       await updateReviewStatus(tourId, reviewId, status);
-
-      // Show success message
       toast({
         title: 'Success',
         description: `Review ${status === 'approved' ? 'approved' : 'rejected'} successfully.`,
       });
-
-      // Instead of removing the review, mark it with the new status (optimistic UI update)
-      setReviews(prevReviews =>
-        prevReviews.map(review =>
-          review._id === reviewId
-            ? { ...review, status }
-            : review
-        )
-      );
-
-      // If we're in the pending tab and want to see the updated review in its new tab
+      // Refetch reviews after status update
       if (activeTab === 'pending') {
-        // Wait a moment before switching tabs to let the user see the success message
         setTimeout(() => {
-          // Fetch all reviews again to ensure we have the latest data
-          fetchReviews().then(() => {
-            // Then switch to the appropriate tab
-            setActiveTab(status); // Switch to the appropriate tab (approved or rejected)
-          });
+          refetch();
+          setActiveTab(status); // Switch to the appropriate tab (approved or rejected)
         }, 1000);
       } else {
-        // Just refresh the current tab after a short delay
         setTimeout(() => {
-          fetchReviews();
+          refetch();
         }, 500);
       }
     } catch (error) {
@@ -186,9 +222,9 @@ const ReviewsManagement = () => {
     }
   };
 
+
   const handleReplySubmit = async () => {
     if (!selectedReview || !replyText.trim()) return;
-
     setSubmitting(true);
     try {
       await addReviewReply(selectedReview.tourId, selectedReview._id, replyText);
@@ -198,7 +234,7 @@ const ReviewsManagement = () => {
       });
       setReplyDialogOpen(false);
       setReplyText('');
-      fetchReviews();
+      refetch();
     } catch (error) {
       console.error('Error adding reply:', error);
       toast({
@@ -210,6 +246,7 @@ const ReviewsManagement = () => {
       setSubmitting(false);
     }
   };
+
 
   const openReplyDialog = (review: Review) => {
     setSelectedReview(review);
@@ -253,7 +290,7 @@ const ReviewsManagement = () => {
   };
 
   const handleRefresh = () => {
-    fetchReviews();
+    refetch();
     toast({
       title: 'Refreshed',
       description: 'Review list has been refreshed.',
@@ -280,7 +317,7 @@ const ReviewsManagement = () => {
 
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="pending" value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected")}>
             <TabsList className="mb-4">
               <TabsTrigger value="pending">Pending Reviews</TabsTrigger>
               <TabsTrigger value="approved">Approved Reviews</TabsTrigger>
@@ -297,116 +334,12 @@ const ReviewsManagement = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tour</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Review</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Engagement</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reviews.map((review) => (
-                      <TableRow key={review._id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <Button
-                              variant="link"
-                              onClick={() => navigateToTour(review.tourId)}
-                              className="text-left font-medium"
-                            >
-                              {review.tourTitle || "Unknown Tour"}
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Avatar>
-                              <AvatarImage src={review.user.avatar} />
-                              <AvatarFallback>
-                                {review.user.name.substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{review.user.name}</p>
-                              <p className="text-xs text-muted-foreground">{review.user.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{renderStarRating(review.rating)}</TableCell>
-                        <TableCell>
-                          <div className="max-w-xs">
-                            <p className="truncate">{review.comment}</p>
-                            {review.replies && review.replies.length > 0 && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {review.replies.length} {review.replies.length === 1 ? 'reply' : 'replies'}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(review.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <div className="flex items-center">
-                              <ThumbsUp className="h-4 w-4 mr-1 text-blue-500" />
-                              <span className="text-xs">{review.likes || 0}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Eye className="h-4 w-4 mr-1 text-gray-500" />
-                              <span className="text-xs">{review.views || 0}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <MessageSquare className="h-4 w-4 mr-1 text-green-500" />
-                              <span className="text-xs">{review.replies?.length || 0}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            {review.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
-                                  onClick={() => handleStatusUpdate(review._id, review.tourId, 'approved')}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="bg-red-100 hover:bg-red-200 text-red-800 border-red-300"
-                                  onClick={() => handleStatusUpdate(review._id, review.tourId, 'rejected')}
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openReplyDialog(review)}
-                            >
-                              Reply
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  data={reviews}
+                  columns={columns}
+                  place="Search reviews..."
+                  colum="tourTitle"
+                />
               </div>
             )}
           </Tabs>

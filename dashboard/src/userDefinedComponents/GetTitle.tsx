@@ -16,7 +16,14 @@ const GetTitle: React.FC = () => {
   useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const lastSegment = pathSegments[pathSegments.length - 1];
-    const matchingBreadcrumb = breadcrumbs.find(breadcrumb => breadcrumb.href?.endsWith(lastSegment));
+    
+    // Try to find matching breadcrumb by href or url property
+    const matchingBreadcrumb = breadcrumbs.find(breadcrumb => {
+      const hrefMatch = breadcrumb.href?.endsWith(lastSegment);
+      const urlMatch = breadcrumb.url?.endsWith(lastSegment);
+      return hrefMatch || urlMatch;
+    });
+    
     if (matchingBreadcrumb) {
       setPageTitle(matchingBreadcrumb.label);
     } else {

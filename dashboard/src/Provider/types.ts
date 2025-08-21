@@ -3,6 +3,99 @@ export interface Author {
     name: string;
 }
 
+export interface dateRange {
+  from: Date;
+  to: Date;
+}
+
+export interface Discount {
+  discountEnabled: boolean;
+  discountPrice: number;
+  dateRange: {
+    from: Date; 
+    to: Date;
+  };
+}
+
+
+export interface pricing {
+  price: number,
+  pricePerPerson: boolean,
+  pricingOptionsEnabled: boolean,
+  paxRange: [number, number],
+  minSize: number,
+  maxSize: number,
+  groupSize: number,
+  discount: {
+    discountEnabled: boolean,
+    discountPrice: number,
+    dateRange: { from: Date; to: Date }
+  },
+  pricingOptions: pricingOptions[],
+  priceLockedUntil: Date | undefined
+}
+
+export interface DiscountOption {
+  isActive?: boolean;
+  percentageOrPrice?: boolean;
+  percentage?: number;
+  discountPrice?: number;
+  description?: string;
+  discountCode?: string;
+  maxDiscountAmount?: number;
+  dateRange: { from: Date | string | undefined; to: Date | string | undefined };
+}
+
+export interface pricingOptions {
+  id?: string;
+  name: string;
+  category: 'adult' | 'child' | 'senior' | 'student' | 'custom';
+  customCategory?: string;
+  price: number;
+  discount: {
+    enabled: boolean;
+    options?: DiscountOption[];
+  };
+  paxRange?: [number, number];
+}
+
+export type TourDateMode = "flexible" | "fixed" | "multiple";
+
+export interface dates {
+  scheduleType: TourDateMode;
+  days?: number;
+  nights?: number;
+  
+  // For flexible or fixed with recurrence
+  isRecurring?: boolean;
+  recurrencePattern?: "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
+  recurrenceInterval?: number; // e.g., every 2 weeks
+  recurrenceEndDate?: Date;
+  
+  // Pricing category (for flexible and fixed)
+  selectedPricingOptions?: string[];
+  
+  // For fixed
+  singleDateRange?: {
+    from: Date;
+    to: Date;
+  };
+  
+  // For multiple
+  departures?: departures[];
+}
+
+export interface departures {
+  id: string;
+  label: string;
+  dateRange: { from: Date; to: Date };
+  isRecurring?: boolean;
+  recurrencePattern?: "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
+  recurrenceEndDate?: Date;
+  selectedPricingOptions?: string[];
+  capacity?: number;
+}
+
 export interface Tour {
   _id?: string;
   id?: string;
@@ -16,56 +109,48 @@ export interface Tour {
   tourStatus?: string;
   file?: string;
   price?: number;
+  originalPrice?: number;
   include?: string;
   exclude?: string;
-  outline?: string;
   itinerary?: Itinerary[];
   facts?: FactData[];
   faqs?: FaqData[];
-  dates?: TourDates;
-  dates_string?: string;
+  dates?: dates;
   booking_close?: string;
   featured?: boolean;
   category?: Category[];
   destination?: string;
   location?: location;
-  map?: string;
   pricePerType?: "person" | "group";
+  pricePerPerson?: boolean;
   basePrice?: number;
   minSize?: number;
   maxSize?: number;
   groupSize?: number;
+  paxRange?: { min: number; max: number };
+  discount?: Discount;
   discountEnabled?: boolean;
   discountPrice?: number;
-  discountDateRange?: DiscountDateRange;
+  discountDateRange?: DateRange;
+  priceLockedUntil?: string;
   pricingOptionsEnabled?: boolean;
-  pricingOptions?: {
-    optionName: string;
-    optionDescription?: string;
-    optionPrice: number;
-  }[];
+  pricingOptions?: pricingOptions[];
   fixedDeparture?: boolean;
   multipleDates?: boolean;
   tourDates?: TourDate[];
-  fixedDate?: Date;
-  dateRanges?: {
-    startDate: Date;
-    endDate: Date;
-    recurring?: boolean;
-  }[];
+  fixedDate?: string;
+  dateRanges?: DateRange[];
+  isSpecialOffer?: boolean;
+  gallery?: string[];
+  map?: string;
+  enquiry?: boolean;
   createdAt?: string;
   updatedAt?: string;
-  enquiry?: boolean;
   tabsDisplay?: string[];
   downloads?: string[];
-  gallery?: string[];
+  pricing?: pricing;
 }
 
-// Define the type for the Author
-export interface Author {
-  _id: string; // Author ID
-  name: string; // Author name
-}
 
 // Define the type for the Post
 export interface Post {
@@ -104,6 +189,8 @@ export interface PaginatedPostsResponse {
 
 export interface location {
   name?: string;
+  map?: string;
+
   placeId?: string;
   position?: {
     lat: number;
@@ -115,11 +202,9 @@ export interface location {
   country?: string;
   zip?: string;
   formatted_address?: string;
-  latitude?: number;
-  longitude?: number;
+  lat?: number;
+  lng?: number;
 }
-
-
 
 export interface Destination {
   _id: string;
@@ -135,11 +220,7 @@ export interface Destination {
   createdAt: string;
   userId?: string;
 }
-export interface TourDates {
-  tripDuration: string;
-  startDate: Date | undefined;
-  endDate: Date | undefined;
-}
+
 
 export interface User {
   _id: string;
@@ -147,9 +228,10 @@ export interface User {
   email: string;
   password: string;
   roles: string;
+  images?: string;
   wishlists: string[];
   bookings: string[];
-  reviews: string[];
+  reviews: Review[];
   payment_methods: string[];
   createdAt: string;
 }
@@ -158,15 +240,9 @@ export interface User {
 export interface Review {
   _id: string;
   rating: number;
+  title: string;
   comment: string;
-  user: {
-      _id: string;
-      name: string;
-      avatar?: string;
-      email?: string;
-      roles?: string;
-      profilePicture?: string;
-  };
+  user: User;
   status: string;
   createdAt: string;
   likes?: number;
@@ -180,34 +256,55 @@ export interface Review {
 export interface Reply {
   _id: string;
   comment: string;
-  user: {
-    name: string;
-    avatar?: string;
-    email?: string;
-    _id?: string;
-  };
+  user: User;
   createdAt: string;
   likes: number;
   views: number;
 }
 
-
 export interface ReviewsManagerProps {
   tourId: string;
 }
 
+export interface DateRange {
+  from?: string;
+  to?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface dates {
+  singleDate?: string;
+  dateType?: string;
+  from?: string;
+  to?: string;
+  startDate?: string;
+  endDate?: string;
+  dateRange?: DateRange;
+}
+
+export interface TourDate {
+  date?: string;
+  price?: number;
+  discountPrice?: number;
+  discountEnabled?: boolean;
+  availability?: string;
+  groupSize?: number;
+}
+
 export interface Category {
-  categoryName: string;
-  categoryId: string;
+  name: string;
+  id: string;
   _id?: string;
-  id?: string;
   value?: string;
   label?: string;
+  isActive?: boolean;
 }
 
 export interface Breadcrumb {
   label: string;
   href?: string;
+  url?: string;
   type?: 'link' | 'page';
   link?: string;
 }
@@ -264,6 +361,33 @@ export interface ImageResource {
   api_key: string;
 }
 
+export interface GalleryDocument {
+  user: string;
+  images: ImageResource[];
+  videos: ImageResource[];
+  PDF: ImageResource[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface GalleryItem {
+  _id?: string;
+  id?: string;
+  image: string;
+  alt?: string;
+  sortOrder?: number;
+  isFeatured?: boolean;
+  public_id?: string;
+  url?: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  resource_type?: string;
+  created_at?: string | Date;
+  bytes?: number;
+  secure_url?: string;
+}
+
 export interface CategoryData {
   _id: string;
   id: string | null;
@@ -275,11 +399,12 @@ export interface CategoryData {
 }
 
 export interface FactData {
-  name: string;      // Used for data from the API
-  title?: string;    // Used for form input
-  field_type?: string;
-  value: string[] | string | { label: string; value: string }[];
-  icon?: string;
+  name: string
+  title?: string
+  field_type?: string
+  label: string
+  icon?: string
+  value: string
 }
 
 export interface FaqData {
@@ -290,26 +415,22 @@ export interface FaqData {
   userId: string;
 }
 
-export interface Itinerary {
-  day: string;
-  title: string;
-  description: string;
+export interface ItineraryItem {
+  day?: string;
+  title?: string;
+  description?: string;
   dateTime?: Date;
   date?: string | Date;
+  destination?: string;
 }
 
-export interface TourDate {
-  date: Date;
-  available: boolean;
-  maxParticipants?: number;
+export interface Itinerary {
+  outline?: string;
+  options?: ItineraryItem[];
 }
 
-export interface DiscountDateRange {
-  startDate: Date;
-  endDate: Date;
-  discountPercentage?: number;
-  discountAmount?: number;
-}
+
+
 
 
 

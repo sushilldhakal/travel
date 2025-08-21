@@ -28,7 +28,7 @@ const TourFaqs = () => {
                 description: 'The FAQ has been removed.',
             });
             queryClient.invalidateQueries({
-                queryKey: ['faqs', userId], // Match the query key used in useQuery
+                queryKey: ['Faq', userId], // Match the query key used in useQuery (with capital F)
             });
         } catch (error) {
             toast({
@@ -67,7 +67,9 @@ const TourFaqs = () => {
                     <div className="w-full">
                         <AddFaq onFaqAdded={() => {
                             if (userId) {
-                                queryClient.invalidateQueries(['faqs', userId]);
+                                queryClient.invalidateQueries({
+                                    queryKey: ['Faq', userId] // Match the query key used in useQuery (with capital F)
+                                });
                                 setIsAddFaqOpen(false);
                             }
                         }} />

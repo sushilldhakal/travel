@@ -4,7 +4,7 @@ import { getUserDestinations } from '@/http';
 import { Destination } from '@/Provider/types';
 
 export const useDestination = (userId: string | null) => {
-  return useQuery<Destination>({
+  return useQuery<Destination[]>({
     queryKey: ['destination', userId],
     queryFn: () => {
       if (!userId) {

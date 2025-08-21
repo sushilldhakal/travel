@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { getUserId } from "@/util/authUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import SingleDestination from "@/pages/Dashboard/Tours/Destination/SingleDestina
 import AddDestination from "@/pages/Dashboard/Tours/Destination/AddDestination";
 
 import { useDestination } from "./useDestination";
+import { Destination as Dest } from "@/Provider/types";
 
 // Create a type for Destination data
 
@@ -22,13 +23,25 @@ const Destination = () => {
     const [isAddingDestination, setIsAddingDestination] = useState(false);
 
 
-    const { data: destinations, isLoading, isError } = useDestination(userId);
+    const { data: destinations, isLoading, isError, refetch } = useDestination(userId);
+
+    // This function will be called when a destination is successfully added
+    const handleDestinationAdded = () => {
+        // Close the add form
+        setIsAddingDestination(false);
+        // Refetch the destinations to update the list
+        refetch();
+        // Also invalidate the query cache to ensure fresh data
+        queryClient.invalidateQueries({
+            queryKey: ['destination', userId]
+        });
+    };
 
 
 
     // Filter destinations based on search query
     const filteredDestinations = Array.isArray(destinations)
-        ? destinations.filter((destination: DestinationData) =>
+        ? destinations.filter((destination: Dest) =>
             destination.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (destination.description &&
                 destination.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -87,16 +100,7 @@ const Destination = () => {
             {isAddingDestination && (
                 <>
                     <Separator className="my-4" />
-                    <AddDestination
-                        onDestinationAdded={() => {
-                            setIsAddingDestination(false);
-                            if (userId) {
-                                queryClient.invalidateQueries({
-                                    queryKey: ['destinations', userId]
-                                });
-                            }
-                        }}
-                    />
+                    <AddDestination onDestinationAdded={handleDestinationAdded} />
                 </>
             )}
 
@@ -139,7 +143,7 @@ const Destination = () => {
                                         onClick={() => {
                                             if (userId) {
                                                 queryClient.invalidateQueries({
-                                                    queryKey: ['destinations', userId]
+                                                    queryKey: ['destination', userId]
                                                 });
                                             }
                                         }}
@@ -152,16 +156,22 @@ const Destination = () => {
                         </Card>
                     ) : filteredDestinations && filteredDestinations.length > 0 ? (
                         // Destinations list
-                        filteredDestinations.map((dest) => (
+                        filteredDestinations.map((destination) => (
                             <SingleDestination
-                                key={dest.id || dest._id}
-                                destinationId={dest.id || dest._id}
+                                key={destination._id}
+                                destinationId={destination._id}
                                 onUpdate={() => {
-                                    if (userId) {
-                                        queryClient.invalidateQueries({
-                                            queryKey: ['destinations', userId]
-                                        });
-                                    }
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['destination', userId]
+                                    });
+                                }}
+                                onDelete={() => {
+                                    // Invalidate and refetch
+                                    queryClient.refetchQueries({
+                                        queryKey: ['destination', userId],
+                                        exact: false
+                                    });
+                                    // Return nothing as this is just a callback
                                 }}
                             />
                         ))

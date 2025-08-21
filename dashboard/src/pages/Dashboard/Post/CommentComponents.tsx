@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/userDefinedComponents/Avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -243,10 +243,11 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
     return (
         <Card className={`mb-4 ${depth > 0 ? "ml-6" : ""}`}>
             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                <Avatar>
-                    <AvatarImage src="https://res.cloudinary.com/dmokg80lf/image/upload/v1726538695/main/tour-cover/fhuxaelnqttkmouqwvhg.jpg" alt="" />
-                    <AvatarFallback>{comment.user?.name?.charAt(0) || "U"}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                    userId={comment.user?._id}
+                    size="sm"
+                    alt={comment.user?.name || 'User avatar'}
+                />
                 <div>
                     <h3 className="font-semibold">{comment.user?.name || "Anonymous"}</h3>
                     <p className="text-sm text-muted-foreground">{timeAgo(new Date(comment.created_at))}</p>
@@ -303,9 +304,9 @@ const CommentComponent = ({ comment: initialComment, depth = 0, onRemove, isAdmi
             )}
             {comment.replies && comment.replies.length > 0 && (
                 <div className="px-4 pb-4">
-                    {comment.replies.map((reply) => (
+                    {comment.replies.map((reply, index) => (
                         <CommentComponent
-                            key={reply._id}
+                            key={reply?._id ?? `${comment?._id ?? 'comment'}-depth-${depth + 1}-idx-${index}`}
                             comment={reply}
                             depth={depth + 1}
                             onRemove={onRemove}
@@ -329,8 +330,7 @@ export function CommentsSection() {
         enabled: !!actualPostId,
     })
 
-    const handleRemoveComment = (commentId: string) => {
-        // This would typically call a delete mutation
+    const handleRemoveComment = () => {
         toast({
             title: "Comment removed",
             description: "The comment has been removed",
@@ -355,7 +355,7 @@ export function CommentsSection() {
                 <CommentComponent
                     key={comment._id}
                     comment={comment}
-                    onRemove={handleRemoveComment}
+                    onRemove={() => handleRemoveComment()}
                     isAdmin={true}
                     postId={actualPostId}
                 />

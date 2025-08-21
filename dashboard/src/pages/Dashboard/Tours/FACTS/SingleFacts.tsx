@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { getSingleFacts, updateFacts } from "@/http";
-import { FactData } from "@/Provider/types";
 import Icon from "@/userDefinedComponents/Icon";
 import { InputTags } from "@/userDefinedComponents/InputTags";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,8 +25,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getUserId } from "@/util/authUtils";
 
-// Extended interface for FactData to include id and handle value type variations
-interface FactDataWithId extends FactData {
+// Custom interface for fact data with flexible value types
+interface FactDataWithId {
+    name: string;
+    title?: string;
+    field_type?: string;
+    label: string;
+    icon?: string;
     id?: string;
     _id?: string;
     value: string[] | string | { label: string; value: string }[];
@@ -54,6 +58,7 @@ const SingleFact = memo(({
     const [valuesTag, setValuesTag] = useState<string[]>([]);
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     // Get user ID for cache invalidation
     const userId = getUserId();
@@ -74,19 +79,35 @@ const SingleFact = memo(({
     // Memoize initial form setup to avoid expensive operations
     const setupFormFromFact = useCallback((factData: FactDataWithId) => {
         form.setValue('name', factData.name);
-        form.setValue('field_type', factData.field_type);
+        form.setValue('field_type', factData.field_type || '');
         form.setValue('icon', factData.icon || '');
 
         // Handle fact values (tags for Single/Multi Select)
         let parsedValues: string[] = [];
 
         if (Array.isArray(factData.value)) {
-            parsedValues = [...factData.value];
+            // Map any object values to strings
+            parsedValues = factData.value.map(item => {
+                if (typeof item === 'string') {
+                    return item;
+                } else if (typeof item === 'object' && item !== null && 'value' in item) {
+                    return item.value; // Extract the value property from objects
+                }
+                return ''; // Fallback
+            });
         } else if (typeof factData.value === 'string') {
             try {
                 const parsed = JSON.parse(factData.value);
                 if (Array.isArray(parsed)) {
-                    parsedValues = parsed;
+                    // Also handle potential objects in the parsed array
+                    parsedValues = parsed.map(item => {
+                        if (typeof item === 'string') {
+                            return item;
+                        } else if (typeof item === 'object' && item !== null && 'value' in item) {
+                            return item.value;
+                        }
+                        return '';
+                    });
                 }
             } catch (e) {
                 // Silent error - use empty array
@@ -224,11 +245,29 @@ const SingleFact = memo(({
         }
     }, [fieldType, form, selectedIcon, updateFactMutation, valuesTag]);
 
-    const handleDeleteFact = useCallback((factId: string) => {
-        if (DeleteFact && factId) {
-            DeleteFact(factId);
+    const handleDeleteFact = useCallback(() => {
+        // Open the confirmation dialog instead of deleting immediately
+        setDeleteDialogOpen(true);
+    }, []);  // No dependencies needed
+    
+    // This function is called when the user confirms deletion in the dialog
+    const confirmDeleteFact = useCallback(() => {
+        if (DeleteFact && (fact?.id || fact?._id)) {
+            DeleteFact(fact.id || fact._id as string);
+            setDeleteDialogOpen(false);
+            toast({
+                title: "Fact deleted",
+                description: "The fact has been deleted successfully."
+            });
+        } else {
+            toast({
+                title: "Error",
+                description: "Could not delete the fact. Please try again.",
+                variant: "destructive"
+            });
+            setDeleteDialogOpen(false);
         }
-    }, [DeleteFact]);
+    }, [DeleteFact, fact]);
 
     const handleEditClick = useCallback(() => {
         enterEditMode();
@@ -248,12 +287,28 @@ const SingleFact = memo(({
             let parsedValues: string[] = [];
 
             if (Array.isArray(fact.value)) {
-                parsedValues = fact.value;
+                // Map any object values to strings
+                parsedValues = fact.value.map(item => {
+                    if (typeof item === 'string') {
+                        return item;
+                    } else if (typeof item === 'object' && item !== null && 'value' in item) {
+                        return item.value; // Extract the value property
+                    }
+                    return ''; // Fallback
+                });
             } else if (typeof fact.value === 'string') {
                 try {
                     const parsed = JSON.parse(fact.value);
                     if (Array.isArray(parsed)) {
-                        parsedValues = parsed;
+                        // Also handle potential objects in the parsed array
+                        parsedValues = parsed.map(item => {
+                            if (typeof item === 'string') {
+                                return item;
+                            } else if (typeof item === 'object' && item !== null && 'value' in item) {
+                                return item.value;
+                            }
+                            return '';
+                        });
                     }
                 } catch (e) {
                     // Silent error - use empty array
@@ -537,7 +592,7 @@ const SingleFact = memo(({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => fact?.id && handleDeleteFact(fact?.id)}
+                                    onClick={() => handleDeleteFact()}
                                     className="text-muted-foreground hover:text-destructive gap-1.5"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -548,6 +603,32 @@ const SingleFact = memo(({
                     </CardFooter>
                 </Card>
             </form>
+            {/* Delete confirmation dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this fact? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDeleteFact}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Form>
     );
 });

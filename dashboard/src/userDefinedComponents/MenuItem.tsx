@@ -1,169 +1,180 @@
-import { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { getUnapprovedCommentsCount } from '@/http';
-import { useQuery } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/badge';
+"use client"
 
-const MenuItem = ({ item, navCollapse }: { item: MenuItemType, navCollapse: boolean }) => {
-  const location = useLocation(); // Hook to get current location
-  const [isOpen, setIsOpen] = useState(localStorage.getItem(`menu-${item.id}`) === 'true');
+import type React from "react"
 
-  useEffect(() => {
-    localStorage.setItem(`menu-${item.id}`, isOpen.toString()); // Store isOpen state in localStorage
-  }, [isOpen, item.id]);
+import { useState, useEffect } from "react"
+import { Link, useLocation } from "react-router-dom"
+import { ChevronDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  SidebarMenuBadge,
+} from "@/components/ui/sidebar"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
-  const toggleChildren = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent the link from navigating when the toggle button is clicked
-    setIsOpen(!isOpen);
-  };
-
-  // Function to determine if NavLink is active
-  const isActive = (url: string) => location.pathname === url;
-
-  const { data: commentNumber, isLoading, isError } = useQuery({
-    queryKey: ['commentsUnapproved'],
-    queryFn: getUnapprovedCommentsCount,
-    staleTime: 10000, // in Milliseconds
-  });
-  return (
-    <div className={`menu-item`}>
-
-      {
-        navCollapse ?
-
-          <TooltipProvider>
-
-
-            {item.children ? (
-              <div
-                onClick={toggleChildren}
-                className={`flex relative items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted' : ''}`}
-              >
-                <Tooltip>
-                  <TooltipTrigger>
-
-                    {<item.icon />}
-                    <span className="menu-title">{!navCollapse ? item.title : ''}</span>
-                    <span className="ml-auto absolute top-2 right-1">
-                      {item.children && isOpen ? <ChevronUp /> : <ChevronDown />}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{item.title}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-              </div>
-            ) : (
-              <NavLink
-                to={item.url || ''}
-                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted text-primary hover:bg-muted' : ''}`}
-              >
-                <Tooltip>
-                  <TooltipTrigger>
-                    {<item.icon />}
-                    {
-                      <span className="menu-title child">{!navCollapse ? item.title : ''}
-                      </span>
-                    }
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{item.title}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </NavLink>
-            )
-            }
-            {
-              item.children && isOpen && (
-                <div className={`${navCollapse ? 'menu-children shadow-inherit pl-1 text-xs border-l-2' : 'menu-children shadow-inherit pl-3 text-xs'}`}>
-
-                  {item.children.map((child) => (
-                    <MenuItem navCollapse={navCollapse} key={child.id} item={child} />
-                  ))}
-
-
-                </div>
-              )
-            }
-
-          </TooltipProvider>
-          :
-
-          <TooltipProvider>
-
-
-            {item.children ? (
-              <div
-                onClick={toggleChildren}
-                className={`flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isOpen ? 'open bg-muted text-primary hover:bg-muted' : ''}`}
-              >
-
-
-                {<item.icon />}
-                <span className="menu-title">{!navCollapse ? item.title : ''}</span>
-                {item.children && isOpen ? (
-                  <span className="ml-auto">
-                    {!navCollapse ? <ChevronUp /> : ''}
-
-                  </span>
-                ) : (
-                  <span className="ml-auto">
-                    {!navCollapse ? <ChevronDown /> : ''}
-
-                  </span>
-                )}
-
-
-              </div>
-            ) : (
-              <NavLink
-                to={item.url || ''}
-                className={`flex items-center gap-3 my-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive(item.url || '') ? 'bg-muted text-primary hover:bg-muted' : ''}`}
-              >
-
-                {<item.icon />}
-                {
-                  <span className="menu-title child">{!navCollapse ? item.title : ''}
-
-                    {
-                      item.id === 'comments' && commentNumber?.data?.unapprovedCount > 0 && <Badge className="ml-2">{commentNumber?.data?.unapprovedCount}</Badge>
-                    }
-
-
-                  </span>
-
-                }
-              </NavLink>
-            )
-            }
-            {
-              item.children && isOpen && (
-                <div className={`${navCollapse ? 'menu-children shadow-inherit pl-1 text-xs border-l-2' : 'menu-children shadow-inherit pl-3 text-xs'}`}>
-                  {item.children.map((child) => (
-                    <MenuItem navCollapse={navCollapse} key={child.id} item={child} />
-                  ))}
-                </div>
-              )
-            }
-
-
-          </TooltipProvider>
-      }
-
-
-
-    </div >
-  );
-};
-
-interface MenuItemType {
-  id: string;
-  title: string;
-  url?: string;
-  icon: React.ComponentType;
-  children?: MenuItemType[];
+interface SidebarNavItemProps {
+  item: {
+    id: string
+    title: string
+    url?: string
+    icon: React.ComponentType<{ className?: string }>
+    children?: Array<{
+      id: string
+      title: string
+      url?: string
+      icon?: React.ComponentType<{ className?: string }>
+    }>
+  }
+  isCollapsed: boolean
+  badge?: number
+  // level param removed as it's not being used
+  isActive?: boolean
 }
-export default MenuItem;
+
+export function SidebarNavItem({ item, isCollapsed, badge }: SidebarNavItemProps) {
+  const location = useLocation()
+  const [isOpen, setIsOpen] = useState(() => {
+    // Check if this item or any children are active
+    const isItemActive = item.url && location.pathname.startsWith(item.url)
+    const isChildActive = item.children?.some(child => child.url && location.pathname.startsWith(child.url))
+    return isItemActive || isChildActive
+  })
+
+  const hasChildren = item.children && item.children.length > 0
+  const ItemIcon = item.icon
+
+  // Check if this item or any of its children are active
+  const isItemActive = item.url && location.pathname.startsWith(item.url)
+  const isChildActive = hasChildren && item.children?.some(child => child.url && location.pathname.startsWith(child.url))
+  const isActive = isItemActive || isChildActive
+
+  // If a child becomes active, open the parent
+  useEffect(() => {
+    if (isChildActive && !isOpen) {
+      setIsOpen(true)
+    }
+  }, [isChildActive, isOpen])
+
+  if (hasChildren) {
+    if (isCollapsed) {
+      // Collapsed: show popover on icon click
+      return (
+        <SidebarMenuItem className="hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300">
+          <Popover>
+            <PopoverTrigger asChild>
+              <SidebarMenuButton isActive={isActive} tooltip={item.title} className="bg-blue-100/50 hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300 dark:bg-slate-800">
+                <ItemIcon className="h-4 w-4 mr-2 shrink-0" />
+              </SidebarMenuButton>
+            </PopoverTrigger>
+            <PopoverContent align="start" sideOffset={6} className="min-w-[180px] p-1">
+              <div className="flex flex-col">
+                {item.children?.map((child) => {
+                  const ChildIcon = child.icon || ItemIcon;
+                  const allToursUrl = item.children?.[0]?.url; // First child's URL
+                  const isActive = !!(child.url && (
+                    location.pathname === child.url ||
+                    (child.url !== allToursUrl && location.pathname.startsWith(child.url + "/"))
+                  ));
+                  return (
+                    <SidebarMenuSubButton
+                      asChild
+                      key={child.id}
+                      isActive={isActive}
+                      className="hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300"
+                    >
+                      <Link to={child.url || "#"} className="flex items-center gap-2 px-2 py-1 rounded bg-blue-100/30 hover:bg-emerald-500/10 dark:bg-slate-800/50">
+                        <ChildIcon className="h-4 w-4 mr-2 shrink-0" />
+
+                        <span className="whitespace-nowrap">{child.title}</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </SidebarMenuItem >
+      );
+    } else {
+      // Expanded: keep accordion/collapsible
+      return (
+        <SidebarMenuItem>
+          <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton
+                isActive={isActive}
+                tooltip={undefined}
+                aria-expanded={isOpen}
+                aria-controls={`submenu-${item.id}`}
+                className="hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300"
+              >
+                <ItemIcon className="h-4 w-4 mr-2 shrink-0" />
+                <span className={cn(
+                  "transition-all duration-300",
+                  isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+                )}>
+                  {item.title}
+                </span>
+                <ChevronDown
+                  className={cn("h-4 w-4 ml-auto shrink-0 transition-transform duration-200", isOpen && "rotate-180")}
+                />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent id={`submenu-${item.id}`}>
+              <SidebarMenuSub>
+                {item.children?.map((child) => {
+                  const ChildIcon = child.icon || ItemIcon;
+                  const isActive = !!(child.url && (
+                    location.pathname === child.url ||
+                    (child.url !== item.children?.[0]?.url && location.pathname.startsWith(child.url + "/"))
+                  ));
+                  return (
+                    <SidebarMenuSubItem key={child.id}>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={isActive}
+                        className="bg-blue-100/30 hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300 dark:bg-slate-800/50"
+                      >
+                        <Link to={child.url || "#"}>
+                          <ChildIcon className="h-3.5 w-3.5 mr-2 shrink-0" />
+                          <span>{child.title}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  );
+                })}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarMenuItem>
+      );
+    }
+  }
+
+  return (
+    <SidebarMenuItem className="hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300">
+      <SidebarMenuButton
+        asChild
+        className="w-full bg-blue-100/50 hover:bg-emerald-500/10 hover:text-emerald-400 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-300 dark:bg-slate-800"
+        isActive={!!isActive}
+        tooltip={isCollapsed ? item.title : undefined}
+      >
+        <Link to={item.url || "#"}>
+          <ItemIcon className="h-4 w-4 mr-2 shrink-0" />
+          <span className={cn(
+            "transition-all duration-300",
+            isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+          )}>
+            {item.title}
+          </span>
+          {badge !== undefined && badge > 0 ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}

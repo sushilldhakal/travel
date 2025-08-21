@@ -34,11 +34,13 @@ import GalleryPage from "@/pages/Dashboard/Gallery/GalleryPage";
 import CustomEditorCommandItem from "./CustomEditorCommandItem";
 const extensions = [...defaultExtensions, slashCommand];
 interface EditorProps {
-  initialValue: JSONContent;
+  initialValue: JSONContent | null;
   onContentChange: (content: JSONContent) => void;
 }
 const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
-  const [initialContent, setInitialContent] = useState<JSONContent | undefined>(initialValue);
+  const [initialContent, setInitialContent] = useState<JSONContent | undefined>(
+    initialValue && Object.keys(initialValue).length > 0 ? initialValue : undefined
+  );
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [charsCount, setCharsCount] = useState<number | undefined>();
   const [openNode, setOpenNode] = useState(false);
@@ -49,7 +51,8 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
 
-  const handleImageSelect = (imageUrl: string) => {
+  const handleImageSelect = (image: string | string[] | null) => {
+    const imageUrl = Array.isArray(image) ? image[0] : image || "";
     if (editorInstance) {
       const { schema, view } = editorInstance;
       const { dispatch, state } = view;
@@ -73,7 +76,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
   const highlightCodeblocks = (content: string) => {
     const doc = new DOMParser().parseFromString(content, 'text/html');
     doc.querySelectorAll('pre code').forEach((el) => {
-      // @ts-ignore
+      // @ts-expect-error highlight.js expects HTMLElement
       hljs.highlightElement(el);
     });
     return new XMLSerializer().serializeToString(doc);
@@ -90,8 +93,10 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
   }, 500);
 
   useEffect(() => {
-    if (initialValue) {
+    if (initialValue && Object.keys(initialValue).length > 0) {
       setInitialContent(initialValue);
+    } else {
+      setInitialContent(undefined);
     }
   }, [initialValue]);
 
@@ -104,105 +109,98 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
           {charsCount} Words
         </div>
       </div>
-      <EditorRoot>
-        {initialContent ? (
-
-          <EditorContent
-            initialContent={initialContent}
-            extensions={extensions}
-            className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-screen-xl border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
-            editorProps={{
-              handleDOMEvents: {
-                keydown: (_view, event) => handleCommandNavigation(event),
-              },
-              handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
-              handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
-              attributes: {
-                class:
-                  "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
-              },
-            }}
-            onUpdate={({ editor }) => {
-              debouncedUpdates(editor);
-              setSaveStatus("Unsaved");
-            }}
-            slotAfter={<ImageResizer />}
-          >
-            <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
-              <EditorCommandEmpty className="px-2 text-muted-foreground">No results</EditorCommandEmpty>
-              <EditorCommandList>
-                {suggestionItems.map((item) => (
-                  <CustomEditorCommandItem
-                    key={item.title}
-                    value={item.title}
-                    onCommand={({ editor, range }) => {
-                      if (item.command) {
-                        item.command({ editor, range });
-                      }
-                    }}
-                    onEnterPress={() => {
-                      if (item.title === "Gallery Image") {
-                        setDialogOpen(true); // Open the dialog when Enter is pressed
-                      }
-                    }}
-                    className="flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent aria-selected:bg-accent"
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-background">
-                      {item.icon}
-                    </div>
-                    <div>
-                      {
-                        item.title === "Gallery Image" ? (
-                          <>
-                            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                              <DialogTrigger><p className="font-medium text-left">{item.title}</p>
-                                <p className="text-xs text-muted-foreground">{item.description}</p></DialogTrigger>
-                              <DialogContent className="z-[99999] asDialog max-w-[90%] max-h-[90%] overflow-auto"
-                                onInteractOutside={(e) => {
-                                  e.preventDefault();
-                                }}
-                              >
-                                <DialogHeader >
-                                  <DialogTitle className="mb-3">Choose Image From Gallery</DialogTitle>
-                                  <div className="upload dialog">
-                                    <GalleryPage isGalleryPage={false} onImageSelect={handleImageSelect} />
-                                  </div>
-                                </DialogHeader>
-                              </DialogContent>
-                            </Dialog>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              <p className="font-medium">{item.title}</p>
-                              <p className="text-xs text-muted-foreground">{item.description}</p>
-                            </span>
-
-                          </>
-                        )
-
-                      }
-                    </div>
-                  </CustomEditorCommandItem>
-                ))}
-              </EditorCommandList>
-            </EditorCommand>
-            <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
-              <Separator orientation="vertical" />
-              <NodeSelector open={openNode} onOpenChange={setOpenNode} />
-              <Separator orientation="vertical" />
-
-              <LinkSelector open={openLink} onOpenChange={setOpenLink} />
-              <Separator orientation="vertical" />
-              <MathSelector />
-              <Separator orientation="vertical" />
-              <TextButtons />
-              <Separator orientation="vertical" />
-              <ColorSelector open={openColor} onOpenChange={setOpenColor} />
-            </GenerativeMenuSwitch>
-          </EditorContent>) : (
-          <p>Loading editor...</p>
-        )}
+      <EditorRoot key={initialValue ? JSON.stringify(initialValue).length : 'empty'}>
+        <EditorContent
+          initialContent={initialContent || undefined}
+          extensions={extensions}
+          className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-screen-xl border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
+          editorProps={{
+            handleDOMEvents: {
+              keydown: (_view, event) => handleCommandNavigation(event),
+            },
+            handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
+            handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
+            attributes: {
+              class:
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+            },
+          }}
+          onUpdate={({ editor }: { editor: EditorInstance }) => {
+            debouncedUpdates(editor);
+            setSaveStatus("Unsaved");
+          }}
+          slotAfter={<ImageResizer />}
+        >
+          <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
+            <EditorCommandEmpty className="px-2 text-muted-foreground">No results</EditorCommandEmpty>
+            <EditorCommandList>
+              {suggestionItems.map((item) => (
+                <CustomEditorCommandItem
+                  key={item.title}
+                  value={item.title}
+                  onCommand={({ editor, range }) => {
+                    if (item.command) {
+                      item.command({ editor, range });
+                    }
+                  }}
+                  onEnterPress={() => {
+                    if (item.title === "Gallery Image") {
+                      setDialogOpen(true); // Open the dialog when Enter is pressed
+                    }
+                  }}
+                  className="flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent aria-selected:bg-accent"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-background">
+                    {item.icon}
+                  </div>
+                  <div>
+                    {
+                      item.title === "Gallery Image" ? (
+                        <>
+                          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                            <DialogTrigger><p className="font-medium text-left">{item.title}</p>
+                              <p className="text-xs text-muted-foreground">{item.description}</p></DialogTrigger>
+                            <DialogContent className="z-[99999] asDialog max-w-[90%] max-h-[90%] overflow-auto"
+                              onInteractOutside={(e) => {
+                                e.preventDefault();
+                              }}
+                            >
+                              <DialogHeader >
+                                <DialogTitle className="mb-3">Choose Image From Gallery</DialogTitle>
+                                <div className="upload dialog">
+                                  <GalleryPage isGalleryPage={false} onImageSelect={handleImageSelect} />
+                                </div>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            <p className="font-medium">{item.title}</p>
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          </span>
+                        </>
+                      )
+                    }
+                  </div>
+                </CustomEditorCommandItem>
+              ))}
+            </EditorCommandList>
+          </EditorCommand>
+          <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
+            <Separator orientation="vertical" />
+            <NodeSelector open={openNode} onOpenChange={setOpenNode} />
+            <Separator orientation="vertical" />
+            <LinkSelector open={openLink} onOpenChange={setOpenLink} />
+            <Separator orientation="vertical" />
+            <MathSelector />
+            <Separator orientation="vertical" />
+            <TextButtons />
+            <Separator orientation="vertical" />
+            <ColorSelector open={openColor} onOpenChange={setOpenColor} />
+          </GenerativeMenuSwitch>
+        </EditorContent>
 
       </EditorRoot>
     </div>

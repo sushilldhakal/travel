@@ -1,55 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
 import { FactData } from '@/Provider/types';
 import { Plus, Info, Trash2, FileText, Award, Clock, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MultiSelect } from '@/components/ui/MultiSelect';
+import { useTourForm } from '@/Provider/hooks/useTourContext';
+import { useFacts } from '../FACTS/useFacts';
+import { getUserId } from '@/util/authUtils';
+import Icon from '@/userDefinedComponents/Icon';
 
-// Define the shape of a fact field in the form
-interface FactField {
-    title: string;
-    field_type: 'Plain Text' | 'Single Select' | 'Multi Select';
-    value: string[] | Array<{ label: string; value: string }>;
-    icon: string;
-}
 
-// Define the shape of the form values
-interface TourFormValues {
-    facts: FactField[];
-    // Add other form fields as needed
-    [key: string]: unknown; // Use unknown instead of any for better type safety
-}
-
-interface TourFactsProps {
-    form: UseFormReturn<TourFormValues>;
-    factsFields: FactField[];
-    factsAppend: (value: Partial<FactField>) => void;
-    factsRemove: (index: number) => void;
-    facts: FactData[];
-    watchedFacts: FactField[];
-}
-
-const TourFacts: React.FC<TourFactsProps> = ({
-    form,
-    factsFields,
-    factsAppend,
-    factsRemove,
-    facts,
-    watchedFacts
-}) => {
+const TourFacts = () => {
     // State to keep track of selected facts for each row
     const [selectedFact, setSelectedFact] = useState<Record<number, FactData | undefined>>({});
+
+    const { form, factsAppend, factsRemove, factsFields } = useTourForm();
+    const watchedFacts = form.watch('facts');
+    const userId = getUserId();
+    const { data: facts } = useFacts(userId);
+
+    // Auto-populate selectedFact state when facts are loaded during edit mode
+    useMemo(() => {
+        if (Array.isArray(watchedFacts) && Array.isArray(facts) && facts.length > 0 && watchedFacts.length > 0) {
+            const newSelectedFacts: Record<number, FactData | undefined> = {};
+
+            watchedFacts.forEach((watchedFact, index) => {
+                if (watchedFact?.title) {
+                    // Try exact match first
+                    let foundFact = facts.find((f) => f.name === watchedFact.title);
+
+                    // If no exact match, try removing the suffix (e.g., "Tour Availability-10" -> "Tour Availability")
+                    if (!foundFact && watchedFact.title && watchedFact.title.includes('-')) {
+                        const baseName = watchedFact.title.split('-').slice(0, -1).join('-');
+                        foundFact = facts.find((f) => f.name === baseName);
+                    }
+
+                    // If still no match, try partial match
+                    if (!foundFact && watchedFact.title) {
+                        foundFact = facts.find((f) =>
+                            f.name.toLowerCase().includes(watchedFact.title!.toLowerCase()) ||
+                            watchedFact.title!.toLowerCase().includes(f.name.toLowerCase())
+                        );
+                    }
+
+                    if (foundFact) {
+                        newSelectedFacts[index] = foundFact;
+                    }
+                }
+            });
+
+            // Only update if we found some facts to link and selectedFact is empty
+            if (Object.keys(newSelectedFacts).length > 0 && Object.keys(selectedFact).length === 0) {
+                setSelectedFact(newSelectedFacts);
+            }
+        }
+        return null;
+    }, [watchedFacts, facts, selectedFact]);
+
+
+
     // Helper function to get an icon for a fact
-    const getFactIcon = (index: number) => {
-        // Make sure watchedFacts exists and has the item at index
-        const iconName = Array.isArray(watchedFacts) && watchedFacts[index]?.icon || '';
+    const getFactIcon = (fact: any) => {
+        const iconName = fact?.icon || '';
         switch (iconName) {
             case 'clock':
                 return <Clock className="h-4 w-4" />;
@@ -107,9 +125,9 @@ const TourFacts: React.FC<TourFactsProps> = ({
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-2"
-                        onClick={() => factsAppend({
+                        onClick={() => factsAppend?.({
                             title: '',
-                            value: [''],
+                            value: '',
                             field_type: 'Plain Text',
                             icon: ''
                         })}
@@ -119,11 +137,21 @@ const TourFacts: React.FC<TourFactsProps> = ({
                     </Button>
                 </div>
 
-                {Array.isArray(factsFields) && factsFields.length > 0 ? (
+                {/* Show facts if we have watchedFacts (edit mode) or factsFields (create mode) */}
+                {((Array.isArray(watchedFacts) && watchedFacts.length > 0) || (Array.isArray(factsFields) && factsFields.length > 0)) ? (
                     <div className="space-y-4">
-                        {factsFields.map((field, index) => {
-                            // Check if the fact has actual content
-                            const hasFact = Array.isArray(watchedFacts) && watchedFacts[index]?.title;
+                        {/* Use watchedFacts in edit mode, factsFields in create mode */}
+                        {(Array.isArray(watchedFacts) && watchedFacts.length > 0 ? watchedFacts : (factsFields || []))?.map((field, index) => {
+                            // Check if the fact has actual content - check for title, field_type, or value
+                            const currentFact = Array.isArray(watchedFacts) ? watchedFacts[index] : null;
+                            const hasFact = currentFact && (
+                                currentFact.title ||
+                                currentFact.field_type ||
+                                (currentFact.value && (
+                                    (Array.isArray(currentFact.value) && currentFact.value.length > 0) ||
+                                    (typeof currentFact.value === 'string' && currentFact.value.trim() !== '')
+                                ))
+                            );
 
                             return (
                                 <Card key={`fact-card-${index}`} className={cn(
@@ -138,10 +166,14 @@ const TourFacts: React.FC<TourFactsProps> = ({
                                                     <div className="flex items-center space-x-3 w-full">
                                                         <Badge variant="default"
                                                             className="rounded-md h-7 w-7 p-0 flex items-center justify-center font-medium">
-                                                            {getFactIcon(index)}
+                                                            {/* {getFactIcon(currentFact)} */}
+
+                                                            <div className="flex-shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                                                <Icon name={currentFact.icon || ''} size={20} />
+                                                            </div>
                                                         </Badge>
                                                         <div className="flex-1 font-medium text-base">
-                                                            {watchedFacts[index]?.title || `Fact ${index + 1}`}
+                                                            {currentFact?.title || `Fact ${index + 1}`}
                                                         </div>
                                                         <div
                                                             role="button"
@@ -154,7 +186,7 @@ const TourFacts: React.FC<TourFactsProps> = ({
                                                                     delete updated[index];
                                                                     return updated;
                                                                 });
-                                                                factsRemove(index);
+                                                                factsRemove?.(index);
                                                             }}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' || e.key === ' ') {
@@ -165,7 +197,7 @@ const TourFacts: React.FC<TourFactsProps> = ({
                                                                         delete updated[index];
                                                                         return updated;
                                                                     });
-                                                                    factsRemove(index);
+                                                                    factsRemove?.(index);
                                                                 }
                                                             }}
                                                             className="ml-auto h-8 w-8 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
@@ -245,7 +277,7 @@ const TourFacts: React.FC<TourFactsProps> = ({
                                                             )}
                                                         />
 
-                                                        {/* Value field - changes based on field type */}
+
                                                         {selectedFact && Array.isArray(watchedFacts) && watchedFacts[index]?.field_type === 'Plain Text' && (
                                                             <FormField
                                                                 control={form.control}
@@ -447,12 +479,12 @@ const TourFacts: React.FC<TourFactsProps> = ({
                                                     tabIndex={0}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        factsRemove(index);
+                                                        factsRemove?.(index);
                                                     }}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.stopPropagation();
-                                                            factsRemove(index);
+                                                            factsRemove?.(index);
                                                         }
                                                     }}
                                                     className="h-10 w-10 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
@@ -478,9 +510,9 @@ const TourFacts: React.FC<TourFactsProps> = ({
                         <p className="text-muted-foreground mb-5 max-w-md">Add important details about your tour such as duration, group size, accommodations, etc.</p>
                         <Button
                             type="button"
-                            onClick={() => factsAppend({
+                            onClick={() => factsAppend?.({
                                 title: '',
-                                value: [''],
+                                value: '',
                                 field_type: 'Plain Text' as 'Plain Text' | 'Single Select' | 'Multi Select',
                                 icon: ''
                             })}

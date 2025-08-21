@@ -1,6 +1,6 @@
 import { getUsers } from '@/http';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Users, Mail, Calendar, Search, UserCog } from "lucide-react"
+import { Users, Mail, Calendar, Search, UserCog, AlertCircle, RefreshCw, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
@@ -21,7 +21,7 @@ interface UserData {
   roles: string;
   phone?: string;
   createdAt: string;
-  avatarUrl?: string;
+  avatar?: string;
 }
 
 const UserPage = () => {
@@ -35,7 +35,7 @@ const UserPage = () => {
 
   // Set up breadcrumbs
   const { updateBreadcrumbs } = useBreadcrumbs();
-  
+
   useEffect(() => {
     const breadcrumbs: Breadcrumb[] = [
       { label: 'Dashboard', href: '/dashboard', type: 'link' },
@@ -61,12 +61,14 @@ const UserPage = () => {
     }
   }, [data, userId, userRole]);
 
+  console.log("filter data user ", filteredData)
+
   // Search functionality
   useEffect(() => {
     if (searchTerm) {
       const filtered = tableData.filter(
-        (user) => 
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.roles.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -78,7 +80,7 @@ const UserPage = () => {
 
   // Helper function to get badge color based on role
   const getRoleBadgeVariant = (role: string) => {
-    switch(role.toLowerCase()) {
+    switch (role.toLowerCase()) {
       case 'admin':
         return 'destructive';
       case 'seller':
@@ -113,55 +115,66 @@ const UserPage = () => {
   // Render content based on loading/error state
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <Card key={item} className="overflow-hidden">
-              <CardHeader className="p-6">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[150px]" />
-                    <Skeleton className="h-3 w-[100px]" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-4">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-              <CardFooter className="p-6 pt-0 flex items-center justify-between">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-24" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Users
+            </CardTitle>
+            <CardDescription>
+              Loading user profiles...
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <Card key={item} className="overflow-hidden">
+                  <CardHeader className="p-6">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-[150px]" />
+                        <Skeleton className="h-3 w-[100px]" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0 space-y-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </CardContent>
+                  <CardFooter className="p-6 pt-0 flex items-center justify-between">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-8 w-24" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="container mx-auto py-10">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Users</CardTitle>
-            <CardDescription>
-              There was a problem loading the user data. Please try again later.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>The server might be unavailable or there might be a network issue.</p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={() => window.location.reload()}>
-              Retry
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Users</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              We encountered an error while fetching user data. Please try again.
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
             </Button>
-          </CardFooter>
+          </CardContent>
         </Card>
       </div>
     );
@@ -170,52 +183,50 @@ const UserPage = () => {
   // Show empty state if no data
   if (filteredData.length === 0) {
     return (
-      <div className="container mx-auto py-10">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          {userRole === 'admin' && (
-            <Button asChild>
-              <Link to="/dashboard/users/add">
-                <Plus className="h-4 w-4 mr-2" />
-                Add User
-              </Link>
-            </Button>
-          )}
-        </div>
-
-        <Card className="text-center p-10">
+      <div className="container mx-auto py-6">
+        <Card>
           <CardHeader>
-            <div className="mx-auto bg-muted rounded-full p-3 w-12 h-12 flex items-center justify-center">
-              <Users className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle className="mt-4">No Users Found</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Users {searchTerm && `(Search: "${searchTerm}")`}
+            </CardTitle>
             <CardDescription>
-              {searchTerm 
-                ? "No users match your search criteria." 
-                : "There are no users in the system yet."}
+              {searchTerm
+                ? "No users match your search criteria"
+                : "Manage user accounts and permissions"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {searchTerm ? (
-              <Button 
-                variant="outline" 
-                onClick={() => setSearchTerm('')}
-                className="mt-2"
-              >
-                Clear Search
-              </Button>
-            ) : userRole === 'admin' ? (
-              <Button asChild className="mt-2">
-                <Link to="/dashboard/users/add">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First User
-                </Link>
-              </Button>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Contact an administrator to add users.
-              </p>
-            )}
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm ? "No Users Found" : "No Users Yet"}
+            </h3>
+            <p className="text-muted-foreground text-center mb-6">
+              {searchTerm
+                ? "Try adjusting your search terms or clear the search to see all users."
+                : userRole === 'admin'
+                  ? "Get started by adding your first user to the system."
+                  : "Contact an administrator to add users to the system."}
+            </p>
+            <div className="flex gap-2">
+              {searchTerm ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchTerm('')}
+                  className="flex items-center gap-2"
+                >
+                  <Search className="h-4 w-4" />
+                  Clear Search
+                </Button>
+              ) : userRole === 'admin' ? (
+                <Button asChild className="flex items-center gap-2">
+                  <Link to="/dashboard/users/add">
+                    <UserPlus className="h-4 w-4" />
+                    Add Your First User
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -224,82 +235,91 @@ const UserPage = () => {
 
   // Modern card view for desktop
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">
-            Manage {userRole === 'admin' ? 'all users' : 'your account'} of the system
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search users..."
-              className="pl-8 w-full sm:w-[250px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          {userRole === 'admin' && (
-            <Button asChild>
-              <Link to="/dashboard/users/add">
-                <Plus className="h-4 w-4 mr-2" />
-                Add User
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Modern Card Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredData.map((user) => (
-          <Card key={user._id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="p-6">
-              <div className="flex justify-between">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12 border">
-                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">{user.name}</CardTitle>
-                    <CardDescription className="text-sm flex items-center gap-1">
-                      <Mail className="h-3 w-3" /> {user.email}
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge variant={getRoleBadgeVariant(user.roles)}>
-                  {user.roles}
-                </Badge>
+    <div className="container mx-auto py-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Users className="h-6 w-6" />
+                Users ({filteredData.length})
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Manage {userRole === 'admin' ? 'all users' : 'your account'} of the system
+              </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search users..."
+                  className="[&&]:pl-[28px] w-full sm:w-[250px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            </CardHeader>
-            <CardContent className="p-6 pt-0">
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> Joined: {formatDate(user.createdAt)}
-              </div>
-              {user.phone && (
-                <p className="text-sm mt-1">Phone: {user.phone}</p>
+              {userRole === 'admin' && (
+                <Button asChild className="flex items-center gap-2">
+                  <Link to="/dashboard/users/add">
+                    <UserPlus className="h-4 w-4" />
+                    Add User
+                  </Link>
+                </Button>
               )}
-            </CardContent>
-            <CardFooter className="p-6 pt-0 flex justify-end">
-              <Button 
-                variant="outline"
-                size="sm"
-                asChild
-              >
-                <Link to={`/dashboard/users/${user._id}`}>
-                  <UserCog className="h-4 w-4 mr-2" />
-                  Manage User
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Modern Card Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredData.map((user) => (
+              <Card key={user._id} className="overflow-hidden hover:shadow-md transition-shadow border-muted">
+                <CardHeader className="p-6">
+                  <div className="flex justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12 border">
+                        <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-lg">{user.name}</CardTitle>
+                        <CardDescription className="text-sm flex items-center gap-1">
+                          <Mail className="h-3 w-3" /> {user.email}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant={getRoleBadgeVariant(user.roles)}>
+                      {user.roles}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-0">
+                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Joined: {formatDate(user.createdAt)}
+                  </div>
+                  {user.phone && (
+                    <p className="text-sm mt-1 text-muted-foreground">Phone: {user.phone}</p>
+                  )}
+                </CardContent>
+                <CardFooter className="p-6 pt-0 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex items-center gap-2"
+                  >
+                    <Link to={`/dashboard/users/${user._id}`}>
+                      <UserCog className="h-4 w-4" />
+                      Manage
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

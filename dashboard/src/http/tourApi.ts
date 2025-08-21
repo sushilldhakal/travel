@@ -63,12 +63,12 @@ export const getUsersTours = async (userId: string) => api.get(`/api/tours/user/
 
 export const getUserToursTitle = async (userId: string) => api.get(`/api/tours/user/${userId}/titles`);
 
-export const getLatestTours = async () => api.get('/api/tour/search/latest');
+export const getLatestTours = async () => api.get('/api/tours/latest');
 
 export const getSingleTour = async (tourId: string) => {
     try {
-        // Use the new specific endpoint for single tour
-        const response = await api.get(`/api/tours/single/${tourId}`);
+        // Use the refactored endpoint for single tour
+        const response = await api.get(`/api/tours/${tourId}`);
         // Handle both response structures
         // If response.data.tour exists, use that structure
         // Otherwise, assume the tour data is directly in response.data
@@ -99,9 +99,11 @@ export const createTour = async (data: FormData) => {
 };
 
 export const updateTour = async (tourId: string, data: FormData) => {
+    const token = useTokenStore.getState().token;
     return api.patch(`/api/tours/${tourId}`, data, {
+        // Let Axios set the correct multipart boundary automatically
         headers: {
-            'Content-Type': 'multipart/form-data',
+            Authorization: token ? `Bearer ${token}` : undefined,
         },
     });
 };

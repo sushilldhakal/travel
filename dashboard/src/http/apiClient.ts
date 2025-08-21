@@ -5,9 +5,6 @@ import useTokenStore from '@/store/store';
 export const api = axios.create({
     baseURL: import.meta.env.VITE_PUBLIC_BACKEND_URL || 'http://localhost:8000', // Use environment variable with fallback
     timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 // Request interceptor to add authorization token

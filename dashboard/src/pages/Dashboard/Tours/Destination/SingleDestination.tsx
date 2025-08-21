@@ -21,6 +21,7 @@ import { MultiSelect, SelectValue } from "@/components/ui/MultiSelect";
 interface SingleDestinationProps {
     destinationId: string;
     onUpdate: () => void;
+    onDelete?: () => void;  // Add this line
 }
 
 interface TourTitle {
@@ -32,17 +33,27 @@ interface TourObject {
     _id?: string;
     id?: string;
     title?: string;
-    [key: string]: any;
 }
 
-const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) => {
+interface DescriptionContent {
+    type?: string;
+    content?: Array<{
+        type?: string;
+        content?: Array<{
+            type?: string;
+            text?: string;
+        }>;
+    }>;
+}
+
+const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinationProps) => {
     const userId = getUserId();
     const queryClient = useQueryClient();
     const [isEditMode, setIsEditMode] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
-    const [descriptionContent, setDescriptionContent] = useState('');
-
+    const [descriptionContent, setDescriptionContent] = useState<DescriptionContent | string>('');
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const form = useForm({
         defaultValues: {
             name: '',
@@ -113,7 +124,9 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                 title: "Destination deleted",
                 description: "The destination has been deleted successfully.",
             });
+            setDeleteDialogOpen(false);
             onUpdate();
+            if (onDelete) onDelete();
         },
         onError: (error) => {
             toast({
@@ -183,18 +196,20 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
         formData.append('region', values.region);
         formData.append('city', values.city);
         // Compare featuredTours only if changed
-        const originalTours = destination.featuredTours || [];
+        const originalTours = Array.isArray(destination.featuredTours)
+            ? destination.featuredTours.map((tour: string) => typeof tour === 'string' ? tour : tour)
+            : [];
         const updatedTours = values.featuredTours || [];
 
-        const originalTourIds = originalTours.map(tour => tour.id); // Get only the ids
-        const updatedTourIds = updatedTours.map(tour => tour.id); // Get only the ids
+        const originalTourIds = originalTours.map((tour: string) => tour); // Get only the ids
+        const updatedTourIds = updatedTours.map((tour: string) => tour); // Get only the ids
 
         // Check if arrays of tour ids are different
         const areToursDifferent = originalTourIds.length !== updatedTourIds.length ||
-            !originalTourIds.every((tourId) => updatedTourIds.includes(tourId));
+            !originalTourIds.every((tourId: string) => updatedTourIds.includes(tourId));
 
         if (areToursDifferent) {
-            updatedTourIds.forEach((tourId) => {
+            updatedTourIds.forEach((tourId: string) => {
                 formData.append('featuredTours[]', tourId); // Append only the ids
             });
         }
@@ -358,8 +373,8 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                                     fieldValue = field.value;
                                                 }
                                                 // If fieldValue contains objects instead of strings, extract the IDs
-                                                if (fieldValue.length > 0 && typeof fieldValue[0] === 'object') {
-                                                    fieldValue = fieldValue.map((item: TourObject) => item._id || item.id || '');
+                                                if (fieldValue.length > 0 && fieldValue[0] && typeof fieldValue[0] === 'object') {
+                                                    fieldValue = (fieldValue as unknown as TourObject[]).map((item) => item._id || item.id || '');
                                                 }
                                             }
 
@@ -479,7 +494,7 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                                         <GalleryPage
                                                             isGalleryPage={false}
                                                             onImageSelect={(coverImage) =>
-                                                                handleImageSelect(coverImage, field.onChange)
+                                                                handleImageSelect(coverImage as string, field.onChange)
                                                             }
                                                         />
                                                     </div>
@@ -503,7 +518,9 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                                         <FormControl>
                                             <div className="border rounded-md">
                                                 <Editor
-                                                    initialValue={descriptionContent}
+                                                    initialValue={typeof descriptionContent === 'string'
+                                                        ? { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: descriptionContent }] }] }
+                                                        : descriptionContent}
                                                     onContentChange={(content) => {
                                                         setDescriptionContent(content);
                                                         // Extract text content for form submission
@@ -723,11 +740,7 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                         <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => {
-                                if (confirm('Are you sure you want to delete this destination?')) {
-                                    deleteMutation.mutate();
-                                }
-                            }}
+                            onClick={() => setDeleteDialogOpen(true)}
                             className="gap-1.5"
                         >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -752,6 +765,33 @@ const SingleDestination = ({ destinationId, onUpdate }: SingleDestinationProps) 
                         <div className="text-sm space-y-4 leading-relaxed">
                             {destination?.description || "No description provided"}
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this destination? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => deleteMutation.mutate()}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

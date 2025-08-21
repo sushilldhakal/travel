@@ -16,6 +16,7 @@ import UserPage from '@/pages/Dashboard/Users/UserPage';
 import AddUser from '@/pages/Dashboard/Users/AddUser';
 import Subscriber from '@/pages/Dashboard/Subscriber/Subscriber';
 import EditUser from '@/pages/Dashboard/Users/EditUser';
+import SellerApplications from '@/pages/Dashboard/Users/SellerApplications';
 import Home from '@/pages/FrontEnd/Home/Home';
 import TourPage from '@/pages/Dashboard/Tours/TourPage';
 import EditTour from '@/pages/Dashboard/Tours/EditTour';
@@ -25,6 +26,7 @@ import TourCategory from '@/pages/Dashboard/Tours/Category/TourCategory';
 import TourFacts from '@/pages/Dashboard/Tours/FACTS/Facts';
 import TourFaq from '@/pages/Dashboard/Tours/FAQ/Faq';
 import ReviewsManagement from '@/pages/Dashboard/Tours/Reviews';
+import TourEditorWrapper from '@/pages/Dashboard/Tours/TourEditorWrapper';
 import HomePage from '@/pages/Dashboard/HomePage';
 import Post from '@/pages/Dashboard/Post/Post';
 import EditPost from '@/pages/Dashboard/Post/EditPost';
@@ -196,7 +198,9 @@ const router = createBrowserRouter([
             path: routePaths.dashboard.singleTours,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <EditTour />
+                <TourEditorWrapper>
+                  <EditTour />
+                </TourEditorWrapper>
               </Suspense>
             ),
           },
@@ -204,7 +208,9 @@ const router = createBrowserRouter([
             path: routePaths.dashboard.addTour,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <AddTour />
+                <TourEditorWrapper>
+                  <AddTour />
+                </TourEditorWrapper>
               </Suspense>
             ),
           },
@@ -212,7 +218,9 @@ const router = createBrowserRouter([
             path: routePaths.dashboard.editTour,
             element: (
               <Suspense fallback={<div>Loading...</div>}>
-                <EditTour />
+                <TourEditorWrapper>
+                  <EditTour />
+                </TourEditorWrapper>
               </Suspense>
             ),
           },
@@ -302,6 +310,16 @@ const router = createBrowserRouter([
               <AdminRoute>
                 <Suspense fallback={<div>Loading...</div>}>
                   <AddUser />
+                </Suspense>
+              </AdminRoute>
+            ),
+          },
+          {
+            path: routePaths.dashboard.sellerApplications,
+            element: (
+              <AdminRoute>
+                <Suspense fallback={<div>Loading...</div>}>
+                  <SellerApplications />
                 </Suspense>
               </AdminRoute>
             ),

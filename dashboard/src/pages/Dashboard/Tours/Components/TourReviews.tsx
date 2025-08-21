@@ -1,13 +1,12 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import ReviewsManager from '@/userDefinedComponents/reviews/ReviewsManager';
 import { MessageSquare } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
-interface TourReviewsProps {
-    tourId: string | undefined;
-}
 
-const TourReviews: React.FC<TourReviewsProps> = ({ tourId }) => {
+
+const TourReviews = () => {
+    const tourId = useParams();
     return (
         <Card className="shadow-sm">
             <CardHeader className="bg-secondary border-b pb-6">
@@ -20,8 +19,8 @@ const TourReviews: React.FC<TourReviewsProps> = ({ tourId }) => {
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-                {tourId ? (
-                    <ReviewsManager tourId={tourId} />
+                {tourId.tourId ? (
+                    <ReviewsManager tourId={tourId.tourId} />
                 ) : (
                     <div className="flex flex-col items-center justify-center p-10 rounded-lg border-2 border-dashed border-border text-center bg-secondary">
                         <div className="bg-primary/10 p-3 rounded-full mb-3">

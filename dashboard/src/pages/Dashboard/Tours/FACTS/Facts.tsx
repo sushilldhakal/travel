@@ -30,7 +30,7 @@ const TourFacts = () => {
                 variant: 'default',
             });
             queryClient.invalidateQueries({
-                queryKey: ['facts', userId], // Match the query key used in useQuery
+                queryKey: ['Facts', userId], // Match the query key used in useQuery (with capital F)
             });
         } catch (error) {
             toast({
@@ -44,7 +44,7 @@ const TourFacts = () => {
     // Filter facts based on search query
     const filteredFacts = facts?.filter(fact =>
         fact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        fact.field_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (fact.field_type?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
         (Array.isArray(fact.value) && fact.value.some((val: string) =>
             val.toLowerCase().includes(searchQuery.toLowerCase())
         ))
@@ -86,10 +86,11 @@ const TourFacts = () => {
                         <AddFact
                             onFactAdded={() => {
                                 if (userId) {
-                                    queryClient.invalidateQueries(['facts', userId]);
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['Facts', userId]  // Capital 'F' to match useFacts.ts
+                                    });
                                     setIsAddFactOpen(false);
                                 }
-
                             }} />
                     </div>
                 )}
@@ -128,9 +129,9 @@ const TourFacts = () => {
                             </div>
                         ) : filteredFacts?.length ? (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredFacts.map((fact) => (
+                                {filteredFacts.map((fact, index) => (
                                     <SingleFact
-                                        key={fact.id}
+                                        key={`fact-${index}`} // Using index as a fallback key since _id might be missing
                                         fact={fact}
                                         DeleteFact={handleDeleteFacts}
                                     />

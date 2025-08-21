@@ -1,58 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
-import { FaqData } from '@/Provider/types';
 import { HelpCircle, Plus, Trash2, MessageCircle, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTourForm } from '@/Provider/hooks/useTourContext';
+import { FaqData } from '@/Provider/types';
+import { useFaq } from '../FAQ/useFaq';
+import { getUserId } from '@/util/authUtils';
+const TourFaqs = () => {
+    const { form, faqFields, faqAppend, faqRemove } = useTourForm();
 
-interface TourFaqsProps {
-    form: UseFormReturn<any>;
-    faqFields: any[];
-    faqAppend: (value: Partial<FaqData>) => void;
-    faqRemove: (index: number) => void;
-    faq: FaqData[];
-    watchedFaq: any[];
-    handleFaqSelect: (faqData: FaqData | undefined, index: number) => void;
-}
-
-const TourFaqs: React.FC<TourFaqsProps> = ({
-    form,
-    faqFields,
-    faqAppend,
-    faqRemove,
-    faq,
-    watchedFaq,
-    handleFaqSelect
-}) => {
-    // Create a state to track if user has manually added FAQs
     const [hasManuallyAddedFaqs, setHasManuallyAddedFaqs] = useState(false);
-    
-    // Only show FAQ items if the user has clicked the "Add FAQ" button
+    const watchedFaq = form.watch('faqs');
+    const userId = getUserId();
+    const { data: faq } = useFaq(userId);
     const handleAddFaq = () => {
         setHasManuallyAddedFaqs(true);
-        // Let the parent component handle the actual FAQ append
-        faqAppend({
-            question: '',
-            answer: ''
-        } as any); // Use type assertion to bypass TypeScript checks
+        faqAppend?.({ question: '', answer: '' });
     };
 
     useEffect(() => {
-        console.log({ hasManuallyAddedFaqs, faqCount: faqFields.length });
-    }, [hasManuallyAddedFaqs, faqFields]);
-
-    // Ensure FAQs are visible if there are any in the fields array
-    useEffect(() => {
         if (Array.isArray(faqFields) && faqFields.length > 0) {
             setHasManuallyAddedFaqs(true);
+        } else {
+            setHasManuallyAddedFaqs(false);
         }
     }, [faqFields]);
+
+    const handleFaqSelect = (faqData: FaqData | undefined, index: number) => {
+        if (faqData) {
+            form.setValue(`faqs.${index}.answer`, faqData.answer || '');
+        }
+    };
+
+    useEffect(() => {
+        if (faqFields && faqFields.length > 0 && faq && faq.length > 0) {
+            faqFields.forEach((field, index) => {
+                if (field.question) {
+                    const matchedFaq = faq.find(f => f.question === field.question || f.question.trim() === field?.question?.trim());
+                    if (matchedFaq) {
+                        form.setValue(`faqs.${index}.question`, matchedFaq.question);
+                    }
+                }
+            });
+        }
+    }, [faqFields, faq, form]);
 
     return (
         <Card className="shadow-sm">
@@ -114,12 +111,12 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                                             tabIndex={0}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                faqRemove(index);
+                                                                faqRemove?.(index);
                                                             }}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' || e.key === ' ') {
                                                                     e.stopPropagation();
-                                                                    faqRemove(index);
+                                                                    faqRemove?.(index);
                                                                 }
                                                             }}
                                                             className="ml-auto h-8 w-8 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
@@ -133,7 +130,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                                     <div className="grid grid-cols-1 gap-5 mt-2">
                                                         <FormField
                                                             control={form.control}
-                                                            name={`faqs.${index}.question` as any}
+                                                            name={`faqs.${index}.question`}
                                                             render={({ field }) => (
                                                                 <FormItem>
                                                                     <FormLabel className="flex items-center gap-1">
@@ -144,7 +141,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                                                         <Select
                                                                             onValueChange={(value) => {
                                                                                 field.onChange(value);
-                                                                                const faqData = faq.find(f => f.question === value);
+                                                                                const faqData = faq?.find(f => f.question === value);
                                                                                 handleFaqSelect(faqData, index);
                                                                             }}
                                                                             defaultValue={field.value}
@@ -153,7 +150,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                                                                 <SelectValue placeholder="Select a question" />
                                                                             </SelectTrigger>
                                                                             <SelectContent>
-                                                                                {faq.map((faqItem, faqIndex) => (
+                                                                                {faq?.map((faqItem, faqIndex) => (
                                                                                     <SelectItem key={faqIndex} value={faqItem.question}>
                                                                                         {faqItem.question}
                                                                                     </SelectItem>
@@ -168,7 +165,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
 
                                                         <FormField
                                                             control={form.control}
-                                                            name={`faqs.${index}.answer` as any}
+                                                            name={`faqs.${index}.answer`}
                                                             render={({ field }) => (
                                                                 <FormItem>
                                                                     <FormLabel className="flex items-center gap-1">
@@ -205,7 +202,7 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                             <div className="flex space-x-2">
                                                 <FormField
                                                     control={form.control}
-                                                    name={`faqs.${index}.question` as any}
+                                                    name={`faqs.${index}.question`}
                                                     render={({ field }) => (
                                                         <FormItem className="w-full">
                                                             <FormControl>
@@ -242,12 +239,12 @@ const TourFaqs: React.FC<TourFaqsProps> = ({
                                                     tabIndex={0}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        faqRemove(index);
+                                                        faqRemove?.(index);
                                                     }}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.stopPropagation();
-                                                            faqRemove(index);
+                                                            faqRemove?.(index);
                                                         }
                                                     }}
                                                     className="h-10 w-10 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"

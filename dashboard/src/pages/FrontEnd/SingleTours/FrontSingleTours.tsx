@@ -32,99 +32,7 @@ import Icon from "@/userDefinedComponents/Icon";
 import { toast } from '@/components/ui/use-toast';
 import useTokenStore from '@/store/store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-// Define types for the tour data
-interface GalleryItem {
-    image: string;
-    alt?: string;
-}
-
-interface Fact {
-    title: string;
-    field_type: string;
-    value: any[]; // Using any for flexibility with different value structures
-    icon?: string;
-}
-
-interface Itinerary {
-    day: number;
-    title: string;
-    description: string;
-    date?: string;
-    time?: string;
-}
-
-interface FAQ {
-    question: string;
-    answer: string;
-}
-
-interface Reply {
-    _id: string;
-    user: {
-        _id: string;
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    name?: string;
-    comment: string;
-    createdAt: string;
-    likes?: number;
-    views?: number;
-}
-
-interface Review {
-    _id: string;
-    user: {
-        _id: string;
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    name?: string;
-    rating: number;
-    comment: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    likes: number;
-    views: number;
-    replies: Reply[];
-}
-
-interface TourData {
-    _id: string;
-    title: string;
-    slug: string;
-    description: string;
-    coverImage: string;
-    gallery?: GalleryItem[];
-    price: number;
-    discount?: {
-        isActive: boolean;
-        percentage: number;
-    };
-    originalPrice?: number;
-    duration: number;
-    location: string | {
-        street?: string;
-        city?: string;
-        state?: string;
-        country?: string;
-    };
-    facts?: Fact[];
-    include?: string;
-    exclude?: string;
-    map?: string;
-    itinerary?: Itinerary[];
-    faqs?: FAQ[];
-    reviews?: Review[];
-    breadcrumbs?: any[];
-    code?: string;
-    isSpecialOffer?: boolean;
-    enquiry?: boolean; // Added enquiry property
-}
+import { FactData, FaqData, GalleryDocument, GalleryItem, Itinerary, Review, Tour, TourData } from "@/Provider/types";
 
 // Helper function to format price
 const formatPrice = (price: number): string => {
@@ -132,7 +40,7 @@ const formatPrice = (price: number): string => {
 };
 
 // Calculate total price
-const calculateTotalPrice = (tourData: TourData | undefined) => {
+const calculateTotalPrice = (tourData: Tour | undefined) => {
     if (!tourData) return 0;
     const basePrice = tourData.price;
     const adultPrice = basePrice * 1;
@@ -141,14 +49,14 @@ const calculateTotalPrice = (tourData: TourData | undefined) => {
 };
 
 // Helper function to render fact value based on its type
-const renderFactValue = (fact: Fact) => {
+const renderFactValue = (fact: FactData) => {
     if (!fact.value || fact.value.length === 0) return '';
 
     const value = fact.value[0];
 
     // Handle Multi Select case (array of objects with label/value)
     if (fact.field_type === 'Multi Select' && Array.isArray(value)) {
-        return value.map((item: any) => item.label).join(', ');
+        return value.map((item: string) => item.label).join(', ');
     }
 
     // Handle Single Select case (object with label/value)
@@ -629,7 +537,7 @@ const FrontSingleTours = () => {
                         <div className="bg-card border border-border rounded-lg p-6 mb-8">
                             <h2 className="text-2xl font-bold mb-4">Tour Facts</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {tourData.facts?.map((fact: Fact, index: number) => (
+                                {tourData.facts?.map((fact: FactData, index: number) => (
                                     <div key={index} className="flex items-start">
                                         <div className="mr-3 text-primary">
                                             {renderFactIcon(fact.icon)}
@@ -876,7 +784,7 @@ const FrontSingleTours = () => {
                                     <div className="bg-card border border-border rounded-lg p-6">
                                         <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
                                         <div className="space-y-4">
-                                            {tourData.faqs?.map((faq: FAQ, index: number) => (
+                                            {tourData.faqs?.map((faq: FaqData, index: number) => (
                                                 <div key={index} className="border border-border rounded-lg overflow-hidden">
                                                     <MessageCircleQuestion className="h-5 w-5 mt-1 flex-shrink-0 text-primary" />
                                                     <div
@@ -1343,7 +1251,7 @@ const FrontSingleTours = () => {
             <section className="container mx-auto px-4 mt-16 py-8 border-t border-border">
                 <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {latestTours?.data?.tours?.slice(0, 3).map((relatedTour: TourData) => (
+                    {latestTours?.data?.tours?.slice(0, 3).map((relatedTour: Tour) => (
                         <Link key={relatedTour._id} to={`/tours/${relatedTour._id}`} className="group">
                             <div className="bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md">
                                 <div className="h-48 overflow-hidden">

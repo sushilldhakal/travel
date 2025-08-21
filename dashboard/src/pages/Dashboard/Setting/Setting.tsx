@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -9,9 +9,28 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getDecryptedApiKey, getUserSetting, userSetting } from "@/http"
 import { useEffect, useState } from "react"
 import { getUserId } from "@/util/authUtils"
-import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react"
+import {
+    Eye,
+    EyeOff,
+    KeyRound,
+    Loader2,
+    Cloud as CloudIcon,
+    BrainCircuit,
+    Globe as MapPin,
+    CheckCircle2,
+    AlertCircle,
+    InfoIcon,
+    ExternalLink,
+    Save,
+    Lock,
+    Settings2
+} from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "@/components/ui/use-toast"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const formSchema = z.object({
@@ -27,14 +46,20 @@ const Setting = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [decryptedKeys, setDecryptedKeys] = useState<Record<string, string>>({});
     const [isLoadingKeys, setIsLoadingKeys] = useState<Record<string, boolean>>({});
+    const [activeTab, setActiveTab] = useState("cloudinary");
+    const [initialValues, setInitialValues] = useState<z.infer<typeof formSchema>>({
+        CLOUDINARY_CLOUD: '',
+        CLOUDINARY_API_KEY: '',
+        CLOUDINARY_API_SECRET: '',
+        OPENAI_API_KEY: '',
+        GOOGLE_API_KEY: '',
+    });
     const userId = getUserId();
 
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['userSettings'], // Key used to cache and invalidate the query
-        queryFn: () => getUserSetting(`${userId}`), // Replace with actual user ID if needed
+        queryKey: ['userSettings'],
+        queryFn: () => getUserSetting(`${userId}`),
     });
-
-    console.log("data", data);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -46,19 +71,25 @@ const Setting = () => {
             GOOGLE_API_KEY: '',
         },
     });
+
     // Populate form with fetched data
     useEffect(() => {
         if (data) {
             // The backend response structure might be data.settings or just data
             const settingsData = data.settings || data;
 
-            form.reset({
+            const initialFormValues = {
                 CLOUDINARY_CLOUD: settingsData.cloudinaryCloud || '',
-                CLOUDINARY_API_KEY: settingsData.cloudinaryApiKey || '', // Don't show the masked value in the input
-                CLOUDINARY_API_SECRET: settingsData.cloudinaryApiSecret || '', // Don't show the masked value in the input
-                OPENAI_API_KEY: settingsData.openaiApiKey || '', // Don't show the masked value in the input
-                GOOGLE_API_KEY: settingsData.googleApiKey || '', // Don't show the masked value in the input
-            });
+                CLOUDINARY_API_KEY: '',
+                CLOUDINARY_API_SECRET: '',
+                OPENAI_API_KEY: '',
+                GOOGLE_API_KEY: '',
+            };
+
+            // Save the initial values to compare against later
+            setInitialValues(initialFormValues);
+
+            form.reset(initialFormValues);
         }
     }, [data, form]);
 
@@ -67,10 +98,16 @@ const Setting = () => {
         mutationFn: ({ userId, formData }: { userId: string; formData: FormData }) =>
             userSetting(`${userId}`, formData),
         onSuccess: () => {
+            // Reset all states related to visibility and decrypted keys
+            setDecryptedKeys({});
+            setVisibleKeys({});
+            
+            // Refresh the data
             queryClient.invalidateQueries({ queryKey: ['userSettings'] });
+            
             toast({
                 title: 'Success!',
-                description: 'Your keys have been updated.',
+                description: 'Your API keys have been updated.',
                 variant: 'success',
             });
             setIsSubmitting(false);
@@ -89,23 +126,67 @@ const Setting = () => {
     function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
         const formData = new FormData();
-        if (values.CLOUDINARY_CLOUD) {
+
+        // Only include fields that have actual values (not empty strings)
+        // AND that have been changed from their initial values
+        let hasChanges = false;
+
+        // For logging purposes, create an object to track what we're sending
+        const dataBeingSent: Record<string, string> = {};
+
+        // Check if Cloudinary cloud name has changed
+        if (values.CLOUDINARY_CLOUD && values.CLOUDINARY_CLOUD.trim() !== '' &&
+            values.CLOUDINARY_CLOUD !== initialValues.CLOUDINARY_CLOUD) {
             formData.append('CLOUDINARY_CLOUD', values.CLOUDINARY_CLOUD);
+            dataBeingSent.CLOUDINARY_CLOUD = values.CLOUDINARY_CLOUD;
+            hasChanges = true;
         }
-        if (values.CLOUDINARY_API_KEY) {
+
+        // Only include API keys if they've been modified and are not empty
+        if (values.CLOUDINARY_API_KEY && values.CLOUDINARY_API_KEY.trim() !== '' &&
+            values.CLOUDINARY_API_KEY !== initialValues.CLOUDINARY_API_KEY) {
             formData.append('CLOUDINARY_API_KEY', values.CLOUDINARY_API_KEY);
+            dataBeingSent.CLOUDINARY_API_KEY = `${values.CLOUDINARY_API_KEY.slice(0, 4)}...${values.CLOUDINARY_API_KEY.slice(-4)} (length: ${values.CLOUDINARY_API_KEY.length})`;
+            hasChanges = true;
         }
-        if (values.CLOUDINARY_API_SECRET) {
+
+        if (values.CLOUDINARY_API_SECRET && values.CLOUDINARY_API_SECRET.trim() !== '' &&
+            values.CLOUDINARY_API_SECRET !== initialValues.CLOUDINARY_API_SECRET) {
             formData.append('CLOUDINARY_API_SECRET', values.CLOUDINARY_API_SECRET);
+            dataBeingSent.CLOUDINARY_API_SECRET = `${values.CLOUDINARY_API_SECRET.slice(0, 4)}...${values.CLOUDINARY_API_SECRET.slice(-4)} (length: ${values.CLOUDINARY_API_SECRET.length})`;
+            hasChanges = true;
         }
-        if (values.OPENAI_API_KEY) {
+
+        if (values.OPENAI_API_KEY && values.OPENAI_API_KEY.trim() !== '' &&
+            values.OPENAI_API_KEY !== initialValues.OPENAI_API_KEY) {
             formData.append('OPENAI_API_KEY', values.OPENAI_API_KEY);
+            dataBeingSent.OPENAI_API_KEY = `${values.OPENAI_API_KEY.slice(0, 4)}...${values.OPENAI_API_KEY.slice(-4)} (length: ${values.OPENAI_API_KEY.length})`;
+            hasChanges = true;
         }
-        if (values.GOOGLE_API_KEY) {
+
+        if (values.GOOGLE_API_KEY && values.GOOGLE_API_KEY.trim() !== '' &&
+            values.GOOGLE_API_KEY !== initialValues.GOOGLE_API_KEY) {
             formData.append('GOOGLE_API_KEY', values.GOOGLE_API_KEY);
+            dataBeingSent.GOOGLE_API_KEY = `${values.GOOGLE_API_KEY.slice(0, 4)}...${values.GOOGLE_API_KEY.slice(-4)} (length: ${values.GOOGLE_API_KEY.length})`;
+            hasChanges = true;
         }
-        if (userId) {
+
+        // Log what data is being sent (with partial masking for security)
+        console.log('Sending data to server:', dataBeingSent);
+        console.log('Number of form fields being sent:', Object.keys(dataBeingSent).length);
+
+        // Only submit if we have changes and a user ID
+        if (hasChanges && userId) {
             userSettingUpdate.mutate({ userId, formData });
+        } else {
+            setIsSubmitting(false);
+            if (!hasChanges) {
+                toast({
+                    title: 'No Changes',
+                    description: 'No changes were detected. Please modify at least one field.',
+                    variant: 'default',
+                });
+            }
         }
     }
 
@@ -135,10 +216,21 @@ const Setting = () => {
                         variant: 'default',
                     });
                 } else {
+                    // Store the decrypted value but don't mark it as modified in the form
                     setDecryptedKeys(prev => ({ ...prev, [keyType]: response.key }));
 
-                    // Update the form with the decrypted value
-                    form.setValue(keyType as keyof z.infer<typeof formSchema>, response.key);
+                    // Update the form display value but without marking it as "changed"
+                    // This ensures the form displays the decrypted value without considering it modified
+                    form.setValue(keyType as keyof z.infer<typeof formSchema>, response.key, {
+                        shouldDirty: false, // Don't mark as dirty/changed
+                        shouldTouch: false, // Don't mark as touched
+                    });
+
+                    // Also update initialValues to match this, so form detection of changes works correctly
+                    setInitialValues(prev => ({
+                        ...prev,
+                        [keyType]: response.key
+                    }));
 
                     toast({
                         title: 'API Key Retrieved',
@@ -161,10 +253,10 @@ const Setting = () => {
 
     const toggleVisibility = async (key: string) => {
         // If we're turning visibility on and we don't have the decrypted key yet
+        console.log(key);
         if (!visibleKeys[key] && isKeySet(key) && !decryptedKeys[key]) {
             await fetchDecryptedKey(key);
         }
-
         setVisibleKeys(prev => ({
             ...prev,
             [key]: !prev[key]
@@ -197,357 +289,394 @@ const Setting = () => {
         return isKeySet(key) ? '••••••••••••••••' : 'Enter your API key...';
     };
 
-    return (
-        <div className="flex min-h-screen w-full flex-col">
-            <Form {...form}>
-                <form onSubmit={(e) => {
-                    e.preventDefault()
-                    form.handleSubmit(onSubmit)();
-                }}>
-                    <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-                        <Button size="sm" type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                <span className="ml-2">Save</span>
-                            )}
-                        </Button>
-                    </div>
-                    <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-3 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-                        <aside className="sticky top-8 inset-x-0 z-20 text-left px-4 sm:px-6 lg:px-8">
-                            <nav className="sticky top-4 flex flex-col gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
-                                >
-                                    Cloudinary
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
-                                >
-                                    OpenAI{''}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="justify-start w-full gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors hover:bg-muted hover:text-foreground focus:bg-muted focus:text-foreground"
-                                >
-                                    Google Map{''}
-                                </Button>
+    // Render an API key field with visibility toggle
+    const renderApiKeyField = (name: keyof z.infer<typeof formSchema>, label: string) => {
+        const isSet = isKeySet(name);
+        const isVisible = visibleKeys[name];
+        const isLoading = isLoadingKeys[name];
 
-                                <Button size="sm" type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving...
-                                        </>
+        return (
+            <FormField
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                            {label}
+                            {isSet && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <KeyRound className="h-4 w-4 text-primary" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>API key is set and securely stored</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            )}
+                        </FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Input
+                                    type={isVisible ? "text" : "password"}
+                                    className="w-full pr-10"
+                                    placeholder={getPlaceholder(name)}
+                                    {...field}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3"
+                                    onClick={() => toggleVisibility(name)}
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : isVisible ? (
+                                        <EyeOff className="h-4 w-4" />
                                     ) : (
-                                        <span className="ml-2">Save Changes</span>
+                                        <Eye className="h-4 w-4" />
                                     )}
                                 </Button>
-                            </nav>
-                        </aside>
+                            </div>
+                        </FormControl>
+                        {isSet && (
+                            <p className="text-xs text-muted-foreground">
+                                Leave blank to keep the existing API key
+                            </p>
+                        )}
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        );
+    };
 
-                        <div className="grid gap-3 lg:col-span-1">
-                            {
-                                isLoading ? <div>Loading...</div> : ""
-                            }
-                            {
-                                isError ? <div>Error loading settings. Add values</div> : ""
-                            }
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Cloudinary</CardTitle>
-                                    <CardDescription>
-                                        Visit {' '}
-                                        <Link className="text-primary" target={"_blank"} to="https://cloudinary.com/">
-                                            Cloudinary {' '}
-                                        </Link>
-                                        and signup for free. Then navigate to you {' '}
-                                        <Link className="text-primary" target={"_blank"} to="https://console.cloudinary.com/settings/c-ccd6ef073e22dd5e5f1b220b3fd801/api-keys">
-                                            Cloudinary Dashboard {' '}
-                                        </Link>
-                                        under setting and get the API Keys from there. {' '}
-                                        Also to upload PDF file in cloudinary you need to go in setting, then select security go to the bottom and check the PDF and ZIP files delivery option.
-                                        Update your Cloudinary information.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-4">
-                                    <div className="grid gap-2 relative">
-                                        <FormField
-                                            control={form.control}
-                                            name="CLOUDINARY_CLOUD"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Cloudinary Cloud</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="text" className="w-full" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2 relative">
-                                        <FormField
-                                            control={form.control}
-                                            name="CLOUDINARY_API_KEY"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        Cloudinary API Key
-                                                        {isKeySet('CLOUDINARY_API_KEY') && (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <KeyRound className="h-4 w-4 text-green-500" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>API key is set and securely stored</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        )}
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type={visibleKeys.CLOUDINARY_API_KEY ? "text" : "password"}
-                                                            className="w-full"
-                                                            placeholder={getPlaceholder('CLOUDINARY_API_KEY')}
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    {isKeySet('CLOUDINARY_API_KEY') && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Leave blank to keep the existing API key
-                                                        </p>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            className="absolute right-1 top-10 p-2 h-6"
-                                            onClick={() => toggleVisibility('CLOUDINARY_API_KEY')}
-                                            disabled={isLoadingKeys['CLOUDINARY_API_KEY']}
-                                        >
-                                            {isLoadingKeys['CLOUDINARY_API_KEY'] ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : visibleKeys.CLOUDINARY_API_KEY ? (
-                                                <EyeOff width="18" height="18" size="20" />
-                                            ) : (
-                                                <Eye width="18" height="18" size="20" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                    <div className="grid gap-2 relative">
-                                        <FormField
-                                            control={form.control}
-                                            name="CLOUDINARY_API_SECRET"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        Cloudinary API Secret
-                                                        {isKeySet('CLOUDINARY_API_SECRET') && (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <KeyRound className="h-4 w-4 text-green-500" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>API secret is set and securely stored</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        )}
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type={visibleKeys.CLOUDINARY_API_SECRET ? "text" : "password"}
-                                                            className="w-full"
-                                                            placeholder={getPlaceholder('CLOUDINARY_API_SECRET')}
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    {isKeySet('CLOUDINARY_API_SECRET') && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Leave blank to keep the existing API secret
-                                                        </p>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            className="absolute right-1 top-10 p-2 h-6"
-                                            onClick={() => toggleVisibility('CLOUDINARY_API_SECRET')}
-                                            disabled={isLoadingKeys['CLOUDINARY_API_SECRET']}
-                                        >
-                                            {isLoadingKeys['CLOUDINARY_API_SECRET'] ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : visibleKeys.CLOUDINARY_API_SECRET ? (
-                                                <EyeOff width="18" height="18" size="20" />
-                                            ) : (
-                                                <Eye width="18" height="18" size="20" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>OpenAI</CardTitle>
-                                    <CardDescription>Add your Open AI API Key here. This enable AI auto complete and lots more for you text.
-
-
-                                        Navigate to the  <Link to="https://platform.openai.com/docs/overview" target={"_blank"} className="text-primary">
-                                            OpenAI Platform
-                                        </Link> and create a free account.
-                                        After creating a account Navigate to
-                                        <Link to='https://platform.openai.com/api-keys' className="text-primary"> {' '}open AI dashboard{' '}</Link>
-                                        Create a new secret key and Copy your secret key from there and paste it here
-
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-4">
-                                    <div className="grid gap-2 relative">
-                                        <FormField
-                                            control={form.control}
-                                            name="OPENAI_API_KEY"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        OpenAI API Key
-                                                        {isKeySet('OPENAI_API_KEY') && (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <KeyRound className="h-4 w-4 text-green-500" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>API key is set and securely stored</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        )}
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type={visibleKeys.OPENAI_API_KEY ? "text" : "password"}
-                                                            className="w-full"
-                                                            placeholder={getPlaceholder('OPENAI_API_KEY')}
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    {isKeySet('OPENAI_API_KEY') && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Leave blank to keep the existing API key
-                                                        </p>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            className="absolute right-1 top-10 p-2 h-6"
-                                            onClick={() => toggleVisibility('OPENAI_API_KEY')}
-                                            disabled={isLoadingKeys['OPENAI_API_KEY']}
-                                        >
-                                            {isLoadingKeys['OPENAI_API_KEY'] ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : visibleKeys.OPENAI_API_KEY ? (
-                                                <EyeOff width="18" height="18" size="20" />
-                                            ) : (
-                                                <Eye width="18" height="18" size="20" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Google Map API</CardTitle>
-                                    <CardDescription>Add your Google Map API Key here. This enable auto complete locations and also lets you add google maps.
-
-
-                                        Navigate to the  <Link to="https://developers.google.com/maps/documentation/javascript/get-api-key" target={"_blank"} className="text-primary">
-                                            Google console
-                                        </Link> and create a free account. It gives 20$ credit every month free to use, which you can use at least 100,000 times in dashboard each month free.
-                                        After creating a account follow the steps to get a
-                                        <Link to='https://developers.google.com/maps/documentation/javascript/get-api-key' className="text-primary"> {' '}API key{' '}</Link>
-                                        copy a new API key and Copy your API key from there and paste it here
-
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-4">
-                                    <div className="grid gap-2 relative">
-                                        <FormField
-                                            control={form.control}
-                                            name="GOOGLE_API_KEY"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        Google Maps API Key
-                                                        {isKeySet('GOOGLE_API_KEY') && (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <KeyRound className="h-4 w-4 text-green-500" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>API key is set and securely stored</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        )}
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type={visibleKeys.GOOGLE_API_KEY ? "text" : "password"}
-                                                            className="w-full"
-                                                            placeholder={getPlaceholder('GOOGLE_API_KEY')}
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    {isKeySet('GOOGLE_API_KEY') && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Leave blank to keep the existing API key
-                                                        </p>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            className="absolute right-1 top-10 p-2 h-6"
-                                            onClick={() => toggleVisibility('GOOGLE_API_KEY')}
-                                            disabled={isLoadingKeys['GOOGLE_API_KEY']}
-                                        >
-                                            {isLoadingKeys['GOOGLE_API_KEY'] ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : visibleKeys.GOOGLE_API_KEY ? (
-                                                <EyeOff width="18" height="18" size="20" />
-                                            ) : (
-                                                <Eye width="18" height="18" size="20" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+    // Render the Cloudinary tab content
+    const renderCloudinaryContent = () => (
+        <Card>
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                        <CloudIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle>Cloudinary Integration</CardTitle>
+                        <CardDescription>Configure your Cloudinary account for image and file uploads</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                    <div className="flex gap-3">
+                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-primary-foreground dark:text-primary">
+                                Visit{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://cloudinary.com/"
+                                >
+                                    Cloudinary <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>{" "}
+                                to create a free account. Then get your API keys from the{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://console.cloudinary.com/settings/c-ccd6ef073e22dd5e5f1b220b3fd801/api-keys"
+                                >
+                                    Cloudinary Dashboard <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>
+                            </p>
+                            <p className="text-sm text-primary-foreground dark:text-primary mt-2">
+                                To upload PDF files, go to Settings → Security and enable the PDF and ZIP files delivery option.
+                            </p>
                         </div>
                     </div>
+                </div>
+
+                <div className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="CLOUDINARY_CLOUD"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Cloudinary Cloud Name</FormLabel>
+                                <FormControl>
+                                    <Input type="text" className="w-full" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {renderApiKeyField("CLOUDINARY_API_KEY", "Cloudinary API Key")}
+                    {renderApiKeyField("CLOUDINARY_API_SECRET", "Cloudinary API Secret")}
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    // Render the OpenAI tab content
+    const renderOpenAIContent = () => (
+        <Card>
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                        <BrainCircuit className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle>OpenAI Integration</CardTitle>
+                        <CardDescription>Configure OpenAI for AI-powered features and text completion</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                    <div className="flex gap-3">
+                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-primary-foreground dark:text-primary">
+                                Visit the{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://platform.openai.com/docs/overview"
+                                >
+                                    OpenAI Platform <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>{" "}
+                                to create a free account. Then create a new API key from the{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://platform.openai.com/api-keys"
+                                >
+                                    OpenAI Dashboard <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>
+                            </p>
+                            <p className="text-sm text-primary-foreground dark:text-primary mt-2">
+                                This enables AI auto-complete and other AI-powered features throughout your application.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {renderApiKeyField("OPENAI_API_KEY", "OpenAI API Key")}
+
+                <Separator className="my-4" />
+
+                <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Features enabled with OpenAI</h3>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>AI-powered text completion</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>Smart content suggestions</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>Automated content generation</span>
+                        </li>
+                    </ul>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    // Render the Google Maps tab content
+    const renderGoogleMapsContent = () => (
+        <Card>
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                        <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle>Google Maps Integration</CardTitle>
+                        <CardDescription>Configure Google Maps API for location services</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                    <div className="flex gap-3">
+                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-primary-foreground dark:text-primary">
+                                Visit the{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://developers.google.com/maps/documentation/javascript/get-api-key"
+                                >
+                                    Google Cloud Console <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>{" "}
+                                to create a free account. Google provides $200 in free monthly credit, which allows for approximately
+                                100,000 API calls.
+                            </p>
+                            <p className="text-sm text-primary-foreground dark:text-primary mt-2">
+                                After creating an account, follow the steps to{" "}
+                                <Link
+                                    className="text-primary font-medium inline-flex items-center hover:underline"
+                                    target="_blank"
+                                    to="https://developers.google.com/maps/documentation/javascript/get-api-key"
+                                >
+                                    get an API key <ExternalLink className="h-3 w-3 ml-0.5" />
+                                </Link>{" "}
+                                and enable the necessary Google Maps services.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {renderApiKeyField("GOOGLE_API_KEY", "Google Maps API Key")}
+
+                <Separator className="my-4" />
+
+                <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Features enabled with Google Maps</h3>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>Location autocomplete</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>Interactive maps</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            <span>Distance calculations</span>
+                        </li>
+                    </ul>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    return (
+        <div className="container mx-auto py-8 px-4 max-w-6xl">
+            <div className="mb-8">
+                <div className="flex items-center gap-2 mb-2">
+                    <Settings2 className="h-5 w-5 text-muted-foreground" />
+                    <Badge variant="outline" className="bg-card text-muted-foreground font-medium">
+                        Settings
+                    </Badge>
+                </div>
+                <h1 className="text-3xl font-bold text-foreground">API Integrations</h1>
+                <p className="text-muted-foreground mt-2 max-w-3xl">
+                    Configure your API keys for various services. These keys are securely encrypted and stored.
+                </p>
+            </div>
+
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <Tabs
+                        defaultValue="cloudinary"
+                        value={activeTab}
+                        onValueChange={setActiveTab}
+                    >
+                        <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
+                            {/* Sidebar */}
+                            <div className="space-y-6">
+                                <Card>
+                                    <CardContent className="p-4">
+                                        <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
+                                            <TabsTrigger
+                                                value="cloudinary"
+                                                className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                            >
+                                                <CloudIcon className="h-4 w-4" />
+                                                <span>Cloudinary</span>
+                                                {isKeySet("CLOUDINARY_API_KEY") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="openai"
+                                                className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                            >
+                                                <BrainCircuit className="h-4 w-4" />
+                                                <span>OpenAI</span>
+                                                {isKeySet("OPENAI_API_KEY") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="google"
+                                                className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                            >
+                                                <MapPin className="h-4 w-4" />
+                                                <span>Google Maps</span>
+                                                {isKeySet("GOOGLE_API_KEY") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </CardContent>
+                                    <CardFooter className="px-4 py-4 border-t">
+                                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                    Save Changes
+                                                </>
+                                            )}
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Lock className="h-4 w-4 text-muted-foreground" />
+                                            Security Information
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-sm text-muted-foreground">
+                                        <p className="mb-2">All API keys are encrypted before being stored in our database.</p>
+                                        <p>We use industry-standard encryption to protect your sensitive credentials.</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Main Content */}
+                            <div className="space-y-6">
+                                {isLoading ? (
+                                    <Card>
+                                        <CardContent className="p-8 flex justify-center items-center">
+                                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                        </CardContent>
+                                    </Card>
+                                ) : isError ? (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Error</AlertTitle>
+                                        <AlertDescription>
+                                            There was a problem loading your settings. Please refresh the page or add new values.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : (
+                                    <>
+                                        <TabsContent value="cloudinary" className="mt-0 space-y-6">
+                                            {renderCloudinaryContent()}
+                                        </TabsContent>
+                                        <TabsContent value="openai" className="mt-0 space-y-6">
+                                            {renderOpenAIContent()}
+                                        </TabsContent>
+                                        <TabsContent value="google" className="mt-0 space-y-6">
+                                            {renderGoogleMapsContent()}
+                                        </TabsContent>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </Tabs>
                 </form>
             </Form>
         </div>

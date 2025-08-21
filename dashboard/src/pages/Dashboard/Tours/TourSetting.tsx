@@ -1,197 +1,335 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, Package, ClipboardCheck, Plus, MapPin, Trash2 } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+    CreditCard,
+    Package,
+    ClipboardCheck,
+    Plus,
+    MapPin,
+    Trash2,
+    Save,
+    Plane,
+    Bus,
+    Car,
+    AlertCircle,
+    Calendar,
+    StampIcon as Passport,
+    FileText,
+    Settings2,
+    Loader2,
+    CheckCircle2
+} from "lucide-react"
 
 const TourSetting = () => {
-    const [activeTab, setActiveTab] = useState("pricing")
-    const [locations, setLocations] = useState([{ name: "Airport", address: "International Airport", mode: "Shuttle" }])
+    // Location Management State
     const [newLocation, setNewLocation] = useState({ name: "", address: "", mode: "" })
+    const [locations, setLocations] = useState([
+        {
+            name: "Airport Terminal 1",
+            address: "123 Airport Road, City",
+            mode: "Shuttle",
+        },
+        {
+            name: "Central Station",
+            address: "45 Main Street, Downtown",
+            mode: "Bus",
+        },
+    ])
 
+    // Form State
+    const [activeTab, setActiveTab] = useState("pricing")
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Location Management Functions
     const addLocation = () => {
-        if (newLocation.name && newLocation.address) {
+        if (newLocation.name && newLocation.address && newLocation.mode) {
             setLocations([...locations, newLocation])
             setNewLocation({ name: "", address: "", mode: "" })
         }
     }
 
     const removeLocation = (index: number) => {
-        setLocations(locations.filter((_, i) => i !== index))
+        const updatedLocations = [...locations]
+        updatedLocations.splice(index, 1)
+        setLocations(updatedLocations)
+    }
+
+    const getTransportIcon = (mode: string) => {
+        switch (mode) {
+            case "Shuttle":
+                return <Bus className="h-3.5 w-3.5" />
+            case "Private Car":
+                return <Car className="h-3.5 w-3.5" />
+            default:
+                return <Plane className="h-3.5 w-3.5" />
+        }
+    }
+
+    // Configuration Status Helper
+    const isConfigured = (section: string): boolean => {
+        switch (section) {
+            case "pricing":
+                return true // Replace with actual logic based on pricing fields
+            case "logistics":
+                return locations.length > 0
+            case "policies":
+                return true // Replace with actual logic based on policy fields
+            default:
+                return false
+        }
+    }
+
+    // Save Settings
+    const handleSave = () => {
+        setIsSubmitting(true)
+        // Simulate API call
+        setTimeout(() => {
+            setIsSubmitting(false)
+        }, 1500)
     }
 
     return (
-        <div className="max-w-6xl mx-auto p-4">
-            <div className="flex flex-col md:flex-row gap-6">
-                {/* Left side - Content */}
-
-                <div className="w-full md:w-1/4 order-1 md:order-1">
-                    <Card className="border-none shadow-lg sticky top-4">
-                        <CardContent className="p-0">
-                            <div className="flex flex-col">
-                                <button
-                                    onClick={() => setActiveTab("pricing")}
-                                    className={`flex items-center p-4 border-l-4 ${activeTab === "pricing"
-                                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                                        : "border-transparent hover:bg-slate-50"
-                                        }`}
-                                >
-                                    <div className={`p-2 rounded-full mr-3 ${activeTab === "pricing" ? "bg-blue-100" : "bg-slate-100"}`}>
-                                        <CreditCard className={`h-5 w-5 ${activeTab === "pricing" ? "text-blue-500" : "text-slate-500"}`} />
-                                    </div>
-                                    <div className="text-left">
-                                        <h3 className="font-medium">Pricing</h3>
-                                        <p className="text-sm text-slate-500">Payment options</p>
-                                    </div>
-                                </button>
-
-                                <button
-                                    onClick={() => setActiveTab("logistics")}
-                                    className={`flex items-center p-4 border-l-4 ${activeTab === "logistics"
-                                        ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                        : "border-transparent hover:bg-slate-50"
-                                        }`}
-                                >
-                                    <div
-                                        className={`p-2 rounded-full mr-3 ${activeTab === "logistics" ? "bg-emerald-100" : "bg-slate-100"}`}
-                                    >
-                                        <Package
-                                            className={`h-5 w-5 ${activeTab === "logistics" ? "text-emerald-500" : "text-slate-500"}`}
-                                        />
-                                    </div>
-                                    <div className="text-left">
-                                        <h3 className="font-medium">Logistics</h3>
-                                        <p className="text-sm text-slate-500">Transport & locations</p>
-                                    </div>
-                                </button>
-
-                                <button
-                                    onClick={() => setActiveTab("policies")}
-                                    className={`flex items-center p-4 border-l-4 ${activeTab === "policies"
-                                        ? "border-amber-500 bg-amber-50 text-amber-700"
-                                        : "border-transparent hover:bg-slate-50"
-                                        }`}
-                                >
-                                    <div
-                                        className={`p-2 rounded-full mr-3 ${activeTab === "policies" ? "bg-amber-100" : "bg-slate-100"}`}
-                                    >
-                                        <ClipboardCheck
-                                            className={`h-5 w-5 ${activeTab === "policies" ? "text-amber-500" : "text-slate-500"}`}
-                                        />
-                                    </div>
-                                    <div className="text-left">
-                                        <h3 className="font-medium">Policies</h3>
-                                        <p className="text-sm text-slate-500">Rules & requirements</p>
-                                    </div>
-                                </button>
-                            </div>
-                        </CardContent>
-                    </Card>
+        <div className="container mx-auto py-8 px-4 max-w-6xl">
+            <div className="mb-8">
+                <div className="flex items-center gap-2 mb-2">
+                    <Settings2 className="h-5 w-5 text-muted-foreground" />
+                    <Badge variant="outline" className="bg-card text-muted-foreground font-medium">
+                        Settings
+                    </Badge>
                 </div>
-                <div className="w-full md:w-3/4 order-2 md:order-2">
-                    <Card className="border-none shadow-lg h-full">
-                        <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-t-lg border-b p-6">
-                            <Badge variant="outline" className="w-fit mb-2 text-slate-600 bg-white">
-                                Settings
-                            </Badge>
-                            <h2 className="text-2xl font-bold text-slate-800">Tour Configuration</h2>
-                            <p className="text-slate-600 mt-2">Configure default settings that will apply to all tours</p>
-                        </div>
+                <h1 className="text-3xl font-bold text-foreground">Tour Configuration</h1>
+                <p className="text-muted-foreground mt-2 max-w-3xl">
+                    Configure default settings that will apply to all tours in your system. These settings can be overridden for
+                    individual tours if needed.
+                </p>
+            </div>
 
-                        <CardContent className="p-6">
-                            {/* Pricing Content */}
-                            {activeTab === "pricing" && (
-                                <div className="space-y-6">
-                                    <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                                        <h3 className="text-sm font-medium text-slate-500 mb-1">PRICING OPTIONS</h3>
-                                        <p className="text-slate-700">Configure how customers can pay for your tours</p>
+            <Tabs 
+                defaultValue="pricing" 
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="space-y-8"
+            >
+                <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
+                    {/* Sidebar */}
+                    <div className="space-y-6">
+                        <Card className="border shadow-sm">
+                            <CardContent className="p-4">
+                                <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
+                                    <TabsTrigger
+                                        value="pricing"
+                                        className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                    >
+                                        <CreditCard className="h-4 w-4" />
+                                        <span>Pricing</span>
+                                        {isConfigured("pricing") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="logistics"
+                                        className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                    >
+                                        <Package className="h-4 w-4" />
+                                        <span>Logistics</span>
+                                        {isConfigured("logistics") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="policies"
+                                        className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                    >
+                                        <ClipboardCheck className="h-4 w-4" />
+                                        <span>Policies</span>
+                                        {isConfigured("policies") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                    </TabsTrigger>
+                                </TabsList>
+                            </CardContent>
+                            <CardFooter className="px-4 py-4 border-t">
+                                <Button onClick={handleSave} className="w-full" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            Save All Settings
+                                        </>
+                                    )}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
+                    
+                    {/* Main Content */}
+                    <div className="space-y-6">
+                        {/* Pricing Tab Content */}
+                        <TabsContent value="pricing" className="mt-0 space-y-6">
+                            <Card className="border shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-primary/10 p-2 rounded-full">
+                                            <CreditCard className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Pricing Options</CardTitle>
+                                            <CardDescription>Configure how customers can pay for your tours</CardDescription>
+                                        </div>
                                     </div>
-
-                                    <Accordion type="single" collapsible className="w-full">
-                                        <AccordionItem value="partial-payments" className="border rounded-lg px-4 shadow-sm">
-                                            <AccordionTrigger className="py-4 hover:no-underline">
-                                                <div className="flex items-center">
-                                                    <div className="bg-blue-50 p-2 rounded-full mr-3">
-                                                        <CreditCard className="h-5 w-5 text-blue-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-left">Partial Payments / Installments</h3>
-                                                        <p className="text-sm text-slate-500 text-left">Allow customers to pay in installments</p>
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pt-2 pb-4">
-                                                <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                                                    <div className="flex items-center space-x-4">
-                                                        <Switch id="partial-payments" />
-                                                        <Label htmlFor="partial-payments" className="font-medium">
-                                                            Enable partial payments
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-6">
+                                    <Card className="border shadow-sm">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <CreditCard className="h-4 w-4 text-primary" />
+                                                Payment Methods
+                                            </CardTitle>
+                                            <CardDescription>Manage accepted payment options</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="space-y-4">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="credit-card" className="font-medium flex items-center gap-2">
+                                                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                                            Credit Card
                                                         </Label>
+                                                        <Switch id="credit-card" defaultChecked />
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="bank-transfer" className="font-medium flex items-center gap-2">
+                                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                                            Bank Transfer
+                                                        </Label>
+                                                        <Switch id="bank-transfer" defaultChecked />
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="paypal" className="font-medium flex items-center gap-2">
+                                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                                            PayPal
+                                                        </Label>
+                                                        <Switch id="paypal" />
                                                     </div>
                                                 </div>
-                                                <div className="mt-4 space-y-2">
-                                                    <Label className="text-sm text-slate-600">Deposit percentage</Label>
-                                                    <div className="flex items-center">
-                                                        <Input type="number" placeholder="e.g. 20" className="max-w-[180px]" />
-                                                        <span className="ml-2 text-slate-500">%</span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        This is the minimum percentage customers must pay upfront
-                                                    </p>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                </div>
-                            )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
 
-                            {/* Logistics Content */}
-                            {activeTab === "logistics" && (
-                                <div className="space-y-6">
-                                    <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                                        <h3 className="text-sm font-medium text-slate-500 mb-1">LOGISTICS OPTIONS</h3>
-                                        <p className="text-slate-700">Configure transportation and location details</p>
+                                    <Card className="border shadow-sm">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-primary" />
+                                                Deposit Options
+                                            </CardTitle>
+                                            <CardDescription>Configure deposit requirements</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Require deposit</Label>
+                                                        <Select defaultValue="percentage">
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select option" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">No deposit required</SelectItem>
+                                                                <SelectItem value="percentage">Percentage of total</SelectItem>
+                                                                <SelectItem value="fixed">Fixed amount</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Deposit amount</Label>
+                                                        <div className="flex items-center">
+                                                            <Input type="number" placeholder="e.g. 20" defaultValue="20" className="max-w-[180px]" />
+                                                            <span className="ml-2 text-muted-foreground">%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <Alert className="bg-primary/5 border-primary/20 text-foreground">
+                                                    <AlertCircle className="h-4 w-4 text-primary" />
+                                                    <AlertTitle>Tip</AlertTitle>
+                                                    <AlertDescription>
+                                                        A 20% deposit is typical for tour bookings. This helps reduce no-shows while keeping the initial payment reasonable.
+                                                    </AlertDescription>
+                                                </Alert>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Logistics Tab Content */}
+                        <TabsContent value="logistics" className="mt-0 space-y-6">
+                            <Card className="border shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/20 dark:to-emerald-900/20 border-b">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full">
+                                            <Package className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Logistics Options</CardTitle>
+                                            <CardDescription>Configure transportation and location details</CardDescription>
+                                        </div>
                                     </div>
-
-                                    <Accordion type="single" collapsible className="w-full">
-                                        <AccordionItem value="pickup-locations" className="border rounded-lg px-4 shadow-sm">
-                                            <AccordionTrigger className="py-4 hover:no-underline">
-                                                <div className="flex items-center">
-                                                    <div className="bg-emerald-50 p-2 rounded-full mr-3">
-                                                        <MapPin className="h-5 w-5 text-emerald-500" />
-                                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-6">
+                                    <Card className="border shadow-sm">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <MapPin className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                                                Pickup/Drop Locations
+                                            </CardTitle>
+                                            <CardDescription>Manage available pickup and drop-off points</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <div>
-                                                        <h3 className="font-medium text-left">Pickup/Drop Locations</h3>
-                                                        <p className="text-sm text-slate-500 text-left">
-                                                            Manage available pickup and drop-off points
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pt-2 pb-4">
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <Label htmlFor="location-name" className="text-xs mb-1 block">
+                                                            Location name
+                                                        </Label>
                                                         <Input
-                                                            placeholder="Location name"
+                                                            id="location-name"
+                                                            placeholder="e.g. Airport Terminal 1"
                                                             value={newLocation.name}
                                                             onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
                                                         />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="location-address" className="text-xs mb-1 block">
+                                                            Address
+                                                        </Label>
                                                         <Input
-                                                            placeholder="Address"
+                                                            id="location-address"
+                                                            placeholder="Full address"
                                                             value={newLocation.address}
                                                             onChange={(e) => setNewLocation({ ...newLocation, address: e.target.value })}
                                                         />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="transfer-mode" className="text-xs mb-1 block">
+                                                            Transfer Mode
+                                                        </Label>
                                                         <Select
                                                             value={newLocation.mode}
                                                             onValueChange={(value) => setNewLocation({ ...newLocation, mode: value })}
                                                         >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Transfer Mode" />
+                                                            <SelectTrigger id="transfer-mode">
+                                                                <SelectValue placeholder="Select mode" />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="Shuttle">Shuttle</SelectItem>
@@ -200,172 +338,222 @@ const TourSetting = () => {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={addLocation}
-                                                        className="w-full flex items-center justify-center gap-2"
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                        Add Location
-                                                    </Button>
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={addLocation}
+                                                    className="w-full flex items-center justify-center gap-2"
+                                                    disabled={!newLocation.name || !newLocation.address || !newLocation.mode}
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                    Add Location
+                                                </Button>
 
-                                                    {locations.length > 0 ? (
-                                                        <div className="mt-4 space-y-2">
-                                                            <h4 className="text-sm font-medium text-slate-600 mb-2">Saved Locations</h4>
+                                                {locations.length > 0 ? (
+                                                    <div className="mt-6">
+                                                        <h4 className="text-sm font-medium mb-3">Saved Locations</h4>
+                                                        <div className="space-y-2">
                                                             {locations.map((location, index) => (
                                                                 <div
                                                                     key={index}
-                                                                    className="flex items-center justify-between bg-slate-50 p-3 rounded-lg"
+                                                                    className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border"
                                                                 >
                                                                     <div className="flex-1">
                                                                         <div className="font-medium">{location.name}</div>
-                                                                        <div className="text-sm text-slate-500 flex items-center gap-2">
+                                                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
                                                                             <span>{location.address}</span>
-                                                                            <span className="inline-block w-1 h-1 bg-slate-300 rounded-full"></span>
-                                                                            <Badge variant="outline" className="bg-white">
-                                                                                {location.mode}
-                                                                            </Badge>
                                                                         </div>
                                                                     </div>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => removeLocation(index)}
-                                                                        className="text-slate-400 hover:text-red-500"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Badge className="bg-muted/70 text-foreground hover:bg-muted/90 border-0 flex items-center gap-1">
+                                                                            {getTransportIcon(location.mode)}
+                                                                            <span>{location.mode}</span>
+                                                                        </Badge>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => removeLocation(index)}
+                                                                            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    ) : (
-                                                        <div className="border rounded-lg p-6 text-center bg-slate-50">
-                                                            <MapPin className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                                            <p className="text-sm text-slate-500">No locations added yet</p>
-                                                            <p className="text-xs text-slate-400">Add your first pickup location above</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                </div>
-                            )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="border rounded-lg p-6 text-center bg-muted/50 mt-4">
+                                                        <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                                        <p className="text-sm text-muted-foreground">No locations added yet</p>
+                                                        <p className="text-xs text-muted-foreground/70">Add your first pickup location above</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
 
-                            {/* Policies Content */}
-                            {activeTab === "policies" && (
-                                <div className="space-y-6">
-                                    <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                                        <h3 className="text-sm font-medium text-slate-500 mb-1">POLICY OPTIONS</h3>
-                                        <p className="text-slate-700">Configure cancellation and travel requirements</p>
+                                    <Card className="border shadow-sm">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Plane className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                                                    Transportation Providers
+                                                </CardTitle>
+                                                <Switch id="transport-providers" defaultChecked />
+                                            </div>
+                                            <CardDescription>Manage your transportation service providers</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Default provider</Label>
+                                                        <Select defaultValue="inhouse">
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select provider" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="inhouse">In-house Fleet</SelectItem>
+                                                                <SelectItem value="partner1">Partner Company 1</SelectItem>
+                                                                <SelectItem value="partner2">Partner Company 2</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Booking lead time</Label>
+                                                        <div className="flex items-center">
+                                                            <Input type="number" placeholder="24" defaultValue="24" className="max-w-[180px]" />
+                                                            <span className="ml-2 text-muted-foreground">hours</span>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">Minimum time required to arrange transportation</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Policies Tab Content */}
+                        <TabsContent value="policies" className="mt-0 space-y-6">
+                            <Card className="border shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 border-b">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full">
+                                            <ClipboardCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Policy Options</CardTitle>
+                                            <CardDescription>Configure cancellation and travel requirements</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <Card className="border shadow-sm">
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                                                    Cancellation Policy
+                                                </CardTitle>
+                                                <CardDescription>Set refund rules for cancellations</CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4 pt-0">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">Policy type</Label>
+                                                    <Select defaultValue="moderate">
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select policy type" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="flexible">Flexible (Full refund up to 24h before)</SelectItem>
+                                                            <SelectItem value="moderate">Moderate (Full refund up to 5 days before)</SelectItem>
+                                                            <SelectItem value="strict">Strict (50% refund up to 7 days before)</SelectItem>
+                                                            <SelectItem value="custom">Custom</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">Custom refund percentage</Label>
+                                                    <div className="flex items-center">
+                                                        <Input type="number" placeholder="e.g. 50" defaultValue="50" className="max-w-[180px]" />
+                                                        <span className="ml-2 text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">Cancellation deadline</Label>
+                                                    <div className="flex items-center">
+                                                        <Input type="number" placeholder="e.g. 7" defaultValue="7" className="max-w-[180px]" />
+                                                        <span className="ml-2 text-muted-foreground">days before tour</span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">Last day to cancel and receive a refund</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="border shadow-sm">
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Passport className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                                                    Travel Requirements
+                                                </CardTitle>
+                                                <CardDescription>Set travel document requirements</CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4 pt-0">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="passport-required" className="font-medium flex items-center gap-2">
+                                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                                            Passport required
+                                                        </Label>
+                                                        <Switch id="passport-required" defaultChecked />
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="visa-required" className="font-medium flex items-center gap-2">
+                                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                                            Visa required
+                                                        </Label>
+                                                        <Switch id="visa-required" />
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="vaccination-required" className="font-medium flex items-center gap-2">
+                                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                                            Vaccination proof required
+                                                        </Label>
+                                                        <Switch id="vaccination-required" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 mt-4">
+                                                    <Label className="text-sm">Additional requirements</Label>
+                                                    <Input type="text" placeholder="e.g. Minimum 6 months passport validity" />
+                                                    <p className="text-xs text-muted-foreground mt-1">Specify any other travel document requirements</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     </div>
 
-                                    <Accordion type="single" collapsible className="w-full space-y-4">
-                                        <AccordionItem value="cancellation" className="border rounded-lg px-4 shadow-sm">
-                                            <AccordionTrigger className="py-4 hover:no-underline">
-                                                <div className="flex items-center">
-                                                    <div className="bg-amber-50 p-2 rounded-full mr-3">
-                                                        <ClipboardCheck className="h-5 w-5 text-amber-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-left">Cancellation Policy</h3>
-                                                        <p className="text-sm text-slate-500 text-left">Set refund rules for cancellations</p>
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pt-2 pb-4">
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-sm text-slate-600">Policy type</Label>
-                                                            <Select>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Select policy type" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {["Flexible", "Moderate", "Strict", "Custom"].map((policy) => (
-                                                                        <SelectItem key={policy} value={policy}>
-                                                                            {policy}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <Label className="text-sm text-slate-600">Refund percentage</Label>
-                                                            <div className="flex items-center">
-                                                                <Input type="number" placeholder="e.g. 50" className="max-w-[180px]" />
-                                                                <span className="ml-2 text-slate-500">%</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm text-slate-600">Policy details</Label>
-                                                        <Input type="text" placeholder="Describe your cancellation policy" />
-                                                        <p className="text-xs text-slate-500 mt-1">
-                                                            This will be displayed to customers during checkout
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        <AccordionItem value="requirements" className="border rounded-lg px-4 shadow-sm">
-                                            <AccordionTrigger className="py-4 hover:no-underline">
-                                                <div className="flex items-center">
-                                                    <div className="bg-purple-50 p-2 rounded-full mr-3">
-                                                        <ClipboardCheck className="h-5 w-5 text-purple-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-left">Passport/Visa Requirements</h3>
-                                                        <p className="text-sm text-slate-500 text-left">Set travel document requirements</p>
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pt-2 pb-4">
-                                                <div className="space-y-4">
-                                                    <div className="bg-slate-50 p-4 rounded-lg space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label htmlFor="passport-required" className="font-medium">
-                                                                Passport required
-                                                            </Label>
-                                                            <Switch id="passport-required" />
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <Label htmlFor="visa-required" className="font-medium">
-                                                                Visa required
-                                                            </Label>
-                                                            <Switch id="visa-required" />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm text-slate-600">Additional requirements</Label>
-                                                        <Input type="text" placeholder="e.g. Minimum 6 months passport validity" />
-                                                        <p className="text-xs text-slate-500 mt-1">
-                                                            Specify any other travel document requirements
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                </div>
-                            )}
-
-                            <div className="mt-8 flex justify-end">
-                                <Button className="px-8 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-                                    Save Settings
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50">
+                                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <AlertTitle>Legal Notice</AlertTitle>
+                                        <AlertDescription className="text-amber-800 dark:text-amber-300">
+                                            Ensure your policies comply with local tourism regulations and consumer protection laws. Consider
+                                            consulting with a legal professional to review your policies.
+                                        </AlertDescription>
+                                    </Alert>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </div>
                 </div>
-
-
-            </div>
+            </Tabs>
         </div>
     )
 }

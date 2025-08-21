@@ -3,90 +3,49 @@ import { Link, useLocation } from 'react-router-dom';
 import { Form } from "@/components/ui/form";
 import { Skeleton } from '@/components/ui/skeleton';
 import Loader from '@/userDefinedComponents/Loader';
-import TabContent from './Components/TabContent';
-import { useFormHandlers } from './Components/useFormHandlers';
+
+// Import tab content components
+import TourBasicInfo from './Components/TourBasicInfo';
 import { useTourMutation } from './Components/useTourMutation';
-import { LoaderCircle } from 'lucide-react';
-import TabNavigation from './Components/TabNavigation';
+import { Calendar, CheckCircle2, ClipboardCheck, CreditCard, FileText, Loader2, LoaderCircle, MapPin, Package, Save, Settings2, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import makeId from './Components/randomId';
-import { getUserId } from '@/util/authUtils';
-import { useFacts } from './FACTS/useFacts';
-import { useFaq } from './FAQ/useFaq';
-import { JSONContent } from 'novel';
-import { FieldValues, useForm } from 'react-hook-form';
-import { useCategories } from './Category/useCategories';
-import { FactData, FaqData, Tour } from '@/Provider/types';
-
-// Define interfaces for proper typing - matching the TabContent expected types
-interface ItineraryItem {
-  day: string;
-  title: string;
-  description: string;
-  dateTime: Date;
-}
-
-interface FactItem {
-  id: string;
-  type: string;
-  description: string;
-}
-
-interface FaqItem {
-  id: string;
-  question: string;
-  answer: string;
-}
+import { z } from 'zod';
+import { formSchema } from './Components/formSchema';
+import { toast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { tabs } from './Components/tabs';
+import { HashLink } from 'react-router-hash-link';
+import TourPricingDates from './Components/TourPricingDates';
+import TourItinerary from './Components/TourItinerary';
+import TourInclusionsExclusions from './Components/TourInclusionsExclusions';
+import TourGallery from './Components/TourGallery';
+import TourFacts from './Components/TourFacts';
+import TourFaqs from './Components/TourFaqs';
+import TourReviews from './Components/TourReviews';
+import { useTourForm } from '@/Provider/hooks/useTourContext';
 
 function AddTour() {
-  const [tripCode, setTripCode] = useState<string>('');
-  const [activeTab, setActiveTab] = useState('overview');
-  const [editorContent, setEditorContent] = useState<JSONContent>({});
-  const userId = getUserId();
-  const { mutate: createTour, isPending } = useTourMutation();
-
-  const {
-    form,
-    onSubmit,
-    handleSubmit,
-    itineraryFields,
-    itineraryAppend,
-    itineraryRemove,
-    factFields: factsFields,
-    factAppend: factsAppend,
-    factRemove: factsRemove,
-    faqFields,
-    faqAppend,
-    faqRemove,
-    pricingOptionsFields,
-    pricingOptionsAppend,
-    pricingOptionsRemove,
-  } = useFormHandlers(editorContent);
-
-  const { data: categories } = useCategories(userId);
-  const { data: facts } = useFacts(userId);
-  const { data: faq } = useFaq(userId);
-
   const location = useLocation();
+  const [activeTab, setActiveTab] = useState(() => location.hash ? location.hash.substring(1) : 'overview');
+
+  const { mutate: createTour, isPending: isCreating } = useTourMutation();
+  const { form, onSubmit } = useTourForm();
+
+
 
   useEffect(() => {
-    if (location.hash) {
-      setActiveTab(location.hash.substring(1));
-    }
+    setActiveTab(location.hash ? location.hash.substring(1) : 'overview');
   }, [location.hash]);
 
-  const handleGenerateCode = () => {
-    const newCode = makeId(6);
-    setTripCode(newCode);
-    return newCode;
-  };
 
 
-  console.log("FAQS", faq);
+  // Pass necessary props to TourBasicInfo directly when needed
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      {isPending && (
+
+    <div className="container mx-auto py-8 px-4 max-w-6xl">
+      {isCreating && (
         <div className="flex flex-col space-y-3 ">
           <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
           <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -95,174 +54,161 @@ function AddTour() {
         </div>
       )}
       <Form {...form}>
-        <form onSubmit={(e: React.FormEvent) => {
+        <form onSubmit={(e) => {
           e.preventDefault();
-          handleSubmit(
-            (values: Tour) => {
-              // Create a clone of values with proper types for submission
-              const formValues = {
-                // Basic fields - convert from field constructors to actual values
-                title: String(values.title || ""),
-                code: String(values.code || ""),
-                tourStatus: String(values.tourStatus || "Draft"),
-                excerpt: String(values.excerpt || ""),
-                description: values.description || "",
-                coverImage: String(values.coverImage || ""),
-                file: values.file || null,
-                outline: String(values.outline || ""),
-                enquiry: Boolean(values.enquiry),
-                isSpecialOffer: Boolean(values.isSpecialOffer),
-
-                // Convert nested objects
-                pricing: {
-                  price: parseFloat(String(values.pricing?.price || 0)),
-                  pricePerPerson: Boolean(values.pricing?.pricePerPerson),
-                  pricingOptionsEnabled: Boolean(values.pricing?.pricingOptionsEnabled),
-                  paxRange: Array.isArray(values.pricing?.paxRange)
-                    ? values.pricing.paxRange.map((n: any) => parseInt(String(n)))
-                    : [1, 10],
-                  groupSize: parseInt(String(values.pricing?.groupSize || 1)),
-                  discount: {
-                    discountEnabled: Boolean(values.pricing?.discount?.discountEnabled),
-                    discountPrice: parseFloat(String(values.pricing?.discount?.discountPrice || 0)),
-                    dateRange: values.pricing?.discount?.dateRange || { from: new Date(), to: new Date() }
-                  },
-                  pricingOptions: Array.isArray(values.pricing?.pricingOptions)
-                    ? values.pricing.pricingOptions.map((opt: any) => ({
-                      ...opt,
-                      price: parseFloat(String(opt.price || 0)),
-                      name: String(opt.name || ""),
-                      category: String(opt.category || ""),
-                      customCategory: String(opt.customCategory || ""),
-                    }))
-                    : []
-                },
-
-                dates: {
-                  days: parseInt(String(values.dates?.days || 0)),
-                  nights: parseInt(String(values.dates?.nights || 0)),
-                  fixedDeparture: Boolean(values.dates?.fixedDeparture),
-                  multipleDates: Boolean(values.dates?.multipleDates),
-                  scheduleType: (values.dates?.scheduleType || "flexible") as "fixed" | "flexible" | "recurring",
-                  singleDateRange: values.dates?.singleDateRange || { from: new Date(), to: new Date() },
-                  departures: Array.isArray(values.dates?.departures)
-                    ? values.dates.departures.map((dep: any) => ({
-                      ...dep,
-                      id: String(dep.id || Date.now()),
-                      label: String(dep.label || ""),
-                      capacity: parseInt(String(dep.capacity || 0)),
-                      isRecurring: Boolean(dep.isRecurring),
-                      recurrencePattern: String(dep.recurrencePattern || "weekly") as
-                        "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly",
-                    }))
-                    : []
-                },
-
-                // Array fields
-                itinerary: Array.isArray(values.itinerary)
-                  ? values.itinerary.map((item: any) => ({
-                    ...item,
-                    day: String(item.day || ""),
-                    title: String(item.title || ""),
-                    description: String(item.description || ""),
-                  }))
-                  : [],
-
-                facts: Array.isArray(values.facts)
-                  ? values.facts.map((fact: FactData) => ({
-                    ...fact,
-                    field_type: String(fact.field_type || "Plain Text") as "Plain Text" | "Single Select" | "Multi Select",
-                  }))
-                  : [],
-
-                faqs: Array.isArray(values.faqs)
-                  && values.faqs.map((faq: FaqData) => ({
-                    ...faq,
-                    question: String(faq.question || ""),
-                    answer: String(faq.answer || ""),
-                  })),
-
-                // Location fields
-                location: values.location ? {
-                  lat: parseFloat(String(values.location.lat || 0)),
-                  lng: parseFloat(String(values.location.lng || 0)),
-                  country: String(values.location.country || ""),
-                  city: String(values.location.city || ""),
-                  street: String(values.location.street || ""),
-                  state: String(values.location.state || ""),
-                } : undefined,
-
-                // Other fields
-                map: String(values.map || ""),
-                destination: String(values.destination || ""),
-                include: String(values.include || ""),
-                exclude: String(values.exclude || ""),
-                category: Array.isArray(values.category) ? values.category : [],
-                gallery: Array.isArray(values.gallery) ? values.gallery : []
-              };
-
-              onSubmit(formValues, createTour);
+          form.handleSubmit(
+            (values) => {
+              if (typeof onSubmit !== 'function') {
+                console.error('onSubmit is not available', onSubmit);
+                toast({ title: 'Error', description: 'Form submit handler is not available.', variant: 'destructive' });
+                return;
+              }
+              onSubmit(values as unknown as z.infer<typeof formSchema>, createTour);
             },
-            (errors: any) => {
+            (errors) => {
               console.log("Form Errors:", errors);
+              // Extract the error fields and format a user-friendly message
+              const errorFields = Object.keys(errors);
+              const formattedErrors = errorFields.map(field => {
+                return `- ${field.charAt(0).toUpperCase() + field.slice(1)} field has invalid data`;
+              }).join('\n');
+
+              toast({
+                title: 'Tour not saved',
+                description: `Please fix the following issues:\n${formattedErrors}`,
+                variant: 'destructive',
+              });
             }
           )();
         }}>
-          <div className="hidden items-center gap-2 md:ml-auto md:flex absolute top-12 right-5">
-            <Link to="/dashboard/tours">
-              <Button size="sm" variant={'outline'}>
-                <span className="ml-2">
-                  <span>Discard</span>
-                </span>
-              </Button>
-            </Link>
-            <Button size="sm" type="submit" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                  Saving
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
+          {/* Page Header Actions */}
+          <div className="mb-6">
+            <Card className="border shadow-sm">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                    <span>Tour Editor</span>
+                  </div>
+                  <h1 className="text-lg font-semibold">Create Tour</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link to="/dashboard/tours">
+                    <Button size="sm" variant={'outline'}>
+                      Discard
+                    </Button>
+                  </Link>
+                  <Button size="sm" type="submit" disabled={isCreating}>
+                    {isCreating ? (
+                      <>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="flex">
-            <div className="hidden lg:block md:w-60 xl:w-72 ml-3 mt-5 border-r pr-5">
-              <div className="sticky top-16">
-                <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Tabs
+            defaultValue="overview"
+            value={activeTab}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
+              {/* Sidebar */}
+              <div className="space-y-6">
+                <Card className="sticky top-8 inset-x-0 border shadow-sm">
+                  <CardContent className="p-4">
+                    <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
+                      {tabs.map((tab) => (
+                        <TabsTrigger
+                          key={tab.id}
+                          value={tab.id}
+                          className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                          asChild
+                        >
+                          <HashLink to={`#${tab.id}`}>
+                            {tab.id === 'overview' && <FileText className="h-4 w-4" />}
+                            {tab.id === 'pricing' && <CreditCard className="h-4 w-4" />}
+                            {tab.id === 'itinerary' && <MapPin className="h-4 w-4" />}
+                            {tab.id === 'inc-exc' && <ClipboardCheck className="h-4 w-4" />}
+                            {tab.id === 'facts' && <Package className="h-4 w-4" />}
+                            {tab.id === 'gallery' && <Calendar className="h-4 w-4" />}
+                            {tab.id === 'faqs' && <Settings2 className="h-4 w-4" />}
+                            {tab.id === 'reviews' && <ThumbsUp className="h-4 w-4" />}
+                            <span>{tab.title}</span>
+                            {activeTab === tab.id && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                          </HashLink>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </CardContent>
+                  <CardFooter className="px-4 py-4 border-t">
+                    <Button onClick={() => {
+                      if (typeof onSubmit !== "function") {
+                        console.error("onSubmit is not a function", onSubmit);
+                        toast({ title: "Error", description: "Form submit handler is not available.", variant: "destructive" });
+                        return;
+                      }
+
+                      onSubmit(form.getValues(), createTour);
+                    }}
+                      className="w-full"
+                      disabled={isCreating}>
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Create Tour
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
               </div>
+
+
+              {/* Main Content */}
+              <div className="space-y-6">
+                {/* Tab Content */}
+                <TabsContent value={activeTab} className="mt-0 space-y-6">
+                  <Card>
+                    {activeTab === 'overview' && (
+                      <TourBasicInfo
+
+                      />
+                    )}
+                    {activeTab === 'pricing' && <TourPricingDates />}
+                    {activeTab === 'itinerary' && <TourItinerary />}
+                    {activeTab === 'inc-exc' && <TourInclusionsExclusions />}
+                    {activeTab === 'gallery' && <TourGallery />}
+                    {activeTab === 'facts' && <TourFacts />}
+                    {activeTab === 'faqs' && <TourFaqs />}
+                    {activeTab === 'reviews' && <TourReviews />}
+                  </Card>
+                </TabsContent>
+              </div>
+
             </div>
-            <div className="flex-1 lg:pl-6 mt-3">
-              <TabContent
-                activeTab={activeTab}
-                form={form as unknown as ReturnType<typeof useForm<FieldValues>>}
-                editorContent={editorContent}
-                onEditorContentChange={setEditorContent}
-                tripCode={tripCode}
-                handleGenerateCode={handleGenerateCode}
-                itineraryFields={itineraryFields as unknown as ItineraryItem[]}
-                itineraryAppend={itineraryAppend as unknown as (value: Partial<ItineraryItem> | Partial<ItineraryItem>[]) => void}
-                itineraryRemove={itineraryRemove}
-                factsFields={factsFields as unknown as FactItem[]}
-                factsAppend={factsAppend as unknown as (value: { type: string; description: string }) => void}
-                factsRemove={factsRemove}
-                faqFields={faqFields as unknown as FaqItem[]}
-                faqAppend={faqAppend as unknown as (value: { question: string; answer: string }) => void}
-                faqRemove={faqRemove}
-                categories={categories}
-                facts={facts}
-                faq={faq}
-                pricingFields={pricingOptionsFields}
-                pricingAppend={pricingOptionsAppend}
-                pricingRemove={pricingOptionsRemove}
-              />
-            </div>
-          </div>
+
+
+          </Tabs>
+
         </form>
       </Form>
     </div>
-  );
-};
 
-export default AddTour;
+  );
+}
+
+export default AddTour

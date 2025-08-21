@@ -1,18 +1,15 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Trash2, PlusCircle, Calendar, ArrowRight, MapPin, Globe, Map, Pin } from 'lucide-react';
-import { UseFormReturn } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Editor from '@/userDefinedComponents/editor/advanced-editor';
 import { Textarea } from '@/components/ui/textarea';
-import { Destination, Itinerary } from '@/Provider/types';
-import RichTextRenderer from '@/components/RichTextRenderer';
+import { Destination } from '@/Provider/types';
 import {
     Select,
     SelectContent,
@@ -22,26 +19,14 @@ import {
 } from "@/components/ui/select"
 import { useDestination } from '../Destination/useDestination';
 import { getUserId } from '@/util/authUtils';
+import { useTourForm } from '@/Provider/hooks/useTourForm';
 
-interface TourItineraryProps {
-    form: UseFormReturn<any>;
-    itineraryFields: Itinerary[];
-    itineraryAppend: (value: Partial<Itinerary>) => void;
-    itineraryRemove: (index: number) => void;
-    watchedItinerary: any[];
-}
-
-const TourItinerary: React.FC<TourItineraryProps> = ({
-    form,
-    itineraryFields,
-    itineraryAppend,
-    itineraryRemove,
-    watchedItinerary
-}) => {
-
+const TourItinerary = () => {
+    const { form, itineraryAppend, itineraryFields, itineraryRemove } = useTourForm();
     const userId = getUserId();
     const { data: destinations } = useDestination(userId);
-
+    // Watch the current itinerary array for dynamic field value updates
+    const watchedItinerary = form.watch('itinerary');
     return (
         <div className="space-y-8">
             {/* Itinerary Section */}
@@ -63,7 +48,7 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                             variant="outline"
                             size="sm"
                             className="flex items-center gap-2"
-                            onClick={() => itineraryAppend({
+                            onClick={() => itineraryAppend?.({
                                 day: '',
                                 title: '',
                                 description: JSON.stringify({
@@ -80,7 +65,7 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
 
                     <FormField
                         control={form.control}
-                        name="outline"
+                        name="outline" as any
 
                         render={({ field }) => (
                             <FormItem className="mt-4 mb-4">
@@ -88,6 +73,8 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                 <FormControl>
                                     <Textarea
                                         {...field}
+                                        value={(field.value as string) || ''}
+                                        onChange={(e) => field.onChange(e.target.value)}
                                         placeholder="Write your outline here..."
                                     />
                                 </FormControl>
@@ -101,55 +88,62 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                             {itineraryFields.map((_, index) => (
                                 <Card key={index} className={cn(
                                     "border overflow-hidden transition-all",
-                                    watchedItinerary[index]?.title ? "border-border" : "bg-secondary/50"
+                                    watchedItinerary && watchedItinerary[index]?.title ? "border-border" : "bg-secondary/50"
                                 )}>
                                     <Accordion type="single" collapsible className="w-full">
                                         <AccordionItem value={`item-${index}`} className="border-none">
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-secondary/70">
                                                 <div className="flex items-center space-x-3 w-full">
-                                                    <Badge variant={watchedItinerary[index]?.title ? "default" : "outline"}
+                                                    <Badge variant={watchedItinerary?.[index]?.title ? "default" : "outline"}
                                                         className="rounded-full h-7 w-7 p-0 flex items-center justify-center font-medium">
                                                         {index + 1}
                                                     </Badge>
                                                     <div className="flex-1 flex items-center">
                                                         <span className="font-medium text-base">
-                                                            {watchedItinerary[index]?.day || `Day ${index + 1}`}
+                                                            {watchedItinerary?.[index]?.day || `Day ${index + 1}`}
                                                         </span>
-                                                        {watchedItinerary[index]?.title && (
+                                                        {watchedItinerary?.[index]?.title && (
                                                             <>
                                                                 <ArrowRight className="h-3 w-3 mx-2 text-muted-foreground" />
                                                                 <span className="text-muted-foreground truncate">
-                                                                    {watchedItinerary[index]?.title}
+                                                                    {watchedItinerary?.[index]?.title}
                                                                 </span>
                                                             </>
                                                         )}
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            itineraryRemove(index);
+                                                            itineraryRemove?.(index);
                                                         }}
-                                                        className="ml-auto h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.stopPropagation();
+                                                                itineraryRemove?.(index);
+                                                            }
+                                                        }}
+                                                        className="ml-auto h-8 w-8 p-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                         <span className="sr-only">Remove</span>
-                                                    </Button>
+                                                    </div>
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 pb-6 pt-2 border-t border-border">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
                                                     <FormField
                                                         control={form.control}
-                                                        name={`itinerary.${index}.day`}
+                                                        name={`itinerary.options.${index}.day` as any}
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Day Label</FormLabel>
                                                                 <FormControl>
                                                                     <Input
                                                                         {...field}
+                                                                        value={field.value || ''}
+                                                                        onChange={(e) => field.onChange(e.target.value)}
                                                                         placeholder="e.g. Day 1 - Arrival"
                                                                     />
                                                                 </FormControl>
@@ -157,29 +151,18 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                                             </FormItem>
                                                         )}
                                                     />
+
                                                     <FormField
                                                         control={form.control}
-                                                        name={`itinerary.${index}.dateTime`}
+                                                        name={`itinerary.options.${index}.title` as any}
                                                         render={({ field }) => (
-                                                            <FormItem className="flex flex-col">
-                                                                <FormLabel>Date & Time</FormLabel>
-                                                                <DateTimePicker
-                                                                    value={field.value}
-                                                                    onChange={(date) => field.onChange(date)}
-                                                                />
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name={`itinerary.${index}.title`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="md:col-span-2">
+                                                            <FormItem className="md:col-span-1">
                                                                 <FormLabel>Activity Title</FormLabel>
                                                                 <FormControl>
                                                                     <Input
                                                                         {...field}
+                                                                        value={field.value || ''}
+                                                                        onChange={(e) => field.onChange(e.target.value)}
                                                                         placeholder="e.g. City Tour, Guided Museum Visit"
                                                                     />
                                                                 </FormControl>
@@ -189,79 +172,48 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                                     />
                                                     <FormField
                                                         control={form.control}
-                                                        name={`itinerary.${index}.description`}
+                                                        name={`itinerary.options.${index}.destination` as any}
+                                                        render={({ field }) => (
+                                                            <FormItem className="md:col-span-1">
+                                                                <FormLabel>Destination</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        {...field}
+                                                                        value={field.value || ''}
+                                                                        onChange={(e) => field.onChange(e.target.value)}
+                                                                        placeholder="e.g. City Tour, Guided Museum Visit"
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`itinerary.options.${index}.description` as any}
                                                         render={({ field }) => {
-                                                            // Create a preview section with RichTextRenderer
-                                                            const hasContent = field.value && field.value.length > 2;
+                                                            // Parse the current field value for this specific itinerary day
+                                                            let currentContent = null;
+                                                            try {
+                                                                currentContent = field.value ? JSON.parse(field.value) : null;
+                                                            } catch (e) {
+                                                                currentContent = null;
+                                                            }
 
                                                             return (
                                                                 <FormItem className="md:col-span-2">
                                                                     <FormLabel>Description</FormLabel>
                                                                     <FormControl>
-                                                                        <div className="space-y-3">
-                                                                            <div className="prose min-h-[140px] max-w-full rounded-md border border-input">
-                                                                                <Editor
-                                                                                    initialValue={(() => {
-                                                                                        try {
-                                                                                            // If the field value is already JSON, parse it
-                                                                                            if (field.value && field.value.startsWith('{')) {
-                                                                                                return JSON.parse(field.value);
-                                                                                            }
-                                                                                            // If it's plain text or empty, create a default document
-                                                                                            return field.value
-                                                                                                ? {
-                                                                                                    type: "doc",
-                                                                                                    content: [{
-                                                                                                        type: "paragraph",
-                                                                                                        content: [{ type: "text", text: field.value }]
-                                                                                                    }]
-                                                                                                }
-                                                                                                : {
-                                                                                                    type: "doc",
-                                                                                                    content: [{
-                                                                                                        type: "paragraph",
-                                                                                                        content: [{ type: "text", text: "" }]
-                                                                                                    }]
-                                                                                                };
-                                                                                        } catch (e) {
-                                                                                            // Return default empty document on error
-                                                                                            return {
-                                                                                                type: "doc",
-                                                                                                content: [{
-                                                                                                    type: "paragraph",
-                                                                                                    content: [{ type: "text", text: "" }]
-                                                                                                }]
-                                                                                            };
-                                                                                        }
-                                                                                    })()}
-                                                                                    onContentChange={(content) => {
-                                                                                        const contentString = JSON.stringify(content);
-                                                                                        form.setValue(`itinerary.${index}.description`, contentString, {
-                                                                                            shouldDirty: true,
-                                                                                            shouldTouch: true,
-                                                                                            shouldValidate: true
-                                                                                        });
-                                                                                        field.onChange(contentString);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-
-                                                                            {hasContent && (
-                                                                                <Card className="p-3 bg-secondary/30">
-                                                                                    <CardHeader className="p-2 pb-1">
-                                                                                        <CardTitle className="text-sm font-medium text-muted-foreground">Preview</CardTitle>
-                                                                                    </CardHeader>
-                                                                                    <CardContent className="p-2 pt-0">
-                                                                                        <RichTextRenderer content={field.value} className="prose-sm" />
-                                                                                    </CardContent>
-                                                                                </Card>
-                                                                            )}
+                                                                        <div className="prose min-h-[200px] w-full max-w-full rounded-md border border-input">
+                                                                            <Editor
+                                                                                initialValue={currentContent}
+                                                                                onContentChange={(content) => {
+                                                                                    field.onChange(JSON.stringify(content));
+                                                                                }}
+                                                                            />
                                                                         </div>
                                                                     </FormControl>
                                                                     <FormMessage />
-                                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                                        Describe the activities and schedule for this day
-                                                                    </p>
                                                                 </FormItem>
                                                             );
                                                         }}
@@ -282,7 +234,7 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                             <p className="text-muted-foreground mb-5 max-w-md">Start building your tour schedule by adding days and activities for your customers</p>
                             <Button
                                 type="button"
-                                onClick={() => itineraryAppend({
+                                onClick={() => itineraryAppend?.({
                                     day: '',
                                     title: '',
                                     description: JSON.stringify({
@@ -319,7 +271,7 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                         </div>
                         <FormField
                             control={form.control}
-                            name="map"
+                            name="location.map"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Google Maps Embed Code</FormLabel>
@@ -351,12 +303,23 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {destinations?.map((destination: Destination) => (
-                                            <SelectItem disabled={destination.isActive === false} key={destination._id} value={destination._id}>
-                                                {destination.name}
-                                            </SelectItem>
-                                        ))}
+                                        {Array.isArray(destinations) && destinations.length > 0 ? (
+                                            destinations.map((destination: Destination) => (
+                                                <SelectItem
+                                                    disabled={destination.isActive === false}
+                                                    key={destination._id}
+                                                    value={destination._id}
+                                                >
+                                                    {destination.name}
+                                                </SelectItem>
+                                            ))
+                                        ) : null}
                                     </SelectContent>
+                                    {(!destinations || !Array.isArray(destinations) || destinations.length === 0) && (
+                                        <div className="text-muted-foreground text-xs px-2 py-1">
+                                            No destinations available
+                                        </div>
+                                    )}
                                 </Select>
                                 <FormDescription>
                                     You can manage your destination in your destination section
@@ -381,6 +344,8 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                         <FormControl>
                                             <Input
                                                 {...field}
+                                                value={field.value || ''}
+                                                onChange={(e) => field.onChange(e.target.value)}
                                                 placeholder="123 Main St"
                                             />
                                         </FormControl>
@@ -399,6 +364,8 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                             <FormControl>
                                                 <Input
                                                     {...field}
+                                                    value={field.value || ''}
+                                                    onChange={(e) => field.onChange(e.target.value)}
                                                     placeholder="City"
                                                 />
                                             </FormControl>
@@ -416,7 +383,27 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                             <FormControl>
                                                 <Input
                                                     {...field}
+                                                    value={field.value || ''}
+                                                    onChange={(e) => field.onChange(e.target.value)}
                                                     placeholder="State/Province"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="location.zip"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Zip Code</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ''}
+                                                    onChange={(e) => field.onChange(e.target.value)}
+                                                    placeholder="Zip Code/Postal Code"
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -434,6 +421,8 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                         <FormControl>
                                             <Input
                                                 {...field}
+                                                value={field.value || ''}
+                                                onChange={(e) => field.onChange(e.target.value)}
                                                 placeholder="Country"
                                             />
                                         </FormControl>
@@ -452,6 +441,8 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                                             <FormControl>
                                                 <Input
                                                     {...field}
+                                                    value={field.value || ''}
+                                                    onChange={(e) => field.onChange(e.target.value)}
                                                     placeholder="e.g. 40.7128"
                                                 />
                                             </FormControl>
@@ -484,12 +475,36 @@ const TourItinerary: React.FC<TourItineraryProps> = ({
                         <div className="absolute inset-0 flex items-center justify-center bg-secondary">
                             <Globe className="h-12 w-12 text-muted-foreground" />
                         </div>
-                        {form.watch('map') && (
-                            <div
-                                className="absolute inset-0 w-full h-full"
-                                dangerouslySetInnerHTML={{ __html: form.watch('map') || '' }}
-                            />
-                        )}
+                        {(form.watch('location.map') ||
+                            form.watch('location.street') ||
+                            form.watch('location.city') ||
+                            form.watch('location.state') ||
+                            form.watch('location.country')) && (
+                                <div className="absolute inset-0 w-full h-full">
+                                    {form.watch('location.map') ? (
+                                        <div
+                                            className="w-full h-full"
+                                            dangerouslySetInnerHTML={{ __html: form.watch('location.map') || '' }}
+                                        />
+                                    ) : (
+                                        <iframe
+                                            className="w-full h-full border-0"
+                                            loading="lazy"
+                                            allowFullScreen
+                                            referrerPolicy="no-referrer-when-downgrade"
+                                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyA0LY-a9T9SbJ6HhH4HQn1gGsHsfmgZBSU&q=${encodeURIComponent(
+                                                [
+                                                    form.watch('location.street'),
+                                                    form.watch('location.city'),
+                                                    form.watch('location.state'),
+                                                    form.watch('location.country')
+                                                ].filter(Boolean).join(', ')
+                                            )}`}
+                                            title="Location Map"
+                                        />
+                                    )}
+                                </div>
+                            )}
                     </div>
                 </CardContent>
             </Card>
