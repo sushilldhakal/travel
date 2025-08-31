@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FactData } from '@/Provider/types';
-import { Plus, Info, Trash2, FileText, Award, Clock, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, FileText, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MultiSelect } from '@/components/ui/MultiSelect';
@@ -24,6 +24,15 @@ const TourFacts = () => {
     const watchedFacts = form.watch('facts');
     const userId = getUserId();
     const { data: facts } = useFacts(userId);
+
+
+    // Log facts by field type to inspect their data structure
+    if (Array.isArray(watchedFacts) && watchedFacts.length > 0) {
+        const plainTextFact = watchedFacts.find(f => f?.field_type === 'Plain Text');
+        const multiSelectFact = watchedFacts.find(f => f?.field_type === 'Multi Select');
+        const singleSelectFact = watchedFacts.find(f => f?.field_type === 'Single Select');
+
+    }
 
     // Auto-populate selectedFact state when facts are loaded during edit mode
     useMemo(() => {
@@ -65,18 +74,8 @@ const TourFacts = () => {
 
 
 
-    // Helper function to get an icon for a fact
-    const getFactIcon = (fact: any) => {
-        const iconName = fact?.icon || '';
-        switch (iconName) {
-            case 'clock':
-                return <Clock className="h-4 w-4" />;
-            case 'award':
-                return <Award className="h-4 w-4" />;
-            default:
-                return <Info className="h-4 w-4" />;
-        }
-    };
+    // We're using the Icon component directly now, so this function is no longer needed
+    // and has been removed to fix the lint warning
 
     // Initialize selectedFact from watchedFacts when component mounts or watchedFacts changes
     useEffect(() => {
@@ -100,14 +99,16 @@ const TourFacts = () => {
     const handleFactSelect = (fact: FactData | undefined, index: number) => {
         if (fact) {
             setSelectedFact({ ...selectedFact, [index]: fact });
-            // Make sure we still set the field_type and icon
+            // Set all the field values correctly
+            form.setValue(`facts.${index}.title`, fact.name);
+            form.setValue(`facts.${index}.factId`, fact.id); // Store the fact ID for reference
             form.setValue(`facts.${index}.field_type`, fact.field_type as 'Plain Text' | 'Single Select' | 'Multi Select' || 'Plain Text');
             form.setValue(`facts.${index}.icon`, fact.icon || '');
         }
     };
 
     return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardHeader className="bg-secondary border-b pb-6">
                 <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
@@ -168,7 +169,7 @@ const TourFacts = () => {
                                                             className="rounded-md h-7 w-7 p-0 flex items-center justify-center font-medium">
                                                             {/* {getFactIcon(currentFact)} */}
 
-                                                            <div className="flex-shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                                            <div className="shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
                                                                 <Icon name={currentFact.icon || ''} size={20} />
                                                             </div>
                                                         </Badge>
@@ -217,22 +218,19 @@ const TourFacts = () => {
                                                                     <FormLabel>Fact Name</FormLabel>
                                                                     <FormControl>
                                                                         <Select
-                                                                            value={field.value}
+                                                                            value={field.value ? facts?.find(f => f.name === field.value)?.id : undefined}
                                                                             onValueChange={(value) => {
-                                                                                field.onChange(value);
-                                                                                // Extract just the name part from our composite value (name-index)
-                                                                                const factName = value.split('-').slice(0, -1).join('-');
-
-                                                                                // Find the selected fact from the facts array
+                                                                                // Find the fact by ID
                                                                                 const foundFact = facts && Array.isArray(facts)
-                                                                                    ? facts.find((f) => f.name === factName)
+                                                                                    ? facts.find((f) => f.id === value)
                                                                                     : undefined;
-                                                                                setSelectedFact({ ...selectedFact, [index]: foundFact });
 
-                                                                                // Make sure we still set the field_type and icon
                                                                                 if (foundFact) {
-                                                                                    form.setValue(`facts.${index}.field_type`, foundFact.field_type as 'Plain Text' | 'Single Select' | 'Multi Select' || 'Plain Text');
-                                                                                    form.setValue(`facts.${index}.icon`, foundFact.icon || '');
+                                                                                    // Use handleFactSelect to properly set all values
+                                                                                    handleFactSelect(foundFact, index);
+                                                                                } else {
+                                                                                    // Fallback if fact not found
+                                                                                    field.onChange(value);
                                                                                 }
                                                                             }}
                                                                         >
@@ -240,10 +238,10 @@ const TourFacts = () => {
                                                                                 <SelectValue placeholder="Select a fact" />
                                                                             </SelectTrigger>
                                                                             <SelectContent>
-                                                                                {Array.isArray(facts) && facts.length > 0 ? facts.map((fact, factIndex) => (
+                                                                                {Array.isArray(facts) && facts.length > 0 ? facts.map((fact) => (
                                                                                     <SelectItem
-                                                                                        key={`fact-${fact.name}-${factIndex}`}
-                                                                                        value={`${fact.name}-${factIndex}`}
+                                                                                        key={`fact-${fact.id || 'unknown'}`}
+                                                                                        value={fact.id || `fact-${fact.name}-${Date.now()}`}
                                                                                     >
                                                                                         {fact.name}
                                                                                     </SelectItem>
@@ -287,11 +285,14 @@ const TourFacts = () => {
                                                                         <FormLabel>Fact Details</FormLabel>
                                                                         <FormControl>
                                                                             <Input
-                                                                                value={Array.isArray(field.value) && field.value.length > 0 ?
-                                                                                    (typeof field.value[0] === 'string' ? field.value[0] : '') : ''}
+                                                                                value={
+                                                                                    Array.isArray(field.value) && field.value.length > 0
+                                                                                        ? (typeof field.value[0] === 'string' ? field.value[0] : '')
+                                                                                        : typeof field.value === 'string' ? field.value : ''
+                                                                                }
                                                                                 onChange={(e) => {
-                                                                                    // Store as array with single item
-                                                                                    field.onChange([e.target.value]);
+                                                                                    // Allow both string and array formats for backward compatibility
+                                                                                    field.onChange(e.target.value);
                                                                                 }}
                                                                                 placeholder={`Enter ${selectedFact[index]?.name || 'Fact Details'}`}
                                                                             />
@@ -361,14 +362,33 @@ const TourFacts = () => {
                                                                 name={`facts.${index}.value`}
                                                                 render={({ field }) => {
                                                                     // Extract current field value and handle nested arrays
-                                                                    let fieldValue: Array<{ label: string; value: string }> = [];
+                                                                    let fieldValue: Array<string | { label: string; value: string }> = [];
+
+                                                                    // Debug the exact structure of the value
+
                                                                     if (Array.isArray(field.value)) {
-                                                                        if (field.value.length > 0 && typeof field.value[0] === 'object') {
-                                                                            // It's an array of objects
-                                                                            fieldValue = field.value as Array<{ label: string; value: string }>;
-                                                                        } else if (field.value.length > 0 && Array.isArray(field.value[0])) {
-                                                                            // It's a nested array, extract the inner array
-                                                                            fieldValue = field.value[0] as Array<{ label: string; value: string }>;
+                                                                        if (field.value.length > 0) {
+                                                                            if (typeof field.value[0] === 'object' && !Array.isArray(field.value[0])) {
+                                                                                // It's an array of objects
+                                                                                fieldValue = field.value as Array<{ label: string; value: string }>;
+                                                                            } else if (Array.isArray(field.value[0])) {
+                                                                                // It's a nested array, extract the inner array
+                                                                                fieldValue = field.value[0];
+                                                                            } else if (field.value.every(item => typeof item === 'string')) {
+                                                                                // It's a flat array of strings (from API)
+                                                                                fieldValue = field.value;
+                                                                            }
+                                                                        }
+                                                                    } else if (typeof field.value === 'string' && field.value) {
+                                                                        // Handle case where it might be a JSON string
+                                                                        try {
+                                                                            const parsed = JSON.parse(field.value);
+                                                                            if (Array.isArray(parsed)) {
+                                                                                fieldValue = parsed;
+                                                                            }
+                                                                        } catch (e) {
+                                                                            // Not valid JSON, use as single string value
+                                                                            fieldValue = [field.value];
                                                                         }
                                                                     }
                                                                     // Map our string array to object format needed by MultiSelect
@@ -386,6 +406,7 @@ const TourFacts = () => {
                                                                         : [];
 
                                                                     // Format current values to match MultiSelect expected format
+
                                                                     const currentValues = (Array.isArray(fieldValue) ?
                                                                         fieldValue.map(val => {
                                                                             // Handle different possible formats
@@ -393,9 +414,12 @@ const TourFacts = () => {
                                                                                 return { value: val, label: val };
                                                                             } else if (val && typeof val === 'object' && 'value' in val) {
                                                                                 return val;
+                                                                            } else if (val && typeof val === 'object' && 'label' in val) {
+                                                                                return val;
                                                                             }
                                                                             return null;
                                                                         }).filter(Boolean) : []) as { label: string; value: string }[];
+
 
                                                                     return (
                                                                         <FormItem>
@@ -405,8 +429,14 @@ const TourFacts = () => {
                                                                                     options={optionsMulti}
                                                                                     value={currentValues}
                                                                                     onValueChange={(selectedValues) => {
-                                                                                        // Store as a flat array, not nested
-                                                                                        field.onChange(selectedValues);
+                                                                                        // Extract just the string values from the selected objects
+                                                                                        const stringValues = selectedValues.map(item => {
+                                                                                            return typeof item === 'object' && item !== null && 'value' in item
+                                                                                                ? String(item.value)
+                                                                                                : String(item);
+                                                                                        });
+                                                                                        // Store as a flat array of strings, not objects
+                                                                                        field.onChange(stringValues);
                                                                                     }}
                                                                                     placeholder="Select options"
                                                                                     className="w-full"
@@ -444,23 +474,29 @@ const TourFacts = () => {
                                                             <FormControl>
                                                                 <Select
                                                                     onValueChange={(value) => {
-                                                                        field.onChange(value);
-                                                                        const factName = value.split('-').slice(0, -1).join('-');
+                                                                        // Find fact by ID
                                                                         const foundFact = facts && Array.isArray(facts)
-                                                                            ? facts.find((f) => f.name === factName)
+                                                                            ? facts.find((f) => f.id === value)
                                                                             : undefined;
-                                                                        handleFactSelect(foundFact, index);
+
+                                                                        if (foundFact) {
+                                                                            // Use handleFactSelect to set all values correctly
+                                                                            handleFactSelect(foundFact, index);
+                                                                        } else {
+                                                                            // Fallback if fact not found
+                                                                            field.onChange(value);
+                                                                        }
                                                                     }}
-                                                                    defaultValue={field.value}
+                                                                    value={field.value ? (facts?.find(f => f.name === field.value)?.id || field.value) : undefined}
                                                                 >
                                                                     <SelectTrigger className="w-[220px]">
                                                                         <SelectValue placeholder="Select a fact" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {Array.isArray(facts) && facts.length > 0 ? facts.map((fact, factIndex) => (
+                                                                        {Array.isArray(facts) && facts.length > 0 ? facts.map((fact) => (
                                                                             <SelectItem
-                                                                                key={`fact-${fact.name}-${factIndex}`}
-                                                                                value={`${fact.name}-${factIndex}`}
+                                                                                key={`fact-${fact.id}`}
+                                                                                value={fact.id}
                                                                             >
                                                                                 {fact.name}
                                                                             </SelectItem>
@@ -522,6 +558,25 @@ const TourFacts = () => {
                         </Button>
                     </div>
                 )}
+
+                <div className="flex items-center justify-between mt-6">
+                    <h3 className="text-md font-medium">Add New Fact</h3>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={() => factsAppend?.({
+                            title: '',
+                            value: '',
+                            field_type: 'Plain Text',
+                            icon: ''
+                        })}
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Fact</span>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

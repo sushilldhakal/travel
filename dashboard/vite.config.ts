@@ -4,6 +4,7 @@ import checker from 'vite-plugin-checker'; // https://github.com/fi3ework/vite-p
 import path from 'node:path'
 import { createRequire } from 'node:module';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import tailwindcss from '@tailwindcss/vite'
 
 const require = createRequire(import.meta.url);
 const pdfjsDistPath = path.dirname(require.resolve('pdfjs-dist/package.json'));
@@ -19,6 +20,7 @@ export default defineConfig({
         },
       ],
     }),
+    tailwindcss(),
     checker({ typescript: false }), react()],
     assetsInclude: ['**/*.pdf'],
   resolve: {

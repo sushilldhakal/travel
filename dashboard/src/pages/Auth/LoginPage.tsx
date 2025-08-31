@@ -238,7 +238,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gradient-to-r from-primary/80 via-primary/60 to-secondary/70">
+    <div className="flex justify-center items-center h-screen bg-linear-to-r from-primary/80 via-primary/60 to-secondary/70">
       <div className={`container ${showForm}`}>
         <div className="overlay"></div>
         <div className="box"></div>

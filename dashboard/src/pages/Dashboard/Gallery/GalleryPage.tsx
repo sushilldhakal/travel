@@ -222,7 +222,6 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
     };
 
     const handleImageSelect = (image: string) => {
-        console.log('Selected image: inside function top', image);
 
         // Update the selected image
         setSelectedImage(image);
@@ -268,7 +267,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
             </div>
 
             {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length === 0 ? (
-                <Card className="shadow-sm border-border">
+                <Card className="shadow-xs border-border">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold flex items-center">
                             {tab === 'images' && <Image className="w-5 h-5 mr-2 text-primary" />}
@@ -294,7 +293,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
             ) : null}
 
             {isGalleryPage && selectedImage && selectedMediaUrls && selectedMediaUrls.length > 0 && (
-                <Card className="shadow-sm border-border">
+                <Card className="shadow-xs border-border">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold flex items-center">
                             <Trash2 className="w-5 h-5 mr-2 text-destructive" />
@@ -344,7 +343,7 @@ const GalleryPage = ({ onImageSelect, activeTab }: GalleryPageProps) => {
     }
 
     return (
-        <Card className="shadow-sm border-border">
+        <Card className="shadow-xs border-border">
             <CardHeader className="pb-3">
                 <CardTitle className="text-xl font-semibold flex items-center justify-between">
                     <div className="flex items-center">

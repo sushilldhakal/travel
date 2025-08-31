@@ -164,7 +164,7 @@ const SingleCategory = ({
     };
 
     if (isLoading) return (
-        <Card className="shadow-sm animate-pulse">
+        <Card className="shadow-xs animate-pulse">
             <div className="w-full h-[200px] bg-muted rounded-t-md"></div>
             <CardContent className="p-6 space-y-4">
                 <div className="h-5 bg-muted rounded w-3/4"></div>
@@ -175,7 +175,7 @@ const SingleCategory = ({
     );
 
     if (isError) return (
-        <Card className="shadow-sm border-destructive/50 bg-destructive/5">
+        <Card className="shadow-xs border-destructive/50 bg-destructive/5">
             <CardContent className="p-6">
                 <p className="text-destructive">Failed to load category data</p>
             </CardContent>
@@ -189,7 +189,7 @@ const SingleCategory = ({
                 handleUpdateCategory();
             }}>
                 <Card className={cn(
-                    "shadow-sm overflow-hidden transition-all",
+                    "shadow-xs overflow-hidden transition-all",
                     isEditMode ? "border-primary/30 bg-primary/5" : "hover:border-border/80"
                 )}>
                     {isEditMode ? (
@@ -212,7 +212,7 @@ const SingleCategory = ({
                                                             type="button"
                                                             size="icon"
                                                             variant="secondary"
-                                                            className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                            className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                             onClick={() => window.open(field.value as string, '_blank')}
                                                         >
                                                             <ImageIcon className="h-4 w-4" />
@@ -222,14 +222,14 @@ const SingleCategory = ({
                                                             type="button"
                                                             size="icon"
                                                             variant="destructive"
-                                                            className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                            className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                             onClick={() => handleRemoveImage(field.onChange)}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                             <span className="sr-only">Remove image</span>
                                                         </Button>
                                                     </div>
-                                                    <Badge className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm">
+                                                    <Badge className="absolute top-2 left-2 bg-background/80 backdrop-blur-xs">
                                                         Cover Image
                                                     </Badge>
                                                 </div>

@@ -24,7 +24,7 @@ export function TourDates() {
     const pricingOptionsFromForm = form.watch('pricingOptions') || form.watch('pricing.pricingOptions') || [];
 
     return (
-        <Card className="mb-6 shadow-sm border">
+        <Card className="mb-6 shadow-xs border">
             <CardHeader className="bg-secondary/20 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ function DateTypeButton({
     return (
         <Button
             type="button"
-            variant={active ? "default" : "outline"}
+            variant={active ? "default" : "outline-solid"}
             className={`h-auto py-2 px-4 justify-start flex-col items-start text-left ${active ? "border-primary" : ""}`}
             onClick={onClick}
         >
@@ -141,11 +141,11 @@ function DateTypeButton({
 
 // Define a type for form field paths based on the Tour schema
 // While this still requires an 'any' cast eventually, it documents our intent better
-type TourFormFieldPath = 
-  | `dates.${string}` 
-  | `pricing.${string}` 
-  | `dates.departures.${number}.${string}`
-  | string; // Fallback for other dynamic paths
+type TourFormFieldPath =
+    | `dates.${string}`
+    | `pricing.${string}`
+    | `dates.departures.${number}.${string}`
+    | string; // Fallback for other dynamic paths
 
 /**
  * Helper function to create type-safe form field paths
@@ -172,10 +172,10 @@ function getWatchedValue<T>(form: UseFormReturn<Tour>, path: TourFormFieldPath, 
 
 function RecurringTourField({ basePath = 'dates' }: { basePath?: string }) {
     const { form } = useTourForm();
-    
+
     // Create field path helper function for this component
     const fieldPath = createFieldPathHelper(basePath);
-    
+
     // The field path for isRecurring
     const isRecurringPath = fieldPath('isRecurring');
 
@@ -237,8 +237,6 @@ function PricingCategorySelector({
                         <Select
                             value={field.value || ''}
                             onValueChange={(value) => {
-                                console.log('PricingCategorySelector - Selected value:', value);
-                                console.log('PricingCategorySelector - Available options:', pricingOptions);
                                 field.onChange(value);
                             }}
                         >
@@ -252,12 +250,10 @@ function PricingCategorySelector({
                                     pricingOptions.map((option, index) => {
                                         // Ensure we have a valid ID for the SelectItem
                                         const optionId = option.id || `option-${index}`;
-                                        console.log(`Rendering SelectItem - ID: "${optionId}", Name: "${option.name}", Category: "${option.category}"`);
                                         return (
-                                            <SelectItem 
-                                                key={optionId} 
+                                            <SelectItem
+                                                key={optionId}
                                                 value={optionId}
-                                                onSelect={() => console.log(`SelectItem clicked: ${optionId}`)}
                                             >
                                                 {option.name || 'Option'} - {option.category} - ${option.price}
                                             </SelectItem>
@@ -378,13 +374,13 @@ function FixedDepartureForm({ pricingOptions = [] }: { pricingOptions: pricingOp
                     render={({ field }) => {
                         // Ensure we have a properly formatted date range value
                         const dateRangeValue = field.value || { from: undefined, to: undefined };
-                        
+
                         return (
                             <FormItem className="flex flex-col">
                                 <FormLabel>Date Range</FormLabel>
                                 <DatePickerWithRange
                                     // Use the correct prop names for DatePickerWithRange component
-                                    date={dateRangeValue} 
+                                    date={dateRangeValue}
                                     setDate={field.onChange}
                                     className="w-full"
                                 />
@@ -525,22 +521,22 @@ function MultipleDeparturesForm({ pricingOptions = [] }: { pricingOptions: prici
 // Implementation of RecurringPatternForm with proper TypeScript type safety
 function RecurringPatternForm({ basePath = 'dates' }: { basePath?: string }) {
     const { form } = useTourForm();
-    
+
     // Create field path helper function for this component
     const fieldPath = createFieldPathHelper(basePath);
-    
+
     // Define paths for recurring fields
     const recurrencePattern = fieldPath('recurrencePattern');
     const recurrenceInterval = fieldPath('recurrenceInterval');
     const recurrenceEndDate = fieldPath('recurrenceEndDate');
-    
+
     // Get watched recurrence pattern to conditionally display relevant inputs
     const pattern = getWatchedValue<string>(form, recurrencePattern, 'daily');
-    
+
     return (
         <div className="space-y-4 border rounded-md p-4 bg-muted/5 mt-4">
             <h3 className="text-lg font-medium">Recurring Pattern</h3>
-            
+
             {/* Recurrence Pattern Selection */}
             <FormField
                 control={form.control}
@@ -598,10 +594,10 @@ function RecurringPatternForm({ basePath = 'dates' }: { basePath?: string }) {
                 name={recurrenceEndDate as any}
                 render={({ field }) => {
                     // Ensure we properly handle the date value
-                    const dateValue = field.value ? 
-                        (field.value instanceof Date ? field.value : new Date(field.value)) : 
+                    const dateValue = field.value ?
+                        (field.value instanceof Date ? field.value : new Date(field.value)) :
                         undefined;
-                        
+
                     return (
                         <FormItem className="flex flex-col">
                             <FormLabel>End Date</FormLabel>

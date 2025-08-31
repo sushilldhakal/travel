@@ -9,18 +9,12 @@ interface TourEditorWrapperProps {
 const TourEditorWrapper: React.FC<TourEditorWrapperProps> = ({ children }) => {
     const location = useLocation();
     const { tourId } = useParams<{ tourId: string }>();
-    
+
     // Detect if we're in editing mode based on the route
     const isEditing = location.pathname.includes('/edit_tour/') && !!tourId;
-    
-    console.log('TourEditorWrapper Debug:', {
-        pathname: location.pathname,
-        tourId,
-        isEditing
-    });
-    
+
     return (
-        <TourProvider 
+        <TourProvider
             isEditing={isEditing}
         >
             {children}

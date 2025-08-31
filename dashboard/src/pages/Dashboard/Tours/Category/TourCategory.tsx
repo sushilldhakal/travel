@@ -57,7 +57,7 @@ const TourCategory = () => {
 
     // Generate skeleton cards for loading state
     const skeletonCards = Array(6).fill(0).map((_, index) => (
-        <Card key={`skeleton-${index}`} className="shadow-sm animate-pulse">
+        <Card key={`skeleton-${index}`} className="shadow-xs animate-pulse">
             <div className="w-full h-[200px] bg-muted rounded-t-md"></div>
             <CardContent className="p-5 space-y-3">
                 <div className="h-5 bg-muted rounded w-3/4"></div>
@@ -81,7 +81,7 @@ const TourCategory = () => {
                         <Input
                             type="search"
                             placeholder="Search categories..."
-                            className="!pl-8 w-full sm:w-[250px] bg-background"
+                            className="pl-8! w-full sm:w-[250px] bg-background"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -137,7 +137,7 @@ const TourCategory = () => {
                     {skeletonCards}
                 </div>
             ) : isError ? (
-                <Card className="border-destructive/50 bg-destructive/5 shadow-sm">
+                <Card className="border-destructive/50 bg-destructive/5 shadow-xs">
                     <CardContent className="p-6 text-center">
                         <div className="flex justify-center mb-3">
                             <CameraIcon className="h-8 w-8 text-destructive" />
@@ -164,7 +164,7 @@ const TourCategory = () => {
                     ))}
                 </div>
             ) : categories && categories.length > 0 ? (
-                <Card className="border-muted/50 shadow-sm">
+                <Card className="border-muted/50 shadow-xs">
                     <CardContent className="p-6 text-center">
                         <div className="flex justify-center mb-3">
                             <Search className="h-8 w-8 text-muted-foreground" />
@@ -183,7 +183,7 @@ const TourCategory = () => {
                     </CardContent>
                 </Card>
             ) : (
-                <Card className="border-muted/50 shadow-sm">
+                <Card className="border-muted/50 shadow-xs">
                     <CardContent className="p-6 text-center">
                         <div className="flex justify-center mb-3">
                             <FolderPlus className="h-8 w-8 text-muted-foreground" />

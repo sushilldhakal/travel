@@ -52,7 +52,7 @@ const TourFaqs = () => {
     }, [faqFields, faq, form]);
 
     return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardHeader className="bg-secondary border-b pb-6">
                 <div className="flex items-center gap-2">
                     <HelpCircle className="h-5 w-5 text-primary" />

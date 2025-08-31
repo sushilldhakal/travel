@@ -67,7 +67,7 @@ const TourBasicInfo = () => {
     };
 
     return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardHeader className="bg-secondary border-b pb-6">
                 <div className="flex items-center gap-2">
                     <HelpCircle className="h-5 w-5 text-primary" />
@@ -243,7 +243,7 @@ const TourBasicInfo = () => {
                 />
 
                 <div className="grid grid-flow-col grid-cols-2 gap-3">
-                    <div className="w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                    <div className="w-full rounded-lg border bg-card text-card-foreground shadow-xs overflow-hidden">
                         <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                             <FormField
                                 control={form.control}
@@ -253,7 +253,7 @@ const TourBasicInfo = () => {
                                         <FormLabel>Cover Image<br /></FormLabel>
                                         {field.value ? (
                                             <div className="mt-2 relative">
-                                                <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5">
+                                                <div className="relative aspect-4/3 rounded-md overflow-hidden border border-border bg-primary/5">
                                                     <img
                                                         src={field.value}
                                                         alt="Selected cover"
@@ -315,7 +315,7 @@ const TourBasicInfo = () => {
                         </div>
                     </div>
 
-                    <div className='w-[100%] rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden'>
+                    <div className='w-full rounded-lg border bg-card text-card-foreground shadow-xs overflow-hidden'>
                         <div className="flex flex-col min-h-20 space-y-1.5 p-6 relative">
                             <FormField
                                 control={form.control}
@@ -325,7 +325,7 @@ const TourBasicInfo = () => {
                                         <FormLabel>PDF<br /></FormLabel>
                                         {field.value ? (
                                             <div className="mt-2 relative">
-                                                <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-primary/5 flex flex-col items-center justify-center p-4">
+                                                <div className="relative aspect-4/3 rounded-md overflow-hidden border border-border bg-primary/5 flex flex-col items-center justify-center p-4">
                                                     <FileText className="h-12 w-12 text-primary" />
                                                     <Link to={field.value} target="_blank" className="flex items-center mt-2 text-primary hover:underline">
                                                         <Eye className="h-4 w-4 mr-1" />

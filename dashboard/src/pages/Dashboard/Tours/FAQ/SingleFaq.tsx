@@ -138,7 +138,7 @@ const SingleFaq = ({
     };
 
     if (isLoading) return (
-        <Card className="shadow-sm animate-pulse">
+        <Card className="shadow-xs animate-pulse">
             <CardContent className="p-6 space-y-4">
                 <div className="h-5 bg-muted rounded w-3/4"></div>
                 <div className="h-20 bg-muted rounded w-full"></div>
@@ -147,7 +147,7 @@ const SingleFaq = ({
     );
     
     if (isError) return (
-        <Card className="shadow-sm border-destructive/50 bg-destructive/5">
+        <Card className="shadow-xs border-destructive/50 bg-destructive/5">
             <CardContent className="p-6">
                 <p className="text-destructive">Failed to load FAQ data</p>
             </CardContent>
@@ -161,7 +161,7 @@ const SingleFaq = ({
                 form.handleSubmit(handleUpdateFaq)();
             }}>
                 <Card className={cn(
-                    "shadow-sm overflow-hidden transition-all", 
+                    "shadow-xs overflow-hidden transition-all", 
                     isEditMode ? "border-primary/30 bg-primary/5" : "hover:border-border/80"
                 )}>
                     <CardContent className="p-0">
@@ -216,7 +216,7 @@ const SingleFaq = ({
                             <div className="p-5">
                                 <div className="mb-3">
                                     <h3 className="font-semibold text-base text-foreground flex items-start gap-2">
-                                        <HelpCircle className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                                        <HelpCircle className="h-4 w-4 text-primary mt-1 shrink-0" />
                                         <span>{faq?.question}</span>
                                     </h3>
                                 </div>

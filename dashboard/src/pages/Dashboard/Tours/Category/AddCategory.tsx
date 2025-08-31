@@ -95,7 +95,7 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
                 e.preventDefault();
                 form.handleSubmit(handleCreateCategory)();
             }}>
-                <Card className="shadow-sm border-primary/30 bg-primary/5">
+                <Card className="shadow-xs border-primary/30 bg-primary/5">
                     <CardHeader className="pb-3">
                         <div className="flex items-center gap-2 mb-2">
                             <Badge variant="outline" className="bg-primary/10 text-primary">
@@ -137,7 +137,7 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
                                                                 <Button
                                                                     size="icon"
                                                                     variant="secondary"
-                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                                     onClick={() => window.open(field.value as string, '_blank')}
                                                                 >
                                                                     <ImageIcon className="h-4 w-4" />
@@ -147,7 +147,7 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
                                                                     type="button"
                                                                     size="icon"
                                                                     variant="destructive"
-                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                                    className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                                     onClick={() => handleRemoveImage(field.onChange)}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />

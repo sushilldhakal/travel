@@ -26,7 +26,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [title, setTitle] = useState(''); // State for input title
     const [selectedCategory, setSelectedCategory] = useState(''); // State for selected category
-    const [sortedTours, setSortedTours] = useState<any>(null);
+    const [sortedTours, setSortedTours] = useState<Record<string, unknown> | null>(null);
     const [showSearchResults, setShowSearchResults] = useState(false); // State to manage view
     const [isHeaderFixed, setIsHeaderFixed] = useState(false);
 
@@ -70,15 +70,27 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         retry: 3, // Number of retry attempts
         retryDelay: 5000, // Delay between retry
         onSuccess: (data) => {
-            // Invalidate and refetch
+
+
+            // Check if any tours match the selected category
+            if (selectedCategory && data?.data?.tours) {
+                const matchingTours = data.data.tours.filter((tour: Record<string, unknown>) => {
+                    return tour.category && Array.isArray(tour.category) &&
+                        tour.category.some((cat: Record<string, unknown>) => cat.value === selectedCategory);
+                });
+                console.log(`Category matches: ${matchingTours.length}/${data.data.tours.length} for ID: ${selectedCategory}`);
+                console.log('First tour categories:', data.data.tours[0]?.category);
+            }
+
             setSortedTours(data);
             setShowSearchResults(true);
         },
-        onError: (error: any) => {
-            console.error("Error getting tour:", error.message);
+        onError: (error: Error | unknown) => {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error("Error getting tour:", errorMessage);
             toast({
                 title: "Search Error",
-                description: `An error occurred: ${error.message}`,
+                description: `An error occurred: ${errorMessage}`,
             });
         }
     });
@@ -98,8 +110,9 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
 
     // Handle category selection
     const handleCategorySelect = (category: string) => {
-        setSelectedCategory(category === 'all' ? '' : category);
-        const query = buildQuery(title, category === 'all' ? '' : category);
+        const selectedCat = category === 'all' ? '' : category;
+        setSelectedCategory(selectedCat);
+        const query = buildQuery(title, selectedCat);
         searchMutation.mutate(query);
     };
 
@@ -117,7 +130,7 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         const query = buildQuery(title, selectedCategory);
         try {
             await searchMutation.mutateAsync(query);
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: "Failed to search tour",
                 description: `An error occurred while searching for the tour. Please try again later.${error.message}`,
@@ -131,16 +144,23 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
         setShowSearchResults(false);
     };
 
-    const sortedToursByDate = showSearchResults
-        ? sortedTours?.data?.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3)
-        : latestTours?.data?.tours?.sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 3);
+    // Properly handle search results vs latest tours
+    const sortedToursByDate = showSearchResults && sortedTours?.data?.tours
+        ? sortedTours.data.tours
+            .sort((a: { updatedAt: string }, b: { updatedAt: string }) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            .slice(0, 3)
+        : latestTours?.data?.tours
+            ?.sort((a: { updatedAt: string }, b: { updatedAt: string }) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            .slice(0, 3);
 
     return (
         <>
             <div ref={searchRef} id="search" className={`cd-main-search fixed ${isHeaderFixed ? 'h-[66px]' : 'h-[106px]'} left-0 right-0 w-full bg-secondary shadow-md transition-all duration-500 ease-in-out ${headerSearch ? 'visibilty-visible opacity-100 z-50 top-0' : 'visibilty-hidden opacity-0 h-0 z-0 top-[-400px]'}`}>
                 <form onSubmit={handleSubmit} className="bg-secondary h-full mx-auto max-w-8xl relative">
                     <Input
-                        className="pr-60 text-primary h-full w-full text-xl bg-transparent leading-10 focus-visible:ring--offset-0 focus-visible:ring-0 focus-visible:outline-none box-shadow-none border-0 text-white placeholder:text-gray-400"
+                        className="pr-60 text-primary h-full w-full text-xl bg-transparent leading-10 focus-visible:ring--offset-0 focus-visible:ring-0 focus-visible:outline-hidden box-shadow-none border-0 text-white placeholder:text-gray-400"
                         type="search"
                         value={title}
                         onChange={handleTitleChange}
@@ -252,8 +272,8 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                         </div>
 
                         <div className="quick-links col-span-3 col-end-13 text-right hidden md:flex flex-row flex-col">
-                            <h3 className="mb-3">Quick Links</h3>
                             <ul>
+                                <li><h3 className="mb-3">Quick Links</h3></li>
                                 <li className="mb-2"><Link to={'#'}>Find a Destination</Link></li>
                                 <li className="mb-2"><Link to={'#'}>FAQ's</Link></li>
                                 <li className="mb-2"><Link to={'#'}>Support</Link></li>

@@ -99,14 +99,14 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                     <div className={`relative flex items-center justify-between h-full`}>
                         <div className="absolute inset-y-0 left-0 flex items-center md:hidden">
                             {/* Mobile menu button*/}
-                            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white">
                                 <span className="absolute -inset-0.5" />
                                 <span className="sr-only">Open main menu</span>
-                                <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-[open]:hidden" />
-                                <X aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
+                                <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-open:hidden" />
+                                <X aria-hidden="true" className="hidden h-6 w-6 group-data-open:block" />
                             </DisclosureButton>
                         </div>
-                        <div className="flex hidden md:block flex-shrink-0 items-center text-primary">
+                        <div className="flex hidden md:block shrink-0 items-center text-primary">
                             <Link to={'/'} className="text-3xl font-bold">eTravel</Link>
                         </div>
                         <div className="flex flex-1 items-center justify-center md:items-stretch md:justify-end">
@@ -134,7 +134,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                                     <>
                                         <button
                                             type="button"
-                                            className="ml-3 relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                                            className="ml-3 relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                                         >
                                             <span className="absolute -inset-1.5" />
                                             <span className="sr-only">View notifications</span>
@@ -142,7 +142,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                                         </button>
                                         <Menu as="div" className="relative ml-3">
                                             <div>
-                                                <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                                                <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                                                     <span className="absolute -inset-1.5" />
                                                     <span className="sr-only">Open user menu</span>
                                                     {isLoadingAvatar ? (
@@ -165,28 +165,28 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
 
                                             <MenuItems
                                                 transition
-                                                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-secondary py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none 
-                                                data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                                                className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-secondary py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-hidden 
+                                                data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75 data-enter:ease-out data-leave:ease-in"
                                             >{dashRight
                                                 ?
                                                 <MenuItem>
-                                                    <Link to={'/dashboard/home'} className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
+                                                    <Link to={'/dashboard/home'} className="block px-4 py-2 text-sm data-focus:text-primary/60">
                                                         Dashboard
                                                     </Link>
                                                 </MenuItem> : ''
                                                 }
                                                 <MenuItem>
-                                                    <a href="#" className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
+                                                    <a href="#" className="block px-4 py-2 text-sm data-focus:text-primary/60">
                                                         Your Profile
                                                     </a>
                                                 </MenuItem>
                                                 <MenuItem>
-                                                    <Link to="/dashboard/settings" className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
+                                                    <Link to="/dashboard/settings" className="block px-4 py-2 text-sm data-focus:text-primary/60">
                                                         Settings
                                                     </Link>
                                                 </MenuItem>
                                                 <MenuItem>
-                                                    <Link to="/" onClick={handleLogout} className="block px-4 py-2 text-sm data-[focus]:text-primary/60">
+                                                    <Link to="/" onClick={handleLogout} className="block px-4 py-2 text-sm data-focus:text-primary/60">
                                                         Sign out
                                                     </Link>
                                                 </MenuItem>

@@ -30,10 +30,7 @@ export const useTourMutation = ({ tourId }: UseTourMutationProps = {}) => {
       });
     },
     onError: (error) => {
-      console.log("form error", error);
-      
       let errorMessage = 'An error occurred while saving the tour. Please try again later.';
-      
       if (error && isAxiosError(error)) {
         // Extract more specific error information if available
         if (error.response?.data?.message) {

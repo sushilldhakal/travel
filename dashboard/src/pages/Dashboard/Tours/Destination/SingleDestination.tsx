@@ -247,7 +247,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
 
     // Loading state
     if (isLoading) return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardContent className="p-0 flex flex-col">
                 <div className="h-[200px] bg-muted/40 animate-pulse" />
                 <div className="p-5 space-y-4">
@@ -263,7 +263,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
     );
 
     if (isError) return (
-        <Card className="shadow-sm border-destructive/50 bg-destructive/5">
+        <Card className="shadow-xs border-destructive/50 bg-destructive/5">
             <CardContent className="p-6">
                 <div className="flex flex-col items-center justify-center text-center space-y-3">
                     <X className="h-8 w-8 text-destructive" />
@@ -289,7 +289,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
 
     return (
         <Card className={cn(
-            "shadow-sm overflow-hidden",
+            "shadow-xs overflow-hidden",
             isEditMode ? "border-primary/30 bg-primary/5" : ""
         )}>
             <CardContent className="p-0">
@@ -444,7 +444,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                                                     <Button
                                                         size="icon"
                                                         variant="secondary"
-                                                        className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                        className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                         onClick={() => window.open(field.value as string, '_blank')}
                                                     >
                                                         <ImageIcon className="h-4 w-4" />
@@ -454,7 +454,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                                                         type="button"
                                                         size="icon"
                                                         variant="destructive"
-                                                        className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                                                        className="h-8 w-8 bg-background/80 backdrop-blur-xs"
                                                         onClick={() => handleRemoveImage(field.onChange)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
@@ -551,7 +551,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                                 control={form.control}
                                 name="isActive"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
                                         <div className="space-y-0.5">
                                             <FormLabel className="text-base">
                                                 Active Status

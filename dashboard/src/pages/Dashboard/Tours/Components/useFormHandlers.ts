@@ -198,7 +198,7 @@
 //       "tourStatus",
 //       "coverImage",
 //       "file",
-//       "outline",
+//       "outline-solid",
 //       "include",
 //       "exclude",
 //       "map",

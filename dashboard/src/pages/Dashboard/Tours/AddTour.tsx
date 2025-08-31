@@ -47,7 +47,7 @@ function AddTour() {
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       {isCreating && (
         <div className="flex flex-col space-y-3 ">
-          <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
+          <Skeleton className="h-full w-full top-0 left-0 absolute z-10 rounded-xl" />
           <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <Loader />
           </div>
@@ -83,7 +83,7 @@ function AddTour() {
         }}>
           {/* Page Header Actions */}
           <div className="mb-6">
-            <Card className="border shadow-sm">
+            <Card className="border shadow-xs">
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -94,7 +94,7 @@ function AddTour() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Link to="/dashboard/tours">
-                    <Button size="sm" variant={'outline'}>
+                    <Button size="sm" variant={'outline-solid'}>
                       Discard
                     </Button>
                   </Link>
@@ -123,7 +123,7 @@ function AddTour() {
             <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
               {/* Sidebar */}
               <div className="space-y-6">
-                <Card className="sticky top-8 inset-x-0 border shadow-sm">
+                <Card className="sticky top-8 inset-x-0 border shadow-xs">
                   <CardContent className="p-4">
                     <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
                       {tabs.map((tab) => (

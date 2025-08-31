@@ -110,7 +110,6 @@ const EditPost = () => {
                         parsed = raw as JSONContent;
                     }
                 }
-                console.log('Editor initial JSONContent:', parsed);
                 setEditorContent(parsed);
             } catch (e) {
                 console.warn('Failed to parse post content for editor:', e);
@@ -200,7 +199,7 @@ const EditPost = () => {
         <div className="flex min-h-screen w-full flex-col">
             {mutation.isPending && (
                 <div className="flex flex-col space-y-3 ">
-                    <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
+                    <Skeleton className="h-full w-full top-0 left-0 absolute z-10 rounded-xl" />
                     <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                         <Loader />
                     </div>
@@ -222,7 +221,7 @@ const EditPost = () => {
                 >
                     {/* Page Header Actions */}
                     <div className="mb-6">
-                        <Card className="border shadow-sm">
+                        <Card className="border shadow-xs">
                             <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -232,13 +231,9 @@ const EditPost = () => {
                                     <h1 className="text-lg font-semibold">Edit Post</h1>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button size="sm" variant={'destructive'} onClick={handleDeletePost} disabled={deleteMutation.isPending}>
-                                        {deleteMutation.isPending ? (
-                                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                        )}
-                                        Delete
+
+                                    <Button size="sm" variant={'outline'} disabled={deleteMutation.isPending}>
+                                        <Link to={`/blog/${postId}`}>View Post</Link>
                                     </Button>
                                     <Button type="submit" size="sm" disabled={mutation.isPending}>
                                         {mutation.isPending ? (
@@ -252,6 +247,14 @@ const EditPost = () => {
                                                 Update Post
                                             </>
                                         )}
+                                    </Button>
+                                    <Button size="sm" variant={'destructive'} onClick={handleDeletePost} disabled={deleteMutation.isPending}>
+                                        {deleteMutation.isPending ? (
+                                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                        )}
+                                        Delete
                                     </Button>
                                 </div>
                             </CardContent>
@@ -427,7 +430,7 @@ const EditPost = () => {
                                     control={form.control}
                                     name="enableComments"
                                     render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
                                             <div className="space-y-0.5">
                                                 <FormLabel>Enable Comments</FormLabel>
                                                 <FormDescription>

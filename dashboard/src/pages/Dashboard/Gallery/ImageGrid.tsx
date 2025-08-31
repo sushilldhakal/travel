@@ -44,10 +44,10 @@ const ImageGrid: React.FC<ImageGridProps> = ({ uploadingFiles, setSelectedMediaU
                     <>
                         {uploadingFiles.map((file, index) => (
                             <div key={index} className="flex flex-col items-center justify-center">
-                                <Skeleton className="h-[125px] w-[100%] rounded-xl" />
+                                <Skeleton className="h-[125px] w-full rounded-xl" />
                                 <div className="space-y-2">
-                                    <Skeleton className="h-4 w-[100%]" />
-                                    <Skeleton className="h-4 w-[100%]" />
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-full" />
                                 </div>
                             </div>
                         ))}

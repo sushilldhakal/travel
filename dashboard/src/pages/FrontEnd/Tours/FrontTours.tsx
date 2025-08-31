@@ -1,18 +1,24 @@
 import { getTours } from "@/http/tourApi";
 import { getCategories } from "@/http/categoryApi";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link } from "react-router-dom";
 import RichTextRenderer from "@/components/RichTextRenderer";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Grid, List, Home } from "lucide-react";
+import { Grid, List } from "lucide-react";
 import Search from "@/userDefinedComponents/User/Search/Search";
 import BreadCrumbTourList from "./BreadCrumbTourList";
 
 interface Category {
     _id: string;
     name: string;
+}
+
+interface TourCategory {
+    label: string;
+    value: string;
+    disable: boolean;
 }
 
 interface Discount {
@@ -61,13 +67,18 @@ interface Tour {
 interface TourResponse {
     items: Tour[];
     nextCursor?: number;
-    pagination: {
+    pagination?: {
         currentPage: number;
         totalPages: number;
         totalTours: number;
         hasNextPage: boolean;
         hasPrevPage?: boolean;
     };
+    currentPage?: number;
+    totalPages?: number;
+    totalTours?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
 }
 
 const FrontTours = () => {
@@ -83,13 +94,14 @@ const FrontTours = () => {
     } = useInfiniteQuery<TourResponse, Error>({
         queryKey: ['tour'],
         queryFn: ({ pageParam = 0 }) => {
-            console.log(`Executing queryFn with pageParam: ${pageParam}`);
-            return getTours({ pageParam });
+            return getTours({ pageParam: pageParam as number });
         },
         getNextPageParam: (lastPage) => {
-            console.log("getNextPageParam received:", lastPage);
-            // Only return next cursor if there are actually more pages and items
-            if (lastPage.pagination.hasNextPage && lastPage.items.length > 0) {
+            // Check for both structures: pagination object or direct properties
+            const hasMorePages = lastPage.pagination?.hasNextPage || lastPage.hasNextPage;
+            const items = lastPage.items || [];
+
+            if (hasMorePages && items.length > 0) {
                 return lastPage.nextCursor !== undefined ? Number(lastPage.nextCursor) : undefined;
             }
             return undefined;
@@ -100,31 +112,6 @@ const FrontTours = () => {
         retry: 2 // Retry failed requests twice
     });
 
-    // Log query state for debugging
-    useEffect(() => {
-        console.log("Tours query state:", {
-            isLoading: isToursLoading,
-            isError: isToursError,
-            hasData: !!toursData,
-            hasNextPage
-        });
-
-        if (isToursError) {
-            console.error("Tour query error:", error);
-        }
-
-        if (toursData) {
-            console.log("Tour data pages:", toursData.pages.length);
-            toursData.pages.forEach((page, i) => {
-                if (page && typeof page === 'object') {
-                    const itemsLength = Array.isArray(page.items) ? page.items.length : 'not an array';
-                    console.log(`Page ${i} items:`, itemsLength);
-                } else {
-                    console.log(`Page ${i} is not properly structured:`, page);
-                }
-            });
-        }
-    }, [toursData, isToursLoading, isToursError, hasNextPage, error]);
 
     const { data: categoriesData, isLoading: isCategoriesLoading } = useQuery({
         queryKey: ['categories'],
@@ -187,28 +174,29 @@ const FrontTours = () => {
             return [];
         }
 
+        // Debug full response structure
+
         // Flatten the pages and extract the items array from each page
-        const flattenedTours = toursData.pages.flatMap(page => {
+        // Using explicit type assertion for each page as TourResponse
+        const flattenedTours = toursData.pages.flatMap((page, index) => {
             if (!page || typeof page !== 'object') {
-                console.log("Invalid page structure:", page);
                 return [];
             }
 
-            if (!Array.isArray(page.items)) {
-                console.log("Items is not an array:", page);
+            // Type assertion to ensure TypeScript knows page has items
+            const typedPage = page as TourResponse;
+            if (!Array.isArray(typedPage.items)) {
                 return [];
             }
 
-            // Get the current page number from pagination
-            const currentPage = page.pagination?.currentPage || 'unknown';
-            console.log(`Found ${page.items.length} tours in page ${currentPage}`);
-            return page.items;
+            // Get the current page number from either pagination or direct property
+            const currentPage = typedPage.pagination?.currentPage ?? typedPage.currentPage ?? 'unknown';
+            return typedPage.items;
         });
 
         return flattenedTours;
     }, [toursData]);
 
-    console.log("Flattened tours:", tours);
 
     const filteredTours = useMemo(() => {
         let filtered = [...tours] as Tour[];
@@ -349,7 +337,7 @@ const FrontTours = () => {
 
                             <div className="flex items-center gap-2">
                                 <Button
-                                    variant={viewMode === "list" ? "primary" : "outline"}
+                                    variant={viewMode === "list" ? "primary" : "outline-solid"}
                                     size="icon"
                                     className={viewMode === "list" ? "" : "text-foreground border-border"}
                                     onClick={() => setViewMode("list")}
@@ -357,7 +345,7 @@ const FrontTours = () => {
                                     <List className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                    variant={viewMode === "grid" ? "primary" : "outline"}
+                                    variant={viewMode === "grid" ? "primary" : "outline-solid"}
                                     size="icon"
                                     className={viewMode === "grid" ? "" : "text-foreground border-border"}
                                     onClick={() => setViewMode("grid")}
@@ -446,6 +434,11 @@ const FrontTours = () => {
                                                                 className="line-clamp-2"
                                                             />
                                                         )}
+                                                    </div>
+                                                    <div className="text-muted-foreground text-sm mb-4">
+                                                        {Array.isArray(tour.category) && tour.category.length > 0 && tour.category.map((category: TourCategory) => (
+                                                            <span key={category.value} className="line-clamp-2 mr-2 inline-block bg-secondary px-2 py-0.5 rounded-sm">{category.label}</span>
+                                                        ))}
                                                     </div>
                                                 </div>
 
@@ -560,6 +553,12 @@ const FrontTours = () => {
                                                             className="line-clamp-3"
                                                         />
                                                     )}
+                                                </div>
+
+                                                <div className="text-muted-foreground text-sm mb-4">
+                                                    {Array.isArray(tour.category) && tour.category.length > 0 && tour.category.map((category: TourCategory) => (
+                                                        <span key={category.value} className="line-clamp-2 mr-2 inline-block bg-secondary px-2 py-0.5 rounded-sm">{category.label}</span>
+                                                    ))}
                                                 </div>
                                             </div>
 

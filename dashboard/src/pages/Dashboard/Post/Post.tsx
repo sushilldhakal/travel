@@ -50,7 +50,7 @@ const Post = () => {
             case 'draft':
                 return 'secondary';
             case 'pending':
-                return 'outline';
+                return 'outline-solid';
             default:
                 return 'secondary';
         }

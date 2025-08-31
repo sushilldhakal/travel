@@ -11,18 +11,18 @@ import { InputTags } from "@/userDefinedComponents/InputTags";
 import Loader from "@/userDefinedComponents/Loader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  LoaderCircle, 
-  Paperclip, 
-  Trash2, 
-  FileText, 
-  Image as ImageIcon, 
-  Tags, 
-  MessageSquare, 
-  Save,
-  Eye,
-  Settings,
-  Hash
+import {
+    LoaderCircle,
+    Paperclip,
+    Trash2,
+    FileText,
+    Image as ImageIcon,
+    Tags,
+    MessageSquare,
+    Save,
+    Eye,
+    Settings,
+    Hash
 } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -75,7 +75,6 @@ const AddPost = () => {
         mutationFn: addPost,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
-            console.log('Post created successfully');
             navigate('/dashboard/posts');
         },
     });
@@ -104,13 +103,12 @@ const AddPost = () => {
         if (values.enableComments) formdata.append('enableComments', values.enableComments.toString());
         mutation.mutate(formdata);
 
-        console.log("this is the value", values);
     }
 
     return (
         <div className="container mx-auto py-6 space-y-6 max-w-7xl">
             {mutation.isPending && (
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-xs z-50 flex items-center justify-center">
                     <div className="bg-card p-6 rounded-lg shadow-lg border">
                         <div className="flex flex-col items-center space-y-4">
                             <Loader />
@@ -119,7 +117,7 @@ const AddPost = () => {
                     </div>
                 </div>
             )}
-            
+
             <Form {...form}>
                 <form
                     onSubmit={(e) => {
@@ -137,7 +135,7 @@ const AddPost = () => {
                 >
                     {/* Page Header Actions */}
                     <div className="mb-6">
-                        <Card className="border shadow-sm">
+                        <Card className="border shadow-xs">
                             <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -148,7 +146,7 @@ const AddPost = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Link to="/dashboard/posts">
-                                        <Button size="sm" variant={'outline'}>
+                                        <Button size="sm" variant={'outline-solid'}>
                                             Discard
                                         </Button>
                                     </Link>
@@ -235,22 +233,22 @@ const AddPost = () => {
                                                     <Eye className="h-4 w-4" />
                                                     Status
                                                 </FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select status type" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="Published">Published</SelectItem>
-                                                    <SelectItem value="Draft">Draft</SelectItem>
-                                                    <SelectItem value="Expired">Expired</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select status type" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Published">Published</SelectItem>
+                                                        <SelectItem value="Draft">Draft</SelectItem>
+                                                        <SelectItem value="Expired">Expired</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </CardContent>
                             </Card>
 
@@ -271,65 +269,65 @@ const AddPost = () => {
                                                     <ImageIcon className="h-4 w-4" />
                                                     Cover Image
                                                 </FormLabel>
-                                            {field.value ? (
-                                                <div className="mt-2 relative">
-                                                    <Link to={field.value} target="_blank" rel="noopener noreferrer">
-                                                        <img
-                                                            src={field.value}
-                                                            alt="Selected Cover Image"
-                                                            className="rounded-md w-full"
-                                                        />
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveImage(field.onChange)}
-                                                        className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
-                                                    >
-                                                        <Trash2 />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-                                                    <DialogTrigger>
-                                                        <div
-                                                            className={cn(
-                                                                buttonVariants({
-                                                                    size: "icon",
-                                                                }),
-                                                                "size-8"
-                                                            )}
+                                                {field.value ? (
+                                                    <div className="mt-2 relative">
+                                                        <Link to={field.value} target="_blank" rel="noopener noreferrer">
+                                                            <img
+                                                                src={field.value}
+                                                                alt="Selected Cover Image"
+                                                                className="rounded-md w-full"
+                                                            />
+                                                        </Link>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveImage(field.onChange)}
+                                                            className="absolute top-1 right-1 mt-2 text-red-600 hover:underline"
                                                         >
-                                                            <Paperclip className="size-4" />
-                                                            <span className="sr-only">Select your files</span>
-                                                        </div>
-                                                        <span className="pl-2">Choose Image</span>
-                                                    </DialogTrigger>
-                                                    <DialogContent
-                                                        className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
-                                                        onInteractOutside={(e) => {
-                                                            e.preventDefault();
-                                                        }}
-                                                    >
-                                                        <DialogHeader>
-                                                            <DialogTitle className="mb-3 text-left">Choose Image From Gallery</DialogTitle>
-                                                            <div className="upload dialog">
-                                                                <GalleryPage
-                                                                    isGalleryPage={false}
-                                                                    onImageSelect={(imageUrl) =>
-                                                                        handleImageSelect(imageUrl, field.onChange)
-                                                                    }
-                                                                />
+                                                            <Trash2 />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+                                                        <DialogTrigger>
+                                                            <div
+                                                                className={cn(
+                                                                    buttonVariants({
+                                                                        size: "icon",
+                                                                    }),
+                                                                    "size-8"
+                                                                )}
+                                                            >
+                                                                <Paperclip className="size-4" />
+                                                                <span className="sr-only">Select your files</span>
                                                             </div>
-                                                        </DialogHeader>
-                                                        <DialogDescription>
-                                                            Select an Image.
-                                                        </DialogDescription>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            )}
-                                        </FormItem>
-                                    )}
-                                />
+                                                            <span className="pl-2">Choose Image</span>
+                                                        </DialogTrigger>
+                                                        <DialogContent
+                                                            className="asDialog max-w-[90%] max-h-[90%] overflow-auto"
+                                                            onInteractOutside={(e) => {
+                                                                e.preventDefault();
+                                                            }}
+                                                        >
+                                                            <DialogHeader>
+                                                                <DialogTitle className="mb-3 text-left">Choose Image From Gallery</DialogTitle>
+                                                                <div className="upload dialog">
+                                                                    <GalleryPage
+                                                                        isGalleryPage={false}
+                                                                        onImageSelect={(imageUrl) =>
+                                                                            handleImageSelect(imageUrl, field.onChange)
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            </DialogHeader>
+                                                            <DialogDescription>
+                                                                Select an Image.
+                                                            </DialogDescription>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                )}
+                                            </FormItem>
+                                        )}
+                                    />
                                 </CardContent>
                             </Card>
 
@@ -350,18 +348,18 @@ const AddPost = () => {
                                                     <Tags className="h-4 w-4" />
                                                     Post Tags
                                                 </FormLabel>
-                                            <FormControl>
-                                                <InputTags
-                                                    value={field.value || []}
-                                                    onChange={(newTags) => {
-                                                        field.onChange(newTags);
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                                <FormControl>
+                                                    <InputTags
+                                                        value={field.value || []}
+                                                        onChange={(newTags) => {
+                                                            field.onChange(newTags);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </CardContent>
                             </Card>
                         </div>

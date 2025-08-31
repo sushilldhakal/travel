@@ -64,8 +64,6 @@ const TourPage = () => {
   };
   const tableData = data?.data?.data; // Access the actual tours array
 
-  console.log("tableData", tableData)
-  console.log("response structure", data)
   const columns: ColumnDef<Tour>[] = [
     {
       accessorKey: "coverImage",
@@ -81,7 +79,7 @@ const TourPage = () => {
         <div className="image-area">
           <div className="relative group">
             <img
-              className="w-12 h-12 object-cover rounded-lg border shadow-sm transition-transform group-hover:scale-105"
+              className="w-12 h-12 object-cover rounded-lg border shadow-xs transition-transform group-hover:scale-105"
               src={row.getValue("coverImage")}
               alt={row.original.title || "Tour cover"}
               onError={(e) => {
@@ -258,8 +256,8 @@ const TourPage = () => {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link 
-                  to={`/dashboard/tours/edit_tour/${tour._id}`} 
+                <Link
+                  to={`/dashboard/tours/edit_tour/${tour._id}`}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <Edit3 className="h-3 w-3" />
@@ -267,7 +265,7 @@ const TourPage = () => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => handleDeleteTour(tour._id || '')}
                 className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
               >
@@ -329,25 +327,8 @@ const TourPage = () => {
 
     // Force render DataTable for debugging
     if (data && data?.data && data.data.success && Array.isArray(data.data.data)) {
-      console.log("SUCCESS: Rendering DataTable with tours:", data.data.data.length);
       return <DataTable data={data.data.data} columns={columns} place="Filter Tours..." colum="title" initialColumnVisibility={{ actions: false }} />;
     }
-
-    // Debug: Show what we're getting
-    console.log("Condition failed:", {
-      hasData: !!data,
-      hasDataData: !!(data?.data),
-      hasDataDataSuccess: !!(data?.data?.success),
-      hasDataDataData: !!(data?.data?.data),
-      isArray: Array.isArray(data?.data?.data),
-      length: data?.data?.data?.length,
-      actualStructure: {
-        data: !!data,
-        'data.data': !!data?.data,
-        'data.data.success': data?.data?.success,
-        'data.data.data': Array.isArray(data?.data?.data) ? `Array[${data?.data?.data?.length}]` : typeof data?.data?.data
-      }
-    });
 
     // Empty state
     return (

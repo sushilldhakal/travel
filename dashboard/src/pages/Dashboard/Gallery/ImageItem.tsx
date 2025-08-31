@@ -84,7 +84,7 @@ const ImageItem = memo(
                     }}
                 >
                     {image.resource_type === "image" && (
-                        <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-muted/20">
+                        <div className="relative aspect-4/3 rounded-md overflow-hidden border border-border bg-muted/20">
                             {!imageLoaded && !imageError && (
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <Skeleton className="h-full w-full absolute" />
@@ -111,7 +111,7 @@ const ImageItem = memo(
                     )}
 
                     {image.resource_type === "video" && (
-                        <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border">
+                        <div className="relative aspect-4/3 rounded-md overflow-hidden border border-border">
                             <video
                                 src={image.secure_url ? image.secure_url : image.url}
                                 className="w-full h-full object-cover"
@@ -125,13 +125,13 @@ const ImageItem = memo(
                     {isPDF() && (
                         <>
 
-                            <div className="relative aspect-[4/3] rounded-md overflow-hidden border border-border bg-background flex flex-col">
+                            <div className="relative aspect-4/3 rounded-md overflow-hidden border border-border bg-background flex flex-col">
                                 <iframe
                                     src={image.secure_url ? image.secure_url : image.url}
                                     className="w-full h-full"
                                     title={getDisplayName()}
                                 />
-                                <div className="absolute bottom-0 w-full bg-primary-foreground backdrop-blur-sm p-2 z-10 flex justify-between items-center">
+                                <div className="absolute bottom-0 w-full bg-primary-foreground backdrop-blur-xs p-2 z-10 flex justify-between items-center">
                                     <div className="truncate max-w-[70%]">
                                         <p className="text-xs font-semibold text-foreground">PDF Document</p>
                                         <p className="text-xs text-foreground truncate">
@@ -141,7 +141,7 @@ const ImageItem = memo(
                                     <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="text-xs gap-1 shadow-sm"
+                                        className="text-xs gap-1 shadow-xs"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             window.open(image.secure_url || image.url, '_blank');
@@ -169,7 +169,7 @@ const ImageItem = memo(
                     < Button
                         variant="outline"
                         size="icon"
-                        className="absolute z-10 w-8 h-8 bg-background/90 border-0 transition ease-in-out top-2 left-2 hover:bg-background/95 shadow-sm"
+                        className="absolute z-10 w-8 h-8 bg-background/90 border-0 transition ease-in-out top-2 left-2 hover:bg-background/95 shadow-xs"
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsSelected(!isSelected);
@@ -184,7 +184,7 @@ const ImageItem = memo(
                     < Button
                         variant="ghost"
                         size="icon"
-                        className="absolute w-6 h-6 transition ease-in-out delay-150 group-hover:opacity-100 opacity-0 top-2 right-2 bg-background/90 hover:bg-destructive shadow-sm"
+                        className="absolute w-6 h-6 transition ease-in-out delay-150 group-hover:opacity-100 opacity-0 top-2 right-2 bg-background/90 hover:bg-destructive shadow-xs"
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete(image.public_id, image.resource_type === "image" ? 'images' : image.resource_type === "video" ? 'videos' : 'PDF');

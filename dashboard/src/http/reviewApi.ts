@@ -75,7 +75,8 @@ export const likeReview = async (tourId: string, reviewId: string) => {
 
 export const addReview = async (tourId: string, rating: number, comment: string) => {
     try {
-        const response = await api.post(`/api/reviews/tour/${tourId}`, { rating, comment });
+        // Include tourId as 'tour' field in the request body to satisfy backend validation
+        const response = await api.post(`/api/reviews/tour/${tourId}`, { rating, comment, tour: tourId });
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {

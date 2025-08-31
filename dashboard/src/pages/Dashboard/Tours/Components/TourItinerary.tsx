@@ -30,7 +30,7 @@ const TourItinerary = () => {
     return (
         <div className="space-y-8">
             {/* Itinerary Section */}
-            <Card className="shadow-sm">
+            <Card className="shadow-xs">
                 <CardHeader className="bg-secondary border-b pb-6">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-primary" />
@@ -75,7 +75,7 @@ const TourItinerary = () => {
                                         {...field}
                                         value={(field.value as string) || ''}
                                         onChange={(e) => field.onChange(e.target.value)}
-                                        placeholder="Write your outline here..."
+                                        placeholder="Write your outline-solid here..."
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -94,7 +94,7 @@ const TourItinerary = () => {
                                         <AccordionItem value={`item-${index}`} className="border-none">
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-secondary/70">
                                                 <div className="flex items-center space-x-3 w-full">
-                                                    <Badge variant={watchedItinerary?.[index]?.title ? "default" : "outline"}
+                                                    <Badge variant={watchedItinerary?.[index]?.title ? "default" : "outline-solid"}
                                                         className="rounded-full h-7 w-7 p-0 flex items-center justify-center font-medium">
                                                         {index + 1}
                                                     </Badge>
@@ -253,7 +253,7 @@ const TourItinerary = () => {
             </Card>
 
             {/* Location Section */}
-            <Card className="shadow-sm">
+            <Card className="shadow-xs">
                 <CardHeader className="bg-secondary border-b pb-6">
                     <div className="flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-primary" />
@@ -264,7 +264,7 @@ const TourItinerary = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                    <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+                    <div className="bg-card rounded-lg p-6 border border-border shadow-xs">
                         <div className="flex items-center mb-4">
                             <Map className="h-4 w-4 text-primary mr-2" />
                             <h3 className="text-md font-medium">Map Information</h3>
@@ -329,7 +329,7 @@ const TourItinerary = () => {
                         )}
                     />
 
-                    <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+                    <div className="bg-card rounded-lg p-6 border border-border shadow-xs">
                         <div className="flex items-center mb-4">
                             <Pin className="h-4 w-4 text-primary mr-2" />
                             <h3 className="text-md font-medium">Starting Address</h3>
@@ -471,7 +471,7 @@ const TourItinerary = () => {
                         </div>
                     </div>
 
-                    <div className="relative w-full h-[400px] mt-4 overflow-hidden rounded-xl border border-border shadow-sm">
+                    <div className="relative w-full h-[400px] mt-4 overflow-hidden rounded-xl border border-border shadow-xs">
                         <div className="absolute inset-0 flex items-center justify-center bg-secondary">
                             <Globe className="h-12 w-12 text-muted-foreground" />
                         </div>

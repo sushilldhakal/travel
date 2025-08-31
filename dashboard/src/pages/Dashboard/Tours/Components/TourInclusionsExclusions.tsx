@@ -11,7 +11,7 @@ const TourInclusionsExclusions = () => {
     const { form, inclusionsContent, setInclusionsContent, exclusionsContent, setExclusionsContent } = useTourContext();
 
     return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardHeader className="border-b bg-secondary pb-6">
                 <div className="flex items-center gap-2">
                     <Check className="h-5 w-5 text-primary" />

@@ -81,14 +81,14 @@ const TourFaqs = () => {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         placeholder=" Search FAQs by question or answer..."
-                        className="!pl-10 max-w-md"
+                        className="pl-10! max-w-md"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
 
                 {/* FAQs List */}
-                <Card className="shadow-sm border-border">
+                <Card className="shadow-xs border-border">
                     <CardHeader className="bg-secondary/50 border-b pb-4">
                         <div className="flex items-center gap-2">
                             <CardTitle className="text-xl">Tour FAQs</CardTitle>
@@ -101,7 +101,7 @@ const TourFaqs = () => {
                         {isLoading ? (
                             <div className="grid md:grid-cols-2 gap-6">
                                 {[1, 2, 3, 4].map((i) => (
-                                    <Card key={i} className="shadow-sm">
+                                    <Card key={i} className="shadow-xs">
                                         <CardHeader className="space-y-2 pb-4">
                                             <Skeleton className="h-4 w-full max-w-[250px]" />
                                             <Skeleton className="h-3 w-full max-w-[200px]" />

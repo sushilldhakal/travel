@@ -4,14 +4,13 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescripti
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, DollarSign, Lock, ChevronDown } from 'lucide-react';
+import { PlusCircle, Trash2, DollarSign, Lock } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { DateTimePickerSimple } from '@/components/ui/DateTimePickerSimple';
 import { DatePickerWithRange } from '@/components/ui/DatePickerWithRange';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { pricingOptions } from '@/Provider/types';
 import { useTourForm } from '@/Provider/hooks/useTourForm';
 
@@ -90,7 +89,7 @@ export function TourPricing() {
     };
     return (
         <div>
-            <Card className="shadow-sm">
+            <Card className="shadow-xs">
                 <CardHeader className="border-b bg-secondary pb-6">
                     <div className="flex items-center gap-2">
                         <DollarSign className="h-5 w-5 text-primary" />
@@ -222,7 +221,7 @@ export function TourPricing() {
 
                         <FormField
                             control={form.control}
-                            name="discountEnabled"
+                            name="pricing.discount.discountEnabled"
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
@@ -238,7 +237,7 @@ export function TourPricing() {
                             )}
                         />
 
-                        {form.watch('discountEnabled') && (
+                        {form.watch('pricing.discount.discountEnabled') && (
                             <div className="space-y-4">
                                 <FormField
                                     control={form.control}
@@ -332,8 +331,8 @@ export function TourPricing() {
                                 <div className="space-y-4 mt-4">
                                     {pricingFields?.length && pricingFields.length > 0 ? (
                                         pricingFields.map((field, index) => {
-                                            const watchedDiscountEnabled = form.watch(`pricing.pricingOptions.options.${index}.discount.enabled` as any);
-                                            const currentPricing = form.watch(`pricing.pricingOptions.options.${index}` as any);
+                                            const watchedDiscountEnabled = form.watch(`pricingOptions.${index}.discount.discountEnabled` as any);
+                                            const currentPricing = form.watch(`pricingOptions.${index}`);
                                             const fieldId = field?.id || index.toString();
                                             return (
                                                 <Accordion
@@ -362,9 +361,9 @@ export function TourPricing() {
                                                                     <Badge>
                                                                         ${currentPricing?.price || 0}
                                                                     </Badge>
-                                                                    {currentPricing?.discount?.discountEnabled && (
+                                                                    {currentPricing?.discount?.enabled && (
                                                                         <Badge variant="secondary">
-                                                                            Discount: ${currentPricing.discount.discountPrice || 0}
+                                                                            Discount Available
                                                                         </Badge>
                                                                     )}
                                                                 </div>
@@ -464,7 +463,7 @@ export function TourPricing() {
 
                                                                 <FormField
                                                                     control={form.control}
-                                                                    name={`pricing.pricingOptions.options.${index}.discount.enabled` as any}
+                                                                    name={`pricingOptions.${index}.discount.discountEnabled` as any}
                                                                     render={({ field }) => (
                                                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                                                             <div className="space-y-0.5">
@@ -484,28 +483,98 @@ export function TourPricing() {
                                                                     <div className="space-y-4">
                                                                         <FormField
                                                                             control={form.control}
-                                                                            name={`pricing.pricingOptions.options.${index}.discount.options.0.discountPrice` as any}
+                                                                            name={`pricingOptions.${index}.discount.percentageOrPrice` as any}
                                                                             render={({ field }) => (
-                                                                                <FormItem>
-                                                                                    <FormLabel>Discount Price</FormLabel>
+                                                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 space-y-0">
+                                                                                    <div className="space-y-0.5">
+                                                                                        <FormLabel className="text-base">Discount Type</FormLabel>
+                                                                                        <FormDescription>
+                                                                                            {field.value ? 'Percentage' : 'Fixed Price'}
+                                                                                        </FormDescription>
+                                                                                    </div>
                                                                                     <FormControl>
-                                                                                        <Input
-                                                                                            type="number"
-                                                                                            {...field}
-                                                                                            value={field.value !== undefined ? field.value.toString() : ''}
-                                                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                                                            min={0}
-                                                                                            step={1.00}
+                                                                                        <Switch
+                                                                                            checked={field.value}
+                                                                                            onCheckedChange={field.onChange}
                                                                                         />
                                                                                     </FormControl>
-                                                                                    <FormMessage />
                                                                                 </FormItem>
                                                                             )}
                                                                         />
+                                                                        
+                                                                        {form.watch(`pricingOptions.${index}.discount.percentageOrPrice` as any) ? (
+                                                                            <>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`pricingOptions.${index}.discount.discountPercentage` as any}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormLabel>Discount Percentage (%)</FormLabel>
+                                                                                            <FormControl>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    {...field}
+                                                                                                    value={field.value !== undefined ? field.value.toString() : ''}
+                                                                                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                                                    min={0}
+                                                                                                    max={100}
+                                                                                                    step={0.01}
+                                                                                                />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`pricingOptions.${index}.discount.maxDiscountAmount` as any}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormLabel>Max Discount Amount (optional)</FormLabel>
+                                                                                            <FormControl>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    {...field}
+                                                                                                    value={field.value !== undefined ? field.value.toString() : ''}
+                                                                                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                                                    min={0}
+                                                                                                    step={1.00}
+                                                                                                />
+                                                                                            </FormControl>
+                                                                                            <FormDescription>
+                                                                                                Cap the maximum discount amount regardless of percentage
+                                                                                            </FormDescription>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
+                                                                            </>
+                                                                        ) : (
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`pricingOptions.${index}.discount.discountPrice` as any}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormLabel>Discount Price</FormLabel>
+                                                                                        <FormControl>
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                {...field}
+                                                                                                value={field.value !== undefined ? field.value.toString() : ''}
+                                                                                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                                                min={0}
+                                                                                                step={1.00}
+                                                                                            />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                        )}
 
                                                                         <FormField
                                                                             control={form.control}
-                                                                            name={`pricing.pricingOptions.options.${index}.discount.options.0.dateRange` as any}
+                                                                            name={`pricingOptions.${index}.discount.dateRange` as any}
                                                                             render={({ field }) => {
                                                                                 // Parse the date values or use defaults
                                                                                 const dateValue = {
@@ -519,7 +588,10 @@ export function TourPricing() {
                                                                                         <DatePickerWithRange
                                                                                             date={dateValue}
                                                                                             setDate={(date) => {
-                                                                                                field.onChange(date);
+                                                                                                field.onChange({
+                                                                                                    from: date?.from?.toISOString(),
+                                                                                                    to: date?.to?.toISOString()
+                                                                                                });
                                                                                             }}
                                                                                             className="w-full"
                                                                                         />
@@ -608,15 +680,14 @@ export function TourPricing() {
             </Card>
 
             {/* Price Lock Section */}
-            <Collapsible className="mb-6 rounded-lg border">
-                <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
+            <div className="mb-6 rounded-lg border">
+                <div className="flex w-full items-center justify-between p-4">
                     <div className="flex items-center gap-2">
                         <Lock className="h-5 w-5" />
                         <span className="font-medium">Price Lock Settings</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-200" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-4 pt-0 space-y-4">
+                </div>
+                <div className="p-4 pt-0 space-y-4">
                     <FormField
                         control={form.control}
                         name="pricing.priceLockedUntil"
@@ -625,8 +696,8 @@ export function TourPricing() {
                                 <FormLabel>Lock Prices Until</FormLabel>
                                 <FormControl>
                                     <DateTimePickerSimple
-                                        value={field.value}
-                                        onChange={field.onChange}
+                                        value={field.value ? field.value.toISOString() : undefined}
+                                        onChange={(value) => field.onChange(value ? new Date(value) : undefined)}
                                         placeholder="Pick a date and time"
                                         disabled={false}
                                     />
@@ -639,8 +710,8 @@ export function TourPricing() {
                             </FormItem>
                         )}
                     />
-                </CollapsibleContent>
-            </Collapsible>
+                </div>
+            </div>
         </div>
     );
 }

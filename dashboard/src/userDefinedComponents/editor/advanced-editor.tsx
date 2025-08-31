@@ -102,7 +102,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
 
 
   return (
-    <div className="relative w-full max-w-screen-xl">
+    <div className="relative w-full max-w-(--breakpoint-xl)">
       <div className="flex absolute right-3 top-3 z-10 mb-2 gap-2">
         <div className="rounded-lg bg-accent px-2 py-1 text-xs text-muted-foreground">{saveStatus}</div>
         <div className={charsCount ? "rounded-lg bg-accent px-2 py-1 text-xs text-muted-foreground" : "hidden"}>
@@ -113,7 +113,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
         <EditorContent
           initialContent={initialContent || undefined}
           extensions={extensions}
-          className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-screen-xl border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
+          className="relative pl-10 pr-5 pt-10 min-h-[300px] w-full max-w-(--breakpoint-xl) border-muted bg-background sm:mb-[calc(5vh)] sm:rounded-lg sm:border sm:shadow-lg"
           editorProps={{
             handleDOMEvents: {
               keydown: (_view, event) => handleCommandNavigation(event),
@@ -122,7 +122,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
             handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
             attributes: {
               class:
-                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-hidden max-w-full",
             },
           }}
           onUpdate={({ editor }: { editor: EditorInstance }) => {
@@ -160,7 +160,7 @@ const Editor: React.FC<EditorProps> = ({ initialValue, onContentChange }) => {
                           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                             <DialogTrigger><p className="font-medium text-left">{item.title}</p>
                               <p className="text-xs text-muted-foreground">{item.description}</p></DialogTrigger>
-                            <DialogContent className="z-[99999] asDialog max-w-[90%] max-h-[90%] overflow-auto"
+                            <DialogContent className="z-99999 asDialog max-w-[90%] max-h-[90%] overflow-auto"
                               onInteractOutside={(e) => {
                                 e.preventDefault();
                               }}

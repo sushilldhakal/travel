@@ -30,7 +30,7 @@ const Home = () => {
                 <div className="absolute inset-0 pointer-events-none">
                     <div className="container mx-auto max-w-8xl px-4 h-full relative">
                         <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-[400px] z-10 hidden md:block pointer-events-auto">
-                            <div className="bg-secondary/70 backdrop-blur-sm rounded-lg p-5 shadow-lg border border-secondary/20">
+                            <div className="bg-secondary/70 backdrop-blur-xs rounded-lg p-5 shadow-lg border border-secondary/20">
                                 <h2 className="text-primary text-xl font-bold mb-4 uppercase">SEARCH TOURS</h2>
                                 <Search />
                             </div>

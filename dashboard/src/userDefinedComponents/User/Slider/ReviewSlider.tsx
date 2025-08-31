@@ -32,8 +32,6 @@ const ReviewSlider = () => {
         staleTime: 5 * 60 * 1000, // 5 minutes cache
     })
 
-    console.log("data", data?.reviews)
-
     // Memoize approved reviews
     const approvedReviews = React.useMemo(() => {
         if (!data?.reviews) return [];
@@ -177,11 +175,11 @@ const ReviewSlider = () => {
                                         <Card className="h-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-primary/10">
                                             <CardContent className="p-0">
                                                 {/* Top gradient banner */}
-                                                <div className="h-3 bg-gradient-to-r from-primary/80 to-primary/40"></div>
+                                                <div className="h-3 bg-linear-to-r from-primary/80 to-primary/40"></div>
 
                                                 <div className="p-6">
                                                     {/* Quote icon with gradient background */}
-                                                    <div className="absolute -top-2 -right-2 w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+                                                    <div className="absolute -top-2 -right-2 w-12 h-12 flex items-center justify-center rounded-full bg-linear-to-br from-primary/20 to-primary/5 shadow-xs">
                                                         <Quote className="h-5 w-5 text-primary/60" />
                                                     </div>
 
@@ -196,7 +194,7 @@ const ReviewSlider = () => {
                                                     </p>
 
                                                     {/* Divider with gradient */}
-                                                    <div className="w-16 h-1 bg-gradient-to-r from-primary/60 to-primary/20 rounded-full mb-4"></div>
+                                                    <div className="w-16 h-1 bg-linear-to-r from-primary/60 to-primary/20 rounded-full mb-4"></div>
 
                                                     {/* User info and tour details */}
                                                     <div className="flex items-center">

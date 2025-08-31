@@ -62,7 +62,7 @@ const Destination = () => {
                         <Input
                             type="search"
                             placeholder="Search destinations..."
-                            className="!pl-8 w-full sm:w-[250px] bg-background"
+                            className="pl-8! w-full sm:w-[250px] bg-background"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -112,7 +112,7 @@ const Destination = () => {
                     {isLoading ? (
                         // Loading skeletons
                         Array.from({ length: 6 }).map((_, index) => (
-                            <Card key={index} className="shadow-sm overflow-hidden">
+                            <Card key={index} className="shadow-xs overflow-hidden">
                                 <Skeleton className="h-[200px] w-full" />
                                 <CardContent className="p-5">
                                     <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ const Destination = () => {
                         ))
                     ) : isError ? (
                         // Error state
-                        <Card className="col-span-full shadow-sm border-destructive/50 bg-destructive/5">
+                        <Card className="col-span-full shadow-xs border-destructive/50 bg-destructive/5">
                             <CardContent className="p-6">
                                 <div className="flex flex-col items-center justify-center text-center space-y-3">
                                     <X className="h-8 w-8 text-destructive" />
@@ -177,7 +177,7 @@ const Destination = () => {
                         ))
                     ) : destinations && destinations.length > 0 ? (
                         // No search results
-                        <Card className="col-span-full shadow-sm border-primary/20 bg-primary/5">
+                        <Card className="col-span-full shadow-xs border-primary/20 bg-primary/5">
                             <CardContent className="p-6">
                                 <div className="flex flex-col items-center justify-center text-center space-y-3">
                                     <Search className="h-8 w-8 text-muted-foreground" />
@@ -197,7 +197,7 @@ const Destination = () => {
                         </Card>
                     ) : (
                         // Empty state
-                        <Card className="col-span-full shadow-sm border-primary/20 bg-primary/5">
+                        <Card className="col-span-full shadow-xs border-primary/20 bg-primary/5">
                             <CardContent className="p-6">
                                 <div className="flex flex-col items-center justify-center text-center space-y-3">
                                     <MapPin className="h-8 w-8 text-muted-foreground" />

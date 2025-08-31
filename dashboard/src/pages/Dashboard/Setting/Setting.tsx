@@ -101,10 +101,10 @@ const Setting = () => {
             // Reset all states related to visibility and decrypted keys
             setDecryptedKeys({});
             setVisibleKeys({});
-            
+
             // Refresh the data
             queryClient.invalidateQueries({ queryKey: ['userSettings'] });
-            
+
             toast({
                 title: 'Success!',
                 description: 'Your API keys have been updated.',
@@ -170,10 +170,6 @@ const Setting = () => {
             dataBeingSent.GOOGLE_API_KEY = `${values.GOOGLE_API_KEY.slice(0, 4)}...${values.GOOGLE_API_KEY.slice(-4)} (length: ${values.GOOGLE_API_KEY.length})`;
             hasChanges = true;
         }
-
-        // Log what data is being sent (with partial masking for security)
-        console.log('Sending data to server:', dataBeingSent);
-        console.log('Number of form fields being sent:', Object.keys(dataBeingSent).length);
 
         // Only submit if we have changes and a user ID
         if (hasChanges && userId) {
@@ -357,7 +353,7 @@ const Setting = () => {
     // Render the Cloudinary tab content
     const renderCloudinaryContent = () => (
         <Card>
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+            <CardHeader className="bg-linear-to-r from-primary/5 to-primary/10 border-b">
                 <div className="flex items-center gap-2">
                     <div className="bg-primary/10 p-2 rounded-full">
                         <CloudIcon className="h-5 w-5 text-primary" />
@@ -371,7 +367,7 @@ const Setting = () => {
             <CardContent className="p-6 space-y-6">
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
                     <div className="flex gap-3">
-                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <InfoIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm text-primary-foreground dark:text-primary">
                                 Visit{" "}
@@ -423,7 +419,7 @@ const Setting = () => {
     // Render the OpenAI tab content
     const renderOpenAIContent = () => (
         <Card>
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+            <CardHeader className="bg-linear-to-r from-primary/5 to-primary/10 border-b">
                 <div className="flex items-center gap-2">
                     <div className="bg-primary/10 p-2 rounded-full">
                         <BrainCircuit className="h-5 w-5 text-primary" />
@@ -437,7 +433,7 @@ const Setting = () => {
             <CardContent className="p-6 space-y-6">
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
                     <div className="flex gap-3">
-                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <InfoIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm text-primary-foreground dark:text-primary">
                                 Visit the{" "}
@@ -492,7 +488,7 @@ const Setting = () => {
     // Render the Google Maps tab content
     const renderGoogleMapsContent = () => (
         <Card>
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+            <CardHeader className="bg-linear-to-r from-primary/5 to-primary/10 border-b">
                 <div className="flex items-center gap-2">
                     <div className="bg-primary/10 p-2 rounded-full">
                         <MapPin className="h-5 w-5 text-primary" />
@@ -506,7 +502,7 @@ const Setting = () => {
             <CardContent className="p-6 space-y-6">
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
                     <div className="flex gap-3">
-                        <InfoIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <InfoIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm text-primary-foreground dark:text-primary">
                                 Visit the{" "}

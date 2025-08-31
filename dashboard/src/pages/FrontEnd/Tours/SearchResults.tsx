@@ -148,12 +148,12 @@ const SearchResults = () => {
       }} >
         <div className="showPattern"></div>
         <div className="absolute inset-0 bg-black/30" style={{ zIndex: 1 }}></div>
-        <div className="relative mx-auto max-w-screen-xl px-4 2xl:px-0" style={{ zIndex: 2 }}>
+        <div className="relative mx-auto max-w-(--breakpoint-xl) px-4 2xl:px-0" style={{ zIndex: 2 }}>
           <BreadCrumbTourList />
         </div>
       </div>
 
-      <div className="w-full bg-background border-b sticky top-[65px] z-[1]">
+      <div className="w-full bg-background border-b sticky top-[65px] z-1">
         <div className="container max-w-8xl px-2 py-3 mx-auto">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left side - Filters */}
@@ -293,8 +293,8 @@ const SearchResults = () => {
         </div>
       </div>
 
-      <section className="bg-gray-50 mx-auto max-w-screen-xl py-8 antialiased dark:bg-gray-900 md:py-12">
-        <div className="mx-auto max-w-screen-xl px-4 2xl:px-0">
+      <section className="bg-gray-50 mx-auto max-w-(--breakpoint-xl) py-8 antialiased dark:bg-gray-900 md:py-12">
+        <div className="mx-auto max-w-(--breakpoint-xl) px-4 2xl:px-0">
           <h1 className="text-2xl font-bold mb-6">
             Search Results for {searchSummary()}
           </h1>
@@ -327,7 +327,7 @@ const SearchResults = () => {
               {filteredTours.map((tour) => (
                 <div
                   key={tour._id}
-                  className={`rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] ${viewMode === "grid" ? "p-6 hover:scale-[1.02]" : "p-4 flex flex-row"}`}
+                  className={`rounded-lg border border-gray-200 bg-white shadow-xs dark:border-gray-700 dark:bg-gray-800 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] ${viewMode === "grid" ? "p-6 hover:scale-[1.02]" : "p-4 flex flex-row"}`}
                 >
                   <div className={`${viewMode === "grid" ? "w-full h-[300px]" : "w-1/3 h-[200px]"} overflow-hidden rounded-lg`}>
                     <Link to={`/tours/${tour._id}`} className="block h-full">
@@ -433,7 +433,7 @@ const SearchResults = () => {
                       </span>
                       <Link
                         to={`/tours/${tour._id}`}
-                        className="inline-flex items-center rounded-lg border border-primary-600 bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:border-primary-500 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-600"
+                        className="inline-flex items-center rounded-lg border border-primary-600 bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 dark:border-primary-500 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-600"
                       >
                         Book now
                         <svg

@@ -105,7 +105,7 @@ export function MultiSelect({
                                     <Badge key={getOptionValue(option)} variant="secondary" className={cn("mr-1", badgeClassName)}>
                                         {option.label}
                                         <span
-                                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
+                                            className="ml-1 rounded-full outline-hidden ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
                                             onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()

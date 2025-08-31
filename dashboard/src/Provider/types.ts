@@ -401,6 +401,7 @@ export interface CategoryData {
 export interface FactData {
   name: string
   title?: string
+  id?: string
   field_type?: string
   label: string
   icon?: string

@@ -76,7 +76,7 @@ const AddFaq = ({ onFaqAdded }: { onFaqAdded: () => void }) => {
                 e.preventDefault();
                 form.handleSubmit(handleCreateFaq)();
             }}>
-                <Card className="shadow-sm border-primary/20">
+                <Card className="shadow-xs border-primary/20">
                     <CardHeader className="bg-primary/5 border-b pb-4">
                         <div className="flex items-center gap-2">
                             <Plus className="h-4 w-4 text-primary" />

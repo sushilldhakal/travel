@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { X, Plus, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Plus, ImageIcon, ChevronLeft, ChevronRight, Play, Video } from 'lucide-react';
 import clsx from 'clsx';
 import { useFormContext } from 'react-hook-form';
 import { GalleryItem } from '@/Provider/types';
@@ -18,6 +18,26 @@ const TourGallery: React.FC = () => {
     // This can now handle both strings and gallery item objects
     const [imageArray, setImageArray] = useState<(string | GalleryItem)[]>([]);
     const [imageLoadStatus, setImageLoadStatus] = useState<{ [key: number]: 'success' | 'error' }>({});
+
+    // Helper function to detect if an item is a video
+    const isVideo = (url: string): boolean => {
+        // Check file extension
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv'];
+        const urlLower = url.toLowerCase();
+
+        // Check if the URL contains video in the path (common for CDNs like Cloudinary)
+        const isVideoInPath = urlLower.includes('/video/') || urlLower.includes('/video_upload/');
+
+        // Check if the URL ends with a video extension
+        const hasVideoExtension = videoExtensions.some(ext => urlLower.endsWith(ext));
+
+        return isVideoInPath || hasVideoExtension;
+    };
+
+    // Get the URL from a gallery item or string
+    const getItemUrl = (item: string | GalleryItem): string => {
+        return typeof item === 'string' ? item : item.image;
+    };
 
     // Sync gallery from form values to local state
     useEffect(() => {
@@ -43,22 +63,22 @@ const TourGallery: React.FC = () => {
         setImageArray((prevImageArray) => {
             // Ensure we're working with an array of URLs
             const newImageUrls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
-            
+
             // Get current image URLs to check for duplicates
-            const existingUrls = prevImageArray.map(item => 
+            const existingUrls = prevImageArray.map(item =>
                 typeof item === 'string' ? item : item.image
             );
-            
+
             // Filter out any URLs that already exist in the gallery
-            const uniqueNewUrls = newImageUrls.filter(url => 
+            const uniqueNewUrls = newImageUrls.filter(url =>
                 !existingUrls.includes(url)
             );
-            
+
             // If no new unique images, return the current array
             if (uniqueNewUrls.length === 0) {
                 return prevImageArray;
             }
-            
+
             // Create gallery items from unique new images
             // IMPORTANT: Don't use _id for new items as MongoDB needs a specific format
             const newGalleryItems = uniqueNewUrls.map(url => ({
@@ -73,7 +93,6 @@ const TourGallery: React.FC = () => {
             // Update form's gallery value with deduped array
             const updatedArray = [...prevImageArray, ...newGalleryItems];
             setValue('gallery', updatedArray, { shouldDirty: true });
-            console.log('Added images:', newGalleryItems);
             return updatedArray;
         });
     };
@@ -101,7 +120,7 @@ const TourGallery: React.FC = () => {
 
 
     return (
-        <Card className="shadow-sm">
+        <Card className="shadow-xs">
             <CardHeader className="border-b bg-secondary pb-6">
                 <div className="flex items-center gap-2">
                     <ImageIcon className="h-5 w-5 text-primary" />
@@ -146,14 +165,32 @@ const TourGallery: React.FC = () => {
                                     setOpen(true);
                                 }}
                             >
-                                {imageLoadStatus[index] === "error" ? (
+                                {imageLoadStatus[index] === "error" && !isVideo(getItemUrl(imageItem)) ? (
                                     <div className="aspect-video w-full flex items-center justify-center bg-secondary/50 text-muted-foreground">
                                         <ImageIcon className="h-8 w-8" />
                                         <p className="text-xs mt-2">Failed to load</p>
                                     </div>
+                                ) : isVideo(getItemUrl(imageItem)) ? (
+                                    <div className="aspect-video w-full relative group">
+                                        <video
+                                            src={getItemUrl(imageItem)}
+                                            className="w-full h-full object-cover"
+                                            onLoadedData={() => handleImageLoad(index)}
+                                            onError={() => handleImageError(index)}
+                                            muted
+                                            playsInline
+                                        />
+                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-all">
+                                            <Play className="h-12 w-12 text-white opacity-80 group-hover:opacity-100" />
+                                        </div>
+                                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                                            <Video className="h-3 w-3" />
+                                            <span>Video</span>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <img
-                                        src={typeof imageItem === 'string' ? imageItem : imageItem.image}
+                                        src={getItemUrl(imageItem)}
                                         alt={`Gallery ${index}`}
                                         className="aspect-video w-full object-cover transition-all"
                                         onLoad={() => handleImageLoad(index)}
@@ -214,11 +251,21 @@ const TourGallery: React.FC = () => {
                         </DialogDescription>
                         <div className="relative w-full h-[60vh] flex items-center justify-center bg-muted rounded-md">
                             {imageArray[selectedIndex] ? (
-                                <img
-                                    src={typeof imageArray[selectedIndex] === 'string' ? imageArray[selectedIndex] : (imageArray[selectedIndex] as GalleryItem).image}
-                                    alt={`Image ${selectedIndex}`}
-                                    className="max-h-full max-w-full object-contain"
-                                />
+                                isVideo(getItemUrl(imageArray[selectedIndex])) ? (
+                                    <video
+                                        src={getItemUrl(imageArray[selectedIndex])}
+                                        className="max-h-full max-w-full object-contain"
+                                        controls
+                                        autoPlay
+                                        playsInline
+                                    />
+                                ) : (
+                                    <img
+                                        src={getItemUrl(imageArray[selectedIndex])}
+                                        alt={`Image ${selectedIndex}`}
+                                        className="max-h-full max-w-full object-contain"
+                                    />
+                                )
                             ) : (
                                 <ImageIcon className="h-12 w-12 text-muted-foreground" />
                             )}

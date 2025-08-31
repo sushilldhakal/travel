@@ -97,7 +97,6 @@ const SingleBlog: React.FC = () => {
         }
 
         const responseData = await response.json();
-        console.log('API Response:', responseData);
 
         // Transform the data if needed
         return {
@@ -121,7 +120,6 @@ const SingleBlog: React.FC = () => {
 
   useEffect(() => {
     if (data) {
-      console.log('Setting post data:', data);
       setPost(data);
     }
   }, [data]);

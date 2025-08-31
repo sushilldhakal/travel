@@ -14,6 +14,7 @@ const HomeSlider = () => {
         staleTime: 5 * 60 * 1000, // 5 minutes cache
     });
 
+    // The API returns data in a nested structure: data.data.data.tours
     // New slider state management
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
@@ -22,15 +23,29 @@ const HomeSlider = () => {
     const [autoplayEnabled, setAutoplayEnabled] = useState(true);
     const slideInterval = 8000; // 8 seconds per slide
 
+    // Define the tour item interface
+    interface TourItem {
+        _id: string;
+        title: string;
+        coverImage: string;
+        description?: string;
+        createdAt: string;
+        [key: string]: any; // For other properties we might access
+    }
+
+
+
     // Process tour data - memoize to prevent recalculation on every render
     const sortedTours = useMemo(() => {
+        // Fixed data access pattern to match API response structure
         if (!data?.data?.tours) return [];
 
         return [...data.data.tours]
-            .sort((a: { createdAt: string }, b: { createdAt: string }) =>
+            .sort((a: TourItem, b: TourItem) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5);
     }, [data?.data?.tours]);
+
 
     // Handle automatic sliding with progress - optimize to reduce renders
     useEffect(() => {
@@ -144,9 +159,9 @@ const HomeSlider = () => {
     if (!sortedTours || sortedTours.length === 0) {
         return (
             <div className="relative w-full max-w-full overflow-hidden">
-                <div className="relative aspect-[16/9]">
+                <div className="relative aspect-video">
                     <Card className="h-full">
-                        <CardContent className="flex items-center justify-center p-6 bg-gradient-to-r from-primary/80 to-secondary/80 h-full">
+                        <CardContent className="flex items-center justify-center p-6 bg-linear-to-r from-primary/80 to-secondary/80 h-full">
                             <span className="text-2xl font-semibold text-white">Loading tours...</span>
                         </CardContent>
                     </Card>
@@ -169,7 +184,7 @@ const HomeSlider = () => {
             onTouchCancel={handleDragCancel}
             style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-            <div className="relative max-h-[90vh] w-full aspect-[16/9]">
+            <div className="relative max-h-[90vh] w-full aspect-video">
                 {sortedTours.map((tour: any, index: number) => {
                     const description = tour.description || "No description available.";
                     let truncatedDescription = description;
@@ -196,8 +211,8 @@ const HomeSlider = () => {
                                 <div className="absolute inset-0 bg-black/30"></div>
                                 <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 relative flex items-center h-full">
                                     <div className="relative z-10 p-5 text-white w-full md:w-1/2 text-center md:text-left">
-                                        <h2 className="text-2xl md:text-3xl capitalize [text-shadow:_3px_3px_3px_rgb(0_0_0_/_100%)]">{tour.title}</h2>
-                                        <div className="text-base md:text-lg mt-4 mb-4 [text-shadow:_1px_1px_2px_rgb(0_0_0_/_100%)] tracking-wide">
+                                        <h2 className="text-2xl md:text-3xl capitalize [text-shadow:3px_3px_3px_rgb(0_0_0/100%)]">{tour.title}</h2>
+                                        <div className="text-base md:text-lg mt-4 mb-4 [text-shadow:1px_1px_2px_rgb(0_0_0/100%)] tracking-wide">
                                             <RichTextRenderer
                                                 content={truncatedDescription}
                                                 className="text-white prose-headings:text-white prose-strong:text-white"

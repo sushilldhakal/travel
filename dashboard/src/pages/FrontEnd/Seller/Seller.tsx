@@ -195,7 +195,7 @@ const Seller = () => {
                 </p>
             </div>
 
-            <Card className="border border-border shadow-sm mb-6">
+            <Card className="border border-border shadow-xs mb-6">
                 <CardHeader className="bg-muted/50">
                     <CardTitle className="flex items-center gap-2">
                         <Store className="h-5 w-5 text-primary" />

@@ -14,7 +14,7 @@ import {
 } from "@/http";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, MapPin, Info, Star, Home, ChevronRight, MessageSquare, Phone, Heart, Eye, MessageCircleQuestion, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Info, Star, Home, ChevronRight, MessageSquare, Phone, Heart, Eye, MessageCircleQuestion, AlertCircle, Play, Video } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -48,29 +48,66 @@ const calculateTotalPrice = (tourData: Tour | undefined) => {
     return adultPrice + childrenPrice;
 };
 
+// Helper function to detect video files based on URL extension or path
+const isVideo = (url: string): boolean => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv'];
+    const urlLower = url.toLowerCase();
+    const isVideoInPath = urlLower.includes('/video/') || urlLower.includes('/video_upload/');
+    const hasVideoExtension = videoExtensions.some(ext => urlLower.endsWith(ext));
+    return isVideoInPath || hasVideoExtension;
+};
+
 // Helper function to render fact value based on its type
 const renderFactValue = (fact: FactData) => {
-    if (!fact.value || fact.value.length === 0) return '';
+    if (!fact.value) return '';
 
-    const value = fact.value[0];
-
-    // Handle Multi Select case (array of objects with label/value)
-    if (fact.field_type === 'Multi Select' && Array.isArray(value)) {
-        return value.map((item: string) => item.label).join(', ');
+    // Handle Plain Text facts (value is a direct string)
+    if (fact.field_type === 'Plain Text') {
+        if (typeof fact.value === 'string') {
+            return fact.value;
+        } else if (Array.isArray(fact.value) && fact.value.length > 0) {
+            return String(fact.value[0]);
+        }
     }
 
-    // Handle Single Select case (object with label/value)
-    if (fact.field_type === 'Single Select' && typeof value === 'object' && value.label) {
-        return value.label;
+    // Handle Multi Select facts (value is an array of strings)
+    if (fact.field_type === 'Multi Select') {
+        if (Array.isArray(fact.value)) {
+            // If array contains strings, join them
+            if (fact.value.every((item: any) => typeof item === 'string')) {
+                return (fact.value as string[]).join(', ');
+            }
+            // If array contains objects with label/value properties
+            if (fact.value.length > 0 && typeof fact.value[0] === 'object') {
+                return (fact.value as Array<{ label?: string; value?: string }>)
+                    .map(item => item.label || item.value || String(item))
+                    .join(', ');
+            }
+        }
     }
 
-    // Handle Plain Text case (simple string)
-    if (Array.isArray(value) && typeof value[0] === 'string') {
-        return value[0];
+    // Handle Single Select facts (value is array with one string)
+    if (fact.field_type === 'Single Select') {
+        if (Array.isArray(fact.value) && fact.value.length > 0) {
+            // If it's a string in an array
+            if (typeof fact.value[0] === 'string') {
+                return (fact.value as string[])[0];
+            }
+            // If it's an object with label/value
+            if (typeof fact.value[0] === 'object' && fact.value[0] !== null) {
+                const item = (fact.value as Array<{ label?: string; value?: string }>)[0];
+                return item.label || item.value || String(item);
+            }
+        }
     }
 
-    // Default case - just return as string
-    return String(value);
+    // Default fallback - try to convert to string
+    if (Array.isArray(fact.value)) {
+        return (fact.value as any[]).map(v => String(v)).join(', ');
+    }
+
+    return String(fact.value);
 };
 
 // Function to render appropriate icon for each fact
@@ -146,20 +183,11 @@ const FrontSingleTours = () => {
         enabled: !!tourId
     });
 
-    console.log("tourResponse", tourResponse)
-    const tourData = tourResponse;
+    // Extract the tour data from the nested structure
+    const tourData = tourResponse?.data?.tour;
 
-    useEffect(() => {
-        console.log("Reviews data from API:", reviewsData);
-        if (reviewsData?.data?.reviews) {
-            console.log("Number of reviews:", reviewsData.data.reviews.length);
-            console.log("Review details:", reviewsData.data.reviews);
-        } else {
-            console.log("No reviews data available");
-        }
-    }, [reviewsData]);
 
-    const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+    // FAQ state is now handled by Accordion component
     const [currentSlide, setCurrentSlide] = useState(0);
     const [api, setApi] = useState<CarouselApi>();
     const [activeDay, setActiveDay] = useState<string[]>(["day-0"])
@@ -172,19 +200,11 @@ const FrontSingleTours = () => {
     const [replyText, setReplyText] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    // Toggle FAQ expansion
-    const toggleFaq = (index: number) => {
-        if (expandedFaq === index) {
-            setExpandedFaq(null);
-        } else {
-            setExpandedFaq(index);
-        }
-    };
+    // FAQ expansion is now handled by Accordion component
 
     // Handle booking submission
     const handleBookingSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Booking submitted:', { totalPrice: calculateTotalPrice(tourData) });
         // Here you would typically send this data to your backend API
         alert('Booking submitted successfully!');
     };
@@ -464,12 +484,19 @@ const FrontSingleTours = () => {
         <div className="bg-background min-h-screen">
             {/* Full width banner */}
             <div className="w-full pattern-2 h-[300px] relative">
+                {/* Base layer: Image */}
                 <img
                     src={tourData.coverImage}
                     alt={tourData.title}
                     className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+
+                {/* Middle layer: Pattern overlays */}
+                <div className="showPattern absolute inset-0" style={{ pointerEvents: 'none' }}></div>
+                <div className="absolute inset-0 bg-black/30" style={{ pointerEvents: 'none' }}></div>
+
+                {/* Top layer: Content with highest z-index */}
+                <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 10 }}>
                     <div className="text-center text-white">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">{tourData.title}</h1>
                         <div className="flex items-center justify-center space-x-2">
@@ -482,7 +509,6 @@ const FrontSingleTours = () => {
                         </div>
                     </div>
                 </div>
-                <div className="showPattern"></div>
             </div>
 
             {/* Breadcrumbs */}
@@ -572,15 +598,28 @@ const FrontSingleTours = () => {
                                                 </div>
                                             </CarouselItem>
 
-                                            {/* Gallery images */}
+                                            {/* Gallery images and videos */}
                                             {tourData.gallery?.map((item: GalleryItem, index: number) => (
                                                 <CarouselItem key={index}>
                                                     <div className="aspect-video w-full overflow-hidden rounded-md">
-                                                        <img
-                                                            src={item.image}
-                                                            alt={item.alt || `Gallery image ${index + 1}`}
-                                                            className="w-full h-full object-cover object-center"
-                                                        />
+                                                        {isVideo(item.image) ? (
+                                                            <div className="relative w-full h-full">
+                                                                <video
+                                                                    src={item.image}
+                                                                    className="w-full h-full object-cover"
+                                                                    controls
+                                                                    autoPlay
+                                                                    muted
+                                                                    playsInline
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <img
+                                                                src={item.image}
+                                                                alt={item.alt || `Gallery image ${index + 1}`}
+                                                                className="w-full h-full object-cover object-center"
+                                                            />
+                                                        )}
                                                     </div>
                                                 </CarouselItem>
                                             ))}
@@ -638,11 +677,29 @@ const FrontSingleTours = () => {
                                                             currentSlide === index + 1 ? "border-primary" : "border-transparent",
                                                         )}
                                                     >
-                                                        <img
-                                                            src={item.image}
-                                                            alt={item.alt || `Thumbnail ${index + 1}`}
-                                                            className="w-full h-full object-cover object-center"
-                                                        />
+                                                        {isVideo(item.image) ? (
+                                                            <div className="aspect-video w-full relative group">
+                                                                <video
+                                                                    src={item.image}
+                                                                    className="w-full h-full object-cover"
+                                                                    muted
+                                                                    playsInline
+                                                                />
+                                                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-all">
+                                                                    <Play className="h-8 w-8 text-white opacity-80 group-hover:opacity-100" />
+                                                                </div>
+                                                                <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                    <Video className="h-2 w-2" />
+                                                                    <span className="text-[10px]">Video</span>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <img
+                                                                src={item.image}
+                                                                alt={item.alt || `Thumbnail ${index + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        )}
                                                     </div>
                                                 </CarouselItem>
                                             ))}
@@ -693,16 +750,14 @@ const FrontSingleTours = () => {
                                 </TabsContent>
                                 <TabsContent value="itinerary" className="mt-4">
                                     <div className="bg-card border border-border rounded-lg p-6">
-
+                                        <h2 className="text-2xl font-bold mb-4">{tourData.outline}</h2>
                                         {/* Map display */}
                                         <div className="mb-6 rounded-lg overflow-hidden border border-border">
-                                            {tourData.map ? (
-                                                <iframe
-                                                    src={tourData.map}
+                                            {tourData.location?.map ? (
+                                                <div
                                                     className="w-full h-[500px]"
-                                                    title="Tour Map"
-                                                    allowFullScreen
-                                                ></iframe>
+                                                    dangerouslySetInnerHTML={{ __html: tourData.location.map }}
+                                                ></div>
                                             ) : (
                                                 <div className="w-full h-[400px] bg-accent/20 flex items-center justify-center text-muted-foreground">
                                                     <MapPin className="w-8 h-8 mr-2" />
@@ -728,7 +783,7 @@ const FrontSingleTours = () => {
                                                         <div className="flex items-start gap-4 relative">
                                                             {/* Numbered circle */}
                                                             <div
-                                                                className={`flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center z-10 ${activeDay.includes(`day-${index}`)
+                                                                className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center z-10 ${activeDay.includes(`day-${index}`)
                                                                     ? "bg-primary text-primary-foreground"
                                                                     : "bg-background text-foreground border-2 border-gray-200"
                                                                     }
@@ -747,7 +802,7 @@ const FrontSingleTours = () => {
                                                                 <AccordionContent className="pl-0 pt-3 pb-2 w-full">
                                                                     <div className="space-y-4 pl-6 border-l-2 border-dashed border-gray-200 ml-2">
                                                                         <div className="flex items-start gap-4">
-                                                                            <Calendar className="h-5 w-5 mt-1 flex-shrink-0 text-primary" />
+                                                                            <Calendar className="h-5 w-5 mt-1 shrink-0 text-primary" />
                                                                             <div>
                                                                                 <p className="font-medium text-sm text-foreground">
                                                                                     {day?.date ? formatDate(day.date) : 'Date not specified'}
@@ -756,7 +811,7 @@ const FrontSingleTours = () => {
                                                                         </div>
 
                                                                         <div className="flex items-start gap-4">
-                                                                            <Clock className="h-5 w-5 mt-1 flex-shrink-0 text-primary" />
+                                                                            <Clock className="h-5 w-5 mt-1 shrink-0 text-primary" />
                                                                             <div>
                                                                                 <p className="font-medium text-sm text-foreground">
                                                                                     {day?.time ? formatTime(day.time) : (day?.date ? formatTime(day.date) : 'Time not specified')}
@@ -765,9 +820,9 @@ const FrontSingleTours = () => {
                                                                         </div>
 
                                                                         <div className="flex items-start gap-4">
-                                                                            <Info className="h-5 w-5 mt-1 flex-shrink-0 text-primary" />
+                                                                            <Info className="h-5 w-5 mt-1 shrink-0 text-primary" />
                                                                             <div className="prose dark:prose-invert max-w-none">
-                                                                                <p className="text-muted-foreground">{day.description}</p>
+                                                                                <RichTextRenderer content={day.description} className="text-muted-foreground" />
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -784,25 +839,32 @@ const FrontSingleTours = () => {
                                     <div className="bg-card border border-border rounded-lg p-6">
                                         <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
                                         <div className="space-y-4">
-                                            {tourData.faqs?.map((faq: FaqData, index: number) => (
-                                                <div key={index} className="border border-border rounded-lg overflow-hidden">
-                                                    <MessageCircleQuestion className="h-5 w-5 mt-1 flex-shrink-0 text-primary" />
-                                                    <div
-                                                        className="flex justify-between items-center p-4 cursor-pointer bg-card hover:bg-accent/50"
-                                                        onClick={() => toggleFaq(index)}
-                                                    >
-                                                        <h4 className="font-medium">{faq.question}</h4>
-                                                        <span className="text-primary">
-                                                            {expandedFaq === index ? '−' : '+'}
-                                                        </span>
-                                                    </div>
-                                                    {expandedFaq === index && (
-                                                        <div className="p-4 border-t border-border bg-background">
-                                                            <p className="text-muted-foreground">{faq.answer}</p>
-                                                        </div>
-                                                    )}
+                                            {tourData.faqs?.length ? (
+                                                <Accordion type="single" collapsible className="w-full">
+                                                    {tourData.faqs.map((faq: FaqData, index: number) => (
+                                                        <AccordionItem key={index} value={`faq-${index}`} className="border border-border rounded-lg overflow-hidden mb-3">
+                                                            <div className="bg-card">
+                                                                <AccordionTrigger className="hover:bg-accent/20 py-3 px-4 rounded-md">
+                                                                    <div className="flex items-center gap-3 text-left w-full">
+                                                                        <MessageCircleQuestion className="h-5 w-5 shrink-0 text-primary" />
+                                                                        <span className="font-medium">{faq.question}</span>
+                                                                    </div>
+                                                                </AccordionTrigger>
+                                                                <AccordionContent className="px-4 pt-2 pb-4">
+                                                                    <div className="pl-8 text-muted-foreground">
+                                                                        {faq.answer}
+                                                                    </div>
+                                                                </AccordionContent>
+                                                            </div>
+                                                        </AccordionItem>
+                                                    ))}
+                                                </Accordion>
+                                            ) : (
+                                                <div className="text-center py-8 border border-dashed border-border rounded-lg">
+                                                    <MessageCircleQuestion className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                                                    <p className="text-muted-foreground">No FAQs available for this tour</p>
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
                                     </div>
                                 </TabsContent>
@@ -838,7 +900,7 @@ const FrontSingleTours = () => {
                                                                 <button
                                                                     key={star}
                                                                     type="button"
-                                                                    className="text-muted-foreground hover:text-yellow-400 focus:outline-none"
+                                                                    className="text-muted-foreground hover:text-yellow-400 focus:outline-hidden"
                                                                     onClick={() => setRating(star)}
                                                                 >
                                                                     <Star
@@ -1077,8 +1139,8 @@ const FrontSingleTours = () => {
 
                     {/* Booking form - 1/3 width on large screens */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-24">
-                            <div className="bg-card mt-[-134px] border border-border rounded-lg overflow-hidden">
+                        <div className="sticky top-24 z-20">
+                            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg relative" style={{ marginTop: '-134px', zIndex: 20 }}>
                                 <div className="bg-primary text-primary-foreground p-4 text-center">
                                     <div className="flex items-center justify-center space-x-2">
                                         <Phone className="h-5 w-5" />

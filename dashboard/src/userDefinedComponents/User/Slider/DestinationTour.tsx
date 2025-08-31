@@ -115,7 +115,7 @@ const DestinationTour = () => {
                     <CarouselContent className="-ml-2 md:-ml-4">
                         {sortedDestinations.map((destination: Destination) => (
                             <CarouselItem key={destination._id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/4">
-                                <Card className="overflow-hidden h-full border shadow-sm hover:shadow-md transition-all duration-300">
+                                <Card className="overflow-hidden h-full border shadow-xs hover:shadow-md transition-all duration-300">
                                     <div className="relative h-48 overflow-hidden">
                                         <img
                                             src={destination.coverImage}

@@ -61,7 +61,6 @@ const UserPage = () => {
     }
   }, [data, userId, userRole]);
 
-  console.log("filter data user ", filteredData)
 
   // Search functionality
   useEffect(() => {
@@ -88,7 +87,7 @@ const UserPage = () => {
       case 'user':
         return 'secondary';
       default:
-        return 'outline';
+        return 'outline-solid';
     }
   };
 

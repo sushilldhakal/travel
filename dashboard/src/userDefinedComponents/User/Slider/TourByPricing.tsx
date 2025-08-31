@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getLatestTours } from "@/http";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import AutoScroll from 'embla-carousel-auto-scroll';
@@ -11,10 +9,8 @@ import {
     Carousel,
     CarouselContent,
     CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
 } from "@/components/ui/carousel"
-import { BellPlus, CornerDownRight, Plane, ThumbsUp } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 
 const TourByPricing = () => {
     const [progress, setProgress] = useState(0)
@@ -45,11 +41,24 @@ const TourByPricing = () => {
     }, [api])
 
 
-    const sortedTours = data?.data.tours
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10);
+    // The API returns response in format: data.data.data.tours
 
-    //console.log("sortedTours", sortedTours)
+    // Define a type for tour items to fix TypeScript errors
+    interface TourItem {
+        _id: string;
+        title: string;
+        coverImage: string;
+        price: number;
+        author: Array<{ _id: string; name: string; roles: string }>;
+        createdAt: string;
+        [key: string]: any; // For other properties we might access
+    }
+
+    const sortedTours = data?.data?.tours
+        ? data.data.tours
+            .sort((a: TourItem, b: TourItem) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 10)
+        : [];
 
     return (
         <div className="pattern-1 pb-16 relative">

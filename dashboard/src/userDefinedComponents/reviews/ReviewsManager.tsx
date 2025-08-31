@@ -225,7 +225,7 @@ const ReviewsManager: React.FC<ReviewsManagerProps> = ({ tourId }) => {
                 {Array.from({ length: totalPages }).map((_, index) => (
                   <PaginationItem key={index}>
                     <Button 
-                      variant={currentPage === index + 1 ? "default" : "outline"}
+                      variant={currentPage === index + 1 ? "default" : "outline-solid"}
                       size="icon"
                       onClick={() => setCurrentPage(index + 1)}
                       className="w-8 h-8"

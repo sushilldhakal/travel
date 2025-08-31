@@ -41,15 +41,7 @@ export const userSetting = async (userId: string, data: FormData) => {
 
 export const getDecryptedApiKey = async (userId: string, keyType: string) => {
     try {
-        console.log(`Making API request to: /api/users/setting/${userId}/key?keyType=${keyType}`);
         const response = await api.get(`/api/users/setting/${userId}/key?keyType=${keyType}`);
-        console.log('API response data structure:', Object.keys(response.data));
-        console.log('API key length received:', response.data.key ? response.data.key.length : 0);
-        // For security, only log the last few characters of the key
-        if (response.data.key) {
-            const maskedKey = '••••••' + response.data.key.slice(-4);
-            console.log('API key value (partial):', maskedKey);
-        }
         return response.data;
     } catch (error) {
         console.error('Raw error from API call:', error);

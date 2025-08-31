@@ -124,7 +124,7 @@ const Search = () => {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
-                                    variant={"outline"}
+                                    variant={"outline-solid"}
                                     className={cn(
                                         "w-full justify-start text-left font-normal h-10 bg-white bg-opacity-20 border-0 text-white",
                                         !date && "text-gray-300"
@@ -171,6 +171,8 @@ const Search = () => {
                             value={priceRange}
                             onValueChange={handleValueChange}
                             label={(value: number) => `$${value}`}
+                            showEditableInputs={true}
+                            currency="$"
                             className="py-4"
                         />
                     </div>

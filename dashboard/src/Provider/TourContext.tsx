@@ -6,14 +6,13 @@ import makeId from '@/pages/Dashboard/Tours/Components/randomId';
 import { TourContext } from './TourContextDefinition';
 import { TourContextType } from './TourContextTypes';
 import { DateRange, departures, FactData, FaqData, Itinerary, ItineraryItem, pricingOptions, Tour } from './types';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 // Use tourApi directly to ensure multipart/form-data behavior
 import { createTour, getSingleTour, updateTour } from '@/http/tourApi';
 import { toast } from '@/components/ui/use-toast';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 
 
 // Provider props interface
@@ -46,10 +45,11 @@ export const TourProvider: React.FC<TourProviderProps> = ({
   // Get tour ID from URL params - using a unique variable name to avoid conflicts
   const urlParams = useParams<{ tourId: string }>();
   const currentTourId = urlParams.tourId;
+  const navigate = useNavigate();
 
 
   // Fetch tour data if in edit mode
-  const { data: fetchedTourData, error: tourError, isLoading: isFetchingTour } = useQuery<Tour, Error>({
+  const { data: fetchedTourData, error: tourError } = useQuery<Tour, Error>({
     queryKey: ['tours', currentTourId],
     queryFn: async () => {
       if (!currentTourId) throw new Error('No tour ID provided');
@@ -60,7 +60,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
   });
 
 
-  const { mutate: updateTourMutation, isPending: isUpdating } = useMutation({
+  const { mutate: updateTourMutation } = useMutation({
     mutationFn: (formData: FormData) => updateTour(tourId!, formData),
     onSuccess: () => {
       toast({
@@ -70,7 +70,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['tour', tourId] });
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       toast({
         variant: "destructive",
         title: "Error updating tour",
@@ -79,7 +79,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
     },
   });
 
-  const { mutate: createTourMutation, isPending: isCreating } = useMutation({
+  const { mutate: createTourMutation } = useMutation({
     mutationFn: (formData: FormData) => createTour(formData),
     onSuccess: (data) => {
       toast({
@@ -88,11 +88,11 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       // Optionally redirect to the edit page
-      if (data?.tour?._id) {
-        navigate(`/dashboard/tours/edit_tour/${data.tour._id}`);
+      if (data?.data?.tour?._id) {
+        navigate(`/dashboard/tours/edit_tour/${data.data.tour._id}`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       toast({
         variant: "destructive",
         title: "Error creating tour",
@@ -105,34 +105,93 @@ export const TourProvider: React.FC<TourProviderProps> = ({
   useEffect(() => {
     if (fetchedTourData) {
       // Extract the actual tour data from the API response wrapper
-      const responseData = (fetchedTourData as any).data || fetchedTourData;
-      const actualTourData = responseData.tour || responseData;
+      const responseData = (fetchedTourData as Record<string, any>).data || fetchedTourData;
+      const actualTourData = (responseData as Record<string, any>).tour || responseData;
 
       // Process special fields before merging
-      const processedTourData = {
-        ...actualTourData,
-        // Transform category from API format {label, value, disable} to form format {id, name, isActive}
-        category: Array.isArray(actualTourData.category)
-          ? actualTourData.category.map((cat: any) => ({
+      const processCategories = (categories: unknown) => {
+        if (categories === null || categories === undefined) return categories;
+        if (typeof categories === 'string') {
+          try {
+            return JSON.parse(categories);
+          } catch (e) {
+            return categories;
+          }
+        }
+        if (Array.isArray(categories)) {
+          return categories.map((cat: Record<string, unknown>) => ({
             id: cat.value || cat.id,
             name: cat.label || cat.name,
             isActive: !cat.disable
-          }))
-          : actualTourData.category,
-        // Transform itinerary from API format (flat array) to form format (nested object with options)
-        itinerary: Array.isArray(actualTourData.itinerary)
-          ? {
-            options: actualTourData.itinerary.map((item: any) => ({
-              day: item.day,
-              title: item.title,
-              description: item.description,
-              destination: item.destination || '',
-              accommodation: item.accommodation || '',
-              meals: item.meals || '',
-              activities: item.activities || ''
-            }))
+          }));
+        }
+        return categories;
+      };
+
+      const processItinerary = (itinerary: unknown) => {
+        if (itinerary === null || itinerary === undefined) return itinerary;
+        if (typeof itinerary === 'string') {
+          try {
+            return JSON.parse(itinerary);
+          } catch (e) {
+            return itinerary;
           }
-          : actualTourData.itinerary,
+        }
+        if (Array.isArray(itinerary)) {
+          return itinerary.map((item: Record<string, unknown>) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+            destination: item.destination || '',
+            accommodation: item.accommodation || '',
+            meals: item.meals || '',
+            activities: item.activities || ''
+          }));
+        }
+        return itinerary;
+      };
+
+      const processPricingOptions = (pricingOptions: unknown) => {
+        if (pricingOptions === null || pricingOptions === undefined) return pricingOptions;
+        if (Array.isArray(pricingOptions)) {
+          return pricingOptions.map((option: unknown) => {
+            const opt = option as Record<string, any>;
+            return {
+              id: opt.id || Date.now().toString(),
+              name: opt.name || '',
+              category: opt.category || 'adult',
+              customCategory: opt.customCategory || '',
+              price: opt.price || 0,
+              paxRange: [
+                opt.paxRange?.from || opt.minPax || 1,
+                opt.paxRange?.to || opt.maxPax || 10
+              ],
+              minPax: opt.paxRange?.from || opt.minPax || 1,
+              maxPax: opt.paxRange?.to || opt.maxPax || 10,
+              discount: {
+                discountEnabled: opt.discount?.discountEnabled || opt.discountEnabled || false,
+                percentageOrPrice: opt.discount?.percentageOrPrice || opt.percentageOrPrice || false,
+                discountPercentage: opt.discount?.discountPercentage || opt.discountPercentage || 0,
+                discountPrice: opt.discount?.discountPrice || opt.discountPrice || 0,
+                dateRange: opt.discount?.discountDateRange ? {
+                  from: new Date(opt.discount.discountDateRange.from),
+                  to: new Date(opt.discount.discountDateRange.to)
+                } : (opt.discountDateRange ? {
+                  from: new Date(opt.discountDateRange.from),
+                  to: new Date(opt.discountDateRange.to)
+                } : { from: new Date(), to: new Date() })
+              }
+            };
+          });
+        }
+        return pricingOptions;
+      };
+
+      const processedTourData = {
+        ...actualTourData,
+        category: processCategories(actualTourData.category),
+        itinerary: processItinerary(actualTourData.itinerary),
+        pricingOptions: processPricingOptions(actualTourData.pricingOptions),
         include: Array.isArray(actualTourData.include) && actualTourData.include.length > 0
           ? JSON.parse(actualTourData.include[0])
           : actualTourData.include,
@@ -154,40 +213,26 @@ export const TourProvider: React.FC<TourProviderProps> = ({
         pricing: {
           price: actualTourData.price || 0,
           pricePerPerson: actualTourData.pricePerPerson !== undefined ? actualTourData.pricePerPerson : true,
+          minSize: actualTourData.minSize || 1,
+          maxSize: actualTourData.maxSize || 10,
           pricingOptionsEnabled: actualTourData.pricingOptionsEnabled || false,
-          pricingOptions: Array.isArray(actualTourData.pricingOptions) 
-            ? actualTourData.pricingOptions.map((option: any) => ({
-                id: option.id || Date.now().toString(),
-                name: option.name || '',
-                category: option.category || 'adult',
-                customCategory: option.customCategory || '',
-                price: option.price || 0,
-                discount: {
-                  discountEnabled: option.discountEnabled || false,
-                  isActive: option.discount?.isActive || false,
-                  percentageOrPrice: option.discount?.percentageOrPrice || false,
-                  percentage: option.discount?.percentage || 0,
-                  discountPrice: option.discount?.discountPrice || 0,
-                  discountCode: option.discount?.discountCode || '',
-                  maxDiscountAmount: option.discount?.maxDiscountAmount || 0,
-                  description: option.discount?.description || '',
-                  dateRange: option.discount?.dateRange || { from: new Date(), to: new Date() }
-                },
-                paxRange: Array.isArray(option.paxRange) ? option.paxRange : [1, 10]
-              }))
-            : [],
+          // Map server discount data to form structure
           discount: {
-            discountEnabled: actualTourData.discountEnabled || false,
+            discountEnabled: actualTourData.discount?.discountEnabled || false,
             isActive: actualTourData.discount?.isActive || false,
             percentageOrPrice: actualTourData.discount?.percentageOrPrice || false,
-            percentage: actualTourData.discount?.percentage || 0,
-            discountPrice: actualTourData.discountPrice || 0,
+            discountPercentage: actualTourData.discount?.discountPercentage || 0,
+            discountPrice: actualTourData.discount?.discountPrice || 0,
             discountCode: actualTourData.discount?.discountCode || '',
             maxDiscountAmount: actualTourData.discount?.maxDiscountAmount || 0,
             description: actualTourData.discount?.description || '',
-            dateRange: actualTourData.discountDateRange || { from: new Date(), to: new Date() }
-          }
-        }
+            dateRange: actualTourData.discount?.discountDateRange || actualTourData.discountDateRange || { from: new Date(), to: new Date() }
+          },
+          // Map price lock date from server
+          priceLockedUntil: actualTourData.priceLockDate ? new Date(actualTourData.priceLockDate) : undefined
+        },
+        // Move pricingOptions to top level to match new structure
+        pricingOptions: processPricingOptions(actualTourData.pricingOptions)
       };
 
 
@@ -204,7 +249,6 @@ export const TourProvider: React.FC<TourProviderProps> = ({
             ? JSON.parse(processedTourData.description)
             : processedTourData.description;
           setEditorContent(description);
-          console.log('✅ Description editor content set');
 
         } catch (e) {
           console.error('❌ Error parsing description:', e);
@@ -217,7 +261,6 @@ export const TourProvider: React.FC<TourProviderProps> = ({
             ? JSON.parse(processedTourData.include)
             : processedTourData.include;
           setInclusionsContent(include);
-          console.log('Set inclusions content:', include);
         } catch (e) {
           console.error('Error parsing include:', e);
           setInclusionsContent({});
@@ -229,7 +272,6 @@ export const TourProvider: React.FC<TourProviderProps> = ({
             ? JSON.parse(processedTourData.exclude)
             : processedTourData.exclude;
           setExclusionsContent(exclude);
-          console.log('Set exclusions content:', exclude);
         } catch (e) {
           console.error('Error parsing exclusions:', e);
           setExclusionsContent({});
@@ -285,7 +327,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
     remove: pricingOptionsRemove,
   } = useFieldArray({
     control: form.control,
-    name: 'pricing.pricingOptions.options' as any,
+    name: 'pricingOptions' as any,
   });
 
   const {
@@ -368,18 +410,16 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       if (!processedItem.price) processedItem.price = 0;
       if (!processedItem.discount) {
         processedItem.discount = {
-          enabled: false,
-          options: [{
-            isActive: false,
-            percentageOrPrice: false,
-            percentage: 0,
-            discountPrice: 0,
-            description: '',
-            discountCode: '',
-            maxDiscountAmount: 0,
-            dateRange: { from: undefined, to: undefined }
-          }]
-        };
+          discountEnabled: false,
+          isActive: false,
+          percentageOrPrice: false,
+          discountPercentage: 0,
+          discountPrice: 0,
+          description: '',
+          discountCode: '',
+          maxDiscountAmount: 0,
+          dateRange: { from: undefined, to: undefined }
+        } as any;
       }
       if (!processedItem.paxRange) processedItem.paxRange = [1, 10];
       return processedItem as pricingOptions;
@@ -407,10 +447,12 @@ export const TourProvider: React.FC<TourProviderProps> = ({
           to: item.dateRange?.to ? new Date(item.dateRange.to) : toDate,
         },
         isRecurring: item.isRecurring || false,
-        recurrencePattern: item.recurrencePattern as "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly" | undefined,
-        recurrenceEndDate: item.recurrenceEndDate ? new Date(item.recurrenceEndDate) : undefined,
-        selectedPricingOptions: item.selectedPricingOptions || [],
-        capacity: item.capacity || 10
+        recurrencePattern: item.isRecurring ?
+          (item.recurrencePattern || "weekly") : undefined,
+        recurrenceEndDate: item.isRecurring ?
+          (item.recurrenceEndDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1))) : undefined,
+        // Only include capacity if it exists
+        ...(item.capacity !== undefined ? { capacity: item.capacity } : {})
       };
 
       return departure;
@@ -501,67 +543,26 @@ export const TourProvider: React.FC<TourProviderProps> = ({
 
   // Main onSubmit handler
   const onSubmit = async (values: FieldValues, mutateFunction?: (data: FormData) => void) => {
-    console.log('=== ALL FORM VALUES ===');
-    console.log('values.price:', values.price);
-    console.log('values.minSize:', values.minSize);
-    console.log('values.maxSize:', values.maxSize);
-    console.log('values.groupSize:', values.groupSize);
-    console.log('values.originalPrice:', values.originalPrice);
-    console.log('values.basePrice:', values.basePrice);
-    console.log('values.discountEnabled:', values.discountEnabled);
-    console.log('values.discountPrice:', values.discountPrice);
-
-    // Check for ALL discount-related fields
-    console.log('=== DISCOUNT FIELDS SEARCH ===');
-    Object.keys(values).forEach(key => {
-      if (key.toLowerCase().includes('discount')) {
-        console.log(`DISCOUNT FIELD - ${key}:`, values[key]);
-      }
-    });
-    console.log('=== END DISCOUNT SEARCH ===');
-
-    // Check for pricing option fields
-    console.log('=== PRICING OPTION FIELDS ===');
-    Object.keys(values).forEach(key => {
-      if (key.includes('pricing') && key.includes('options')) {
-        console.log(`${key}:`, values[key]);
-      }
-      // Also check for any field that might contain option price data
-      if (key.includes('option') || key.includes('pricingOptions') || (key.includes('pricing') && key.includes('price'))) {
-        console.log(`POTENTIAL OPTION FIELD - ${key}:`, values[key]);
-      }
-    });
-
-    // Detailed analysis of individual pricingOptions field
-    if (values.pricingOptions) {
-      console.log('=== INDIVIDUAL PRICING OPTIONS ANALYSIS ===');
-      console.log('values.pricingOptions:', values.pricingOptions);
-      if (Array.isArray(values.pricingOptions)) {
-        values.pricingOptions.forEach((option: any, index: number) => {
-          console.log(`IndividualOption[${index}]:`, {
-            name: option.name,
-            price: option.price,
-            category: option.category,
-            discount: option.discount,
-            paxRange: option.paxRange
-          });
-        });
-      }
-      console.log('=== END INDIVIDUAL ANALYSIS ===');
-    }
-
-    console.log('=== END PRICING OPTION FIELDS ===');
-
-    console.log('=== END FORM VALUES ===');
 
 
     // Update the mutate function to handle both create and update
     const mutate = mutateFunction || ((data: FormData) => {
-      console.log('Form data being submitted:');
+
+      // Create an object to more easily visualize the form data structure
+      const formDataObj: Record<string, any> = {};
       for (const [key, value] of data.entries()) {
-        console.log(`FormData[${key}]:`, value);
+        // Try to parse JSON strings for better visualization
+        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+          try {
+            formDataObj[key] = JSON.parse(value);
+          } catch (e) {
+            formDataObj[key] = value;
+          }
+        } else {
+          formDataObj[key] = value;
+        }
       }
-      
+
       if (isEditing && tourId) {
         return updateTourMutation(data);
       } else {
@@ -575,7 +576,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
     const originalTour = fetchedTourData || getTourWithDefaults({});
 
     const topLevelFields = [
-      "title", "code", "excerpt", "description", "tourStatus", "coverImage", "file", "outline", "include", "exclude", "map", "destination", "discount", "gallery"
+      "title", "code", "excerpt", "description", "tourStatus", "coverImage", "file", "outline-solid", "include", "exclude", "map", "destination", "gallery"
     ];
     formData.append("id", tourId || "");
     let changedFieldCount = 0;
@@ -643,111 +644,312 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       formData.append("faqs", JSON.stringify(values.faqs));
     }
 
+    // Handle discount fields separately - backend expects individual fields, not a JSON object
+    // Prioritize pricing.discount over direct discount field as it contains the correct UI values
+    const discountData = values.pricing?.discount || values.discount;
 
-
-    // Handle the unified dates structure
-    if (values.dates && hasChanged('dates', values.dates)) {
+    if (discountData) {
       changedFieldCount++;
-      // Ensure the departures have proper date formats and properties
-      const formattedDates = {
-        ...values.dates,
-        days: values.dates.days || 0,
-        nights: values.dates.nights || 0,
-        scheduleType: values.dates.scheduleType || 'flexible',
-        fixedDeparture: Boolean(values.dates.fixedDeparture),
-        multipleDates: Boolean(values.dates.multipleDates),
-        departures: Array.isArray(values.dates.departures) ? values.dates.departures.map((departure: any) => ({
-          id: departure.id || String(Date.now()),
-          label: departure.label || '',
-          dateRange: departure.dateRange || { from: new Date(), to: new Date() },
-          selectedPricingOptions: Array.isArray(departure.selectedPricingOptions) ?
-            departure.selectedPricingOptions : [],
-          isRecurring: Boolean(departure.isRecurring),
-          recurrencePattern: departure.isRecurring ?
-            (departure.recurrencePattern || "weekly") : undefined,
-          recurrenceEndDate: departure.isRecurring ?
-            (departure.recurrenceEndDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1))) : undefined,
-          // Only include capacity if it exists
-          ...(departure.capacity !== undefined ? { capacity: departure.capacity } : {})
-        })) : []
-      };
 
-      formData.append("dates", JSON.stringify(formattedDates));
+      // Send individual discount fields instead of a JSON object
+      if (discountData.discountEnabled !== undefined) {
+        formData.append("discountEnabled", String(discountData.discountEnabled));
+      }
+      if (discountData.discountPrice !== undefined) {
+        formData.append("discountPrice", String(discountData.discountPrice));
+      }
+      if (discountData.dateRange) {
+        formData.append("discountDateRange", JSON.stringify(discountData.dateRange));
+
+            // For objects, create a clean version without temporary properties
+            const cleanItem = { ...item };
+
+            // Remove client-side temporary ID if it exists
+            if (cleanItem.tempId) {
+              delete cleanItem.tempId;
+            }
+
+            // Only include _id if it's a valid MongoDB ObjectId (24 chars)
+            if (cleanItem._id && (typeof cleanItem._id !== 'string' || cleanItem._id.length !== 24)) {
+              delete cleanItem._id;
+            }
+
+            return cleanItem;
+          });
+
+          formData.append('gallery', JSON.stringify(processedGallery));
+        }
+      } else if (field === "file") {
+        const fileValue = processedValues.file;
+        if (Array.isArray(fileValue) && fileValue.length > 0) {
+          formData.append(field, String(fileValue[0] || ""));
+        } else {
+          formData.append(field, String(fileValue || ""));
+        }
+      } else {
+        formData.append(field, String(processedValues[field] || ""));
+      }
     }
-    // Use individual form fields instead of nested pricing object
-    // since the individual fields contain the correct data
+  });
+
+  if (values.facts && hasChanged('facts', values.facts)) {
+    changedFieldCount++;
+    formData.append("facts", JSON.stringify(values.facts));
+  }
+
+  // Handle FAQs if present
+  if (values.faqs && hasChanged('faqs', values.faqs)) {
+    changedFieldCount++;
+    formData.append("faqs", JSON.stringify(values.faqs));
+  }
+
+  // Handle discount fields separately - backend expects individual fields, not a JSON object
+  // Prioritize pricing.discount over direct discount field as it contains the correct UI values
+  const discountData = values.pricing?.discount || values.discount;
+
+  if (discountData) {
+    changedFieldCount++;
+
+    // Send individual discount fields instead of a JSON object
+    if (discountData.discountEnabled !== undefined) {
+      formData.append("discountEnabled", String(discountData.discountEnabled));
+    }
+    if (discountData.discountPrice !== undefined) {
+      formData.append("discountPrice", String(discountData.discountPrice));
+    }
+    if (discountData.dateRange) {
+      formData.append("discountDateRange", JSON.stringify(discountData.dateRange));
+    }
+  }
+
+
+
+  // Helper function to calculate days and nights from date range
+  const calculateDaysNights = (dateRange: { from: Date; to: Date }) => {
+    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return {
+      days: diffDays,
+      nights: Math.max(0, diffDays - 1)
+    };
+  };
+
+  // Process dates data with automatic days/nights calculation
+  if (shouldIncludeField('dates', values.dates, isCreating)) {
+    console.log('🔍 Processing dates data:', values.dates);
+    changedFieldCount++;
+    
+    const datesData = values.dates || {};
+    let calculatedDays: number | undefined;
+    let calculatedNights: number | undefined;
+
+    // Calculate days/nights based on schedule type
+    if (datesData.scheduleType === 'flexible') {
+      // For flexible dates, use manually entered days/nights
+      calculatedDays = datesData.days ? Number(datesData.days) : undefined;
+      calculatedNights = datesData.nights ? Number(datesData.nights) : undefined;
+    } else if (datesData.scheduleType === 'fixed' && datesData.dateRange) {
+      // For fixed dates, calculate from date range
+      const dateRange = {
+        from: new Date(datesData.dateRange.from),
+        to: new Date(datesData.dateRange.to)
+      };
+      const calculated = calculateDaysNights(dateRange);
+      calculatedDays = calculated.days;
+      calculatedNights = calculated.nights;
+      console.log('🔢 Calculated from fixed date range:', { days: calculatedDays, nights: calculatedNights });
+    } else if (datesData.scheduleType === 'multiple' && Array.isArray(datesData.departures) && datesData.departures.length > 0) {
+      // For multiple departures, calculate from first departure's date range
+      const firstDeparture = datesData.departures[0];
+      if (firstDeparture?.dateRange) {
+        const dateRange = {
+          from: new Date(firstDeparture.dateRange.from),
+          to: new Date(firstDeparture.dateRange.to)
+        };
+        const calculated = calculateDaysNights(dateRange);
+        calculatedDays = calculated.days;
+        calculatedNights = calculated.nights;
+        console.log('🔢 Calculated from multiple departures:', { days: calculatedDays, nights: calculatedNights });
+      }
+    }
+    
+    // Create formatted dates object
+    const formattedDates = {
+      scheduleType: datesData.scheduleType || 'flexible',
+      days: calculatedDays,
+      nights: calculatedNights,
+      dateRange: datesData.dateRange ? {
+        from: new Date(datesData.dateRange.from),
+        to: new Date(datesData.dateRange.to)
+      } : undefined,
+      isRecurring: Boolean(datesData.isRecurring),
+      recurrencePattern: datesData.recurrencePattern || undefined,
+      recurrenceInterval: datesData.recurrenceInterval ? Number(datesData.recurrenceInterval) : undefined,
+      recurrenceEndDate: datesData.recurrenceEndDate ? new Date(datesData.recurrenceEndDate) : undefined,
+      pricingCategory: datesData.pricingCategory || undefined,
+      departures: Array.isArray(datesData.departures) ? datesData.departures.map((departure: any) => {
+        // Calculate days/nights for each departure
+        let depDays: number | undefined;
+        let depNights: number | undefined;
+        
+        if (departure.dateRange) {
+          const depDateRange = {
+            from: new Date(departure.dateRange.from),
+            to: new Date(departure.dateRange.to)
+          };
+          const calculated = calculateDaysNights(depDateRange);
+          depDays = calculated.days;
+          depNights = calculated.nights;
+        }
+
+        return {
+          id: departure.id || crypto.randomUUID(),
+          label: departure.label || 'Departure',
+          dateRange: departure.dateRange ? {
+            from: new Date(departure.dateRange.from),
+            to: new Date(departure.dateRange.to)
+          } : undefined,
+          days: depDays,
+          nights: depNights,
+          isRecurring: Boolean(departure.isRecurring),
+          recurrencePattern: departure.recurrencePattern || undefined,
+          recurrenceInterval: departure.recurrenceInterval ? Number(departure.recurrenceInterval) : undefined,
+          recurrenceEndDate: departure.recurrenceEndDate ? new Date(departure.recurrenceEndDate) : undefined,
+          pricingCategory: departure.pricingCategory || undefined,
+          capacity: departure.capacity ? Number(departure.capacity) : undefined
+
+    // Process pricing data and ensure minSize and maxSize are sent under pricing object
     if (shouldIncludeField('price', values.price, isCreating) ||
       shouldIncludeField('minSize', values.minSize, isCreating) ||
       shouldIncludeField('maxSize', values.maxSize, isCreating) ||
-      shouldIncludeField('discountEnabled', values.discountEnabled, isCreating)) {
+      shouldIncludeField('discountEnabled', values.discountEnabled, isCreating) ||
+      shouldIncludeField('priceLockedUntil', values.pricing?.priceLockedUntil, isCreating)) {
       changedFieldCount++;
 
-      // Basic pricing fields from individual form fields
-      if (values.price !== undefined) {
-        formData.append("price", String(Number(values.price) || 0));
+      // First, determine where to get minSize and maxSize from
+      // Try to get values from the form, then from the pricing object, then use defaults
+      let minSizeValue = 1;
+      let maxSizeValue = 10;
+
+      // Check if values exist directly on the form
+      if (values.minSize !== undefined && values.minSize !== null) {
+        minSizeValue = Number(values.minSize);
       }
-      if (values.originalPrice !== undefined) {
-        formData.append("originalPrice", String(Number(values.originalPrice) || 0));
-      }
-      if (values.basePrice !== undefined) {
-        formData.append("basePrice", String(Number(values.basePrice) || 0));
+      // Otherwise check if values exist in the pricing object
+      else if (values.pricing?.minSize !== undefined && values.pricing.minSize !== null) {
+        minSizeValue = Number(values.pricing.minSize);
       }
 
-      // Discount fields - discountEnabled from individual, discountPrice from nested
-      if (values.discountEnabled !== undefined) {
-        formData.append("discountEnabled", String(Boolean(values.discountEnabled)));
+      // Same for maxSize
+      if (values.maxSize !== undefined && values.maxSize !== null) {
+        maxSizeValue = Number(values.maxSize);
+      }
+      else if (values.pricing?.maxSize !== undefined && values.pricing.maxSize !== null) {
+        maxSizeValue = Number(values.pricing.maxSize);
       }
 
-      // Get discount price from nested pricing structure since it's not in individual fields
-      const pricingDiscount = values.pricing?.discount;
-      if (pricingDiscount?.discountPrice !== undefined) {
-        formData.append("discountPrice", String(Number(pricingDiscount.discountPrice) || 0));
-      } else if (values.discountPrice !== undefined) {
-        formData.append("discountPrice", String(Number(values.discountPrice) || 0));
+
+      // Create a pricing object to bundle all pricing-related data
+      const pricingObject: {
+        price: number;
+        originalPrice: number;
+        basePrice: number;
+        minSize: number;
+        maxSize: number;
+        discountEnabled: boolean;
+        discountPrice: number;
+        pricePerPerson: boolean;
+        priceLockDate?: Date;
+        discountDateRange?: {
+          from: Date;
+          to: Date;
+        };
+      } = {
+        // Basic pricing fields
+        price: Number(values.price) || 0,
+        originalPrice: Number(values.originalPrice) || 0,
+        basePrice: Number(values.basePrice) || 0,
+
+        // Include minSize and maxSize under pricing object
+        minSize: minSizeValue,
+        maxSize: maxSizeValue,
+
+        // Discount fields - use pricing.discount data as it contains the correct UI values
+        discountEnabled: Boolean(values.pricing?.discount?.discountEnabled || values.discountEnabled),
+        discountPrice: Number(values.pricing?.discount?.discountPrice || values.discountPrice || 0),
+
+        // Pricing type
+        pricePerPerson: values.pricing?.pricePerPerson !== undefined ? Boolean(values.pricing.pricePerPerson) : true
+      };
+
+      // Add price lock date if available
+      if (values.pricing?.priceLockedUntil) {
+        pricingObject.priceLockDate = new Date(values.pricing.priceLockedUntil);
       }
 
-      // Get discount date range from nested pricing if available
+      // Also add discount date range if available
       const discountForDates = values.pricing?.discount;
-
-
       if (discountForDates?.dateRange) {
         const fromDate = discountForDates.dateRange.from ? new Date(discountForDates.dateRange.from) : new Date();
         const toDate = discountForDates.dateRange.to ? new Date(discountForDates.dateRange.to) : new Date();
 
-        formData.append("discountDateRange", JSON.stringify({
+        pricingObject.discountDateRange = {
           from: !isNaN(fromDate.getTime()) ? fromDate : new Date(),
           to: !isNaN(toDate.getTime()) ? toDate : new Date()
-        }));
+        };
       }
 
-      // Size fields from individual form fields
-      if (values.minSize !== undefined) {
-        formData.append("minSize", String(Number(values.minSize) || 1));
-      }
-      if (values.maxSize !== undefined) {
-        formData.append("maxSize", String(Number(values.maxSize) || 10));
-      }
 
-      // Pricing type from nested pricing object
-      const pricePerPerson = values.pricing?.pricePerPerson !== undefined
-        ? values.pricing.pricePerPerson
-        : true; // default to per person
-      formData.append("pricePerPerson", String(Boolean(pricePerPerson)));
+      // Append the pricing object to formData
+      formData.append("pricing", JSON.stringify(pricingObject));
 
+      // Also append individual fields for backward compatibility
+      formData.append("price", String(Number(values.price) || 0));
+      formData.append("minSize", String(Number(values.minSize) || 1));
+      formData.append("maxSize", String(Number(values.maxSize) || 10));
+      formData.append("pricePerPerson", String(Boolean(pricingObject.pricePerPerson)));
+      if (values.discountEnabled !== undefined) {
+        formData.append("discountEnabled", String(Boolean(values.discountEnabled)));
+      }
     }
 
 
 
     // Use individual form fields for pricing options (like we did for main pricing)
     if (values.pricingOptions && Array.isArray(values.pricingOptions) && values.pricingOptions.length > 0) {
+      // Log the raw pricing options for debugging
+
       const flatPricingOptions = values.pricingOptions.map((option: any, index: number) => {
         // Generate unique ID for each pricing option
         const optionId = option.id || `option_${Date.now()}_${index}`;
 
+        // Use individual pricing option discount data (not main discount)
+        const optionDiscount = option.discount;
+        const hasOptionDiscount = optionDiscount && optionDiscount.discountEnabled;
 
-        // Use main discount settings since individual pricing options don't have discount data
-        const mainDiscount = values.pricing?.discount;
-        const useMainDiscount = values.discountEnabled && mainDiscount;
+        // Get pax range values - handle different possible paxRange formats
+        // Start with user-specified values if already present
+        let minPax = option.minPax ? Number(option.minPax) : 1;
+        let maxPax = option.maxPax ? Number(option.maxPax) : 22;
+
+        // Extract from paxRange array if available
+        if (Array.isArray(option.paxRange)) {
+          if (option.paxRange[0] !== undefined && option.paxRange[0] !== null) {
+            minPax = Number(option.paxRange[0]) || minPax;
+          }
+          if (option.paxRange[1] !== undefined && option.paxRange[1] !== null) {
+            maxPax = Number(option.paxRange[1]) || maxPax;
+          }
+        }
+        // Extract from paxRange object if available
+        else if (option.paxRange && typeof option.paxRange === 'object') {
+          if (option.paxRange.from !== undefined) {
+            minPax = Number(option.paxRange.from) || minPax;
+          }
+          if (option.paxRange.to !== undefined) {
+            maxPax = Number(option.paxRange.to) || maxPax;
+          }
+        }
 
         return {
           id: optionId, // Add unique ID for pricing option
@@ -755,20 +957,29 @@ export const TourProvider: React.FC<TourProviderProps> = ({
           category: option.category || "adult",
           customCategory: option.customCategory || "",
           price: option.price ? Number(option.price) : 0,
-          discountEnabled: Boolean(values.discountEnabled), // Use main discount enabled
-          discountPrice: useMainDiscount && mainDiscount.discountPrice ? Number(mainDiscount.discountPrice) : undefined,
-          discountDateRange: useMainDiscount && mainDiscount.dateRange ? {
-            from: new Date(mainDiscount.dateRange.from),
-            to: new Date(mainDiscount.dateRange.to)
-          } : undefined,
+          // Send discount as nested object to match server schema
+          discount: hasOptionDiscount ? {
+            discountEnabled: true,
+            discountPrice: optionDiscount.discountPrice ? Number(optionDiscount.discountPrice) : 0,
+            discountDateRange: optionDiscount.dateRange ? {
+              from: new Date(optionDiscount.dateRange.from),
+              to: new Date(optionDiscount.dateRange.to)
+            } : undefined,
+            percentageOrPrice: Boolean(optionDiscount.percentageOrPrice),
+            discountPercentage: optionDiscount.percentageOrPrice ? Number(optionDiscount.discountPercentage) : undefined,
+          } : {
+            discountEnabled: false
+          },
+          // Send both paxRange object and individual minPax/maxPax fields
           paxRange: {
-            from: Array.isArray(option.paxRange) ? Number(option.paxRange[0]) || 1 : 1,
-            to: Array.isArray(option.paxRange) ? Number(option.paxRange[1]) || 22 : 22
-          }
+            from: minPax,
+            to: maxPax
+          },
+          // Add explicit minPax and maxPax fields
+          minPax: minPax,
+          maxPax: maxPax
         };
       });
-
-      console.log('Appending individual flatPricingOptions to FormData:', flatPricingOptions);
 
       // Pricing options are enabled if we have any
       const pricingOptionsEnabled = true;

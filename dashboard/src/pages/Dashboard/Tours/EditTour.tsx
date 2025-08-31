@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreadcrumbs } from "@/Provider/BreadcrumbsProvider";
 import { getSingleTour, deleteTour } from '@/http';
@@ -54,19 +54,15 @@ const EditTour: React.FC = () => {
 
     const { form, onSubmit } = useTourForm();
 
-    console.log('onSubmit available:', !!onSubmit);
 
     useEffect(() => {
         if (initialTourData && tourId) {
             const apiBreadcrumbs = initialTourData.breadcrumbs;
-            console.log('API breadcrumbs:', apiBreadcrumbs);
 
             // Use the tour title from API breadcrumbs if available, otherwise use tour data
             const tourTitle = (apiBreadcrumbs?.[0]?.label && apiBreadcrumbs[0].label.trim() !== '')
                 ? apiBreadcrumbs[0].label
                 : ((initialTourData as any).data?.tour?.title || initialTourData.tour?.title || 'Edit Tour');
-
-            console.log('Tour title extracted:', tourTitle);
 
             const breadcrumbItems: Breadcrumb[] = [
                 { label: 'Dashboard', href: '/dashboard', type: 'link' },
@@ -74,7 +70,6 @@ const EditTour: React.FC = () => {
                 { label: tourTitle, href: `/dashboard/tours/edit_tour/${tourId}`, type: 'page' },
             ];
 
-            console.log('Setting breadcrumbs:', breadcrumbItems);
             updateBreadcrumbs(breadcrumbItems);
 
             // Get the tour data from the response
@@ -85,7 +80,6 @@ const EditTour: React.FC = () => {
         }
     }, [updateBreadcrumbs, initialTourData, tourId]);
 
-    console.log("initialTourData", initialTourData);
 
     const { mutate: tourMutation, isPending: isUpdating } = useTourMutation({ tourId });
 
@@ -141,7 +135,7 @@ const EditTour: React.FC = () => {
             {/* Show loading state for initial data fetch */}
             {isLoading && (
                 <div className="flex flex-col space-y-3">
-                    <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
+                    <Skeleton className="h-full w-full top-0 left-0 absolute z-10 rounded-xl" />
                     <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                         <Loader />
                         <p className="text-center text-muted-foreground">Loading tour data...</p>
@@ -168,7 +162,7 @@ const EditTour: React.FC = () => {
 
             {/* Show mutation loading state */}
             {isUpdating && <div className="flex flex-col space-y-3 ">
-                <Skeleton className="h-[100%] w-[100%] top-0 left-0 absolute z-10 rounded-xl" />
+                <Skeleton className="h-full w-full top-0 left-0 absolute z-10 rounded-xl" />
                 <div className="space-y-2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <Loader />
                     <p className="text-center text-muted-foreground">Updating tour...</p>
@@ -185,7 +179,7 @@ const EditTour: React.FC = () => {
                     }}>
                         {/* Page Header Actions */}
                         <div className="mb-6">
-                            <Card className="border shadow-sm">
+                            <Card className="border shadow-xs">
                                 <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -195,6 +189,22 @@ const EditTour: React.FC = () => {
                                         <h1 className="text-lg font-semibold">Edit Tour</h1>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        <Button className="ml-2" variant={'outline'} size="sm" disabled={isUpdating}>
+                                            <Link to={`/tours/${tourId}`} >  View Tour</Link>
+                                        </Button>
+                                        <Button type="submit" size="sm" disabled={isUpdating}>
+                                            {isUpdating ? (
+                                                <>
+                                                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                    Update Tour
+                                                </>
+                                            )}
+                                        </Button>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="destructive" size="sm">Delete</Button>
@@ -214,19 +224,9 @@ const EditTour: React.FC = () => {
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                        <Button type="submit" size="sm" disabled={isUpdating}>
-                                            {isUpdating ? (
-                                                <>
-                                                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                                                    Updating...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                    Update Tour
-                                                </>
-                                            )}
-                                        </Button>
+
+
+
                                     </div>
                                 </CardContent>
                             </Card>
@@ -240,7 +240,7 @@ const EditTour: React.FC = () => {
                             <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
                                 {/* Sidebar */}
                                 <div className="space-y-6">
-                                    <Card className="sticky top-8 inset-x-0 border shadow-sm">
+                                    <Card className="sticky top-8 inset-x-0 border shadow-xs">
                                         <CardContent className="p-4">
                                             <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
                                                 {tabs.map((tab) => (

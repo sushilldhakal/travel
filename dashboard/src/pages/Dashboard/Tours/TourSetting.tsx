@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -26,7 +26,12 @@ import {
     FileText,
     Settings2,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    Percent,
+    DollarSign,
+    Copy,
+    RefreshCw,
+    Tag
 } from "lucide-react"
 
 const TourSetting = () => {
@@ -44,6 +49,21 @@ const TourSetting = () => {
             mode: "Bus",
         },
     ])
+
+    // Global Discount State - Default settings for tour creation
+    const [globalDiscount, setGlobalDiscount] = useState({
+        enabled: false,
+        defaultType: "percentage", // "percentage" or "fixed" - default for new tours
+        defaultValue: 10,
+        description: "",
+        couponCodes: [] as Array<{
+            code: string;
+            expiryDate: string;
+            isActive: boolean;
+        }>
+    })
+    const [newCouponCode, setNewCouponCode] = useState("")
+    const [newCouponExpiry, setNewCouponExpiry] = useState("")
 
     // Form State
     const [activeTab, setActiveTab] = useState("pricing")
@@ -74,6 +94,87 @@ const TourSetting = () => {
         }
     }
 
+    // Global Discount Functions
+    const generateCouponCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        let result = ''
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        return result
+    }
+
+    const addCouponCode = () => {
+        if (newCouponCode.trim() && newCouponExpiry) {
+            const expiryDate = new Date(newCouponExpiry)
+            const isActive = expiryDate > new Date()
+            
+            setGlobalDiscount(prev => ({
+                ...prev,
+                couponCodes: [...prev.couponCodes, {
+                    code: newCouponCode.trim().toUpperCase(),
+                    expiryDate: newCouponExpiry,
+                    isActive
+                }]
+            }))
+            setNewCouponCode("")
+            setNewCouponExpiry("")
+        }
+    }
+
+    const generateRandomCoupon = () => {
+        if (newCouponExpiry) {
+            const code = generateCouponCode()
+            const expiryDate = new Date(newCouponExpiry)
+            const isActive = expiryDate > new Date()
+            
+            setGlobalDiscount(prev => ({
+                ...prev,
+                couponCodes: [...prev.couponCodes, {
+                    code,
+                    expiryDate: newCouponExpiry,
+                    isActive
+                }]
+            }))
+            setNewCouponExpiry("")
+        }
+    }
+
+    const removeCouponCode = (index: number) => {
+        setGlobalDiscount(prev => ({
+            ...prev,
+            couponCodes: prev.couponCodes.filter((_, i) => i !== index)
+        }))
+    }
+
+    const copyCouponCode = (code: string) => {
+        navigator.clipboard.writeText(code)
+    }
+
+    // Check if coupon codes are expired and update their status
+    const updateCouponStatus = () => {
+        const now = new Date()
+        setGlobalDiscount(prev => ({
+            ...prev,
+            couponCodes: prev.couponCodes.map(coupon => ({
+                ...coupon,
+                isActive: new Date(coupon.expiryDate) > now
+            }))
+        }))
+    }
+
+    // Get active and inactive coupons
+    const activeCoupons = globalDiscount.couponCodes.filter(coupon => coupon.isActive)
+    const inactiveCoupons = globalDiscount.couponCodes.filter(coupon => !coupon.isActive)
+
+    // Update coupon status on component mount and periodically
+    useEffect(() => {
+        updateCouponStatus()
+        // Update coupon status every minute to handle expiration in real-time
+        const interval = setInterval(updateCouponStatus, 60000)
+        return () => clearInterval(interval)
+    }, [globalDiscount.couponCodes])
+
     // Configuration Status Helper
     const isConfigured = (section: string): boolean => {
         switch (section) {
@@ -83,6 +184,8 @@ const TourSetting = () => {
                 return locations.length > 0
             case "policies":
                 return true // Replace with actual logic based on policy fields
+            case "discounts":
+                return globalDiscount.enabled
             default:
                 return false
         }
@@ -122,7 +225,7 @@ const TourSetting = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        <Card className="border shadow-sm">
+                        <Card className="border shadow-xs">
                             <CardContent className="p-4">
                                 <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
                                     <TabsTrigger
@@ -149,6 +252,14 @@ const TourSetting = () => {
                                         <span>Policies</span>
                                         {isConfigured("policies") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
                                     </TabsTrigger>
+                                    <TabsTrigger
+                                        value="discounts"
+                                        className="w-full justify-start gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                    >
+                                        <Tag className="h-4 w-4" />
+                                        <span>Global Discounts</span>
+                                        {isConfigured("discounts") && <CheckCircle2 className="h-3 w-3 ml-auto text-primary" />}
+                                    </TabsTrigger>
                                 </TabsList>
                             </CardContent>
                             <CardFooter className="px-4 py-4 border-t">
@@ -173,8 +284,8 @@ const TourSetting = () => {
                     <div className="space-y-6">
                         {/* Pricing Tab Content */}
                         <TabsContent value="pricing" className="mt-0 space-y-6">
-                            <Card className="border shadow-sm">
-                                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                            <Card className="border shadow-xs">
+                                <CardHeader className="bg-linear-to-r from-primary/5 to-primary/10 border-b">
                                     <div className="flex items-center gap-2">
                                         <div className="bg-primary/10 p-2 rounded-full">
                                             <CreditCard className="h-5 w-5 text-primary" />
@@ -186,7 +297,7 @@ const TourSetting = () => {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
-                                    <Card className="border shadow-sm">
+                                    <Card className="border shadow-xs">
                                         <CardHeader className="pb-2">
                                             <CardTitle className="text-lg flex items-center gap-2">
                                                 <CreditCard className="h-4 w-4 text-primary" />
@@ -225,7 +336,7 @@ const TourSetting = () => {
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="border shadow-sm">
+                                    <Card className="border shadow-xs">
                                         <CardHeader className="pb-2">
                                             <CardTitle className="text-lg flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-primary" />
@@ -274,8 +385,8 @@ const TourSetting = () => {
 
                         {/* Logistics Tab Content */}
                         <TabsContent value="logistics" className="mt-0 space-y-6">
-                            <Card className="border shadow-sm">
-                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/20 dark:to-emerald-900/20 border-b">
+                            <Card className="border shadow-xs">
+                                <CardHeader className="bg-linear-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/20 dark:to-emerald-900/20 border-b">
                                     <div className="flex items-center gap-2">
                                         <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full">
                                             <Package className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -287,7 +398,7 @@ const TourSetting = () => {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
-                                    <Card className="border shadow-sm">
+                                    <Card className="border shadow-xs">
                                         <CardHeader className="pb-2">
                                             <CardTitle className="text-lg flex items-center gap-2">
                                                 <MapPin className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
@@ -393,7 +504,7 @@ const TourSetting = () => {
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="border shadow-sm">
+                                    <Card className="border shadow-xs">
                                         <CardHeader className="pb-2">
                                             <div className="flex items-center justify-between">
                                                 <CardTitle className="text-lg flex items-center gap-2">
@@ -439,8 +550,8 @@ const TourSetting = () => {
 
                         {/* Policies Tab Content */}
                         <TabsContent value="policies" className="mt-0 space-y-6">
-                            <Card className="border shadow-sm">
-                                <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 border-b">
+                            <Card className="border shadow-xs">
+                                <CardHeader className="bg-linear-to-r from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 border-b">
                                     <div className="flex items-center gap-2">
                                         <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full">
                                             <ClipboardCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -453,7 +564,7 @@ const TourSetting = () => {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <Card className="border shadow-sm">
+                                        <Card className="border shadow-xs">
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-lg flex items-center gap-2">
                                                     <Calendar className="h-4 w-4 text-amber-500 dark:text-amber-400" />
@@ -496,7 +607,7 @@ const TourSetting = () => {
                                             </CardContent>
                                         </Card>
 
-                                        <Card className="border shadow-sm">
+                                        <Card className="border shadow-xs">
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-lg flex items-center gap-2">
                                                     <Passport className="h-4 w-4 text-amber-500 dark:text-amber-400" />
@@ -548,6 +659,280 @@ const TourSetting = () => {
                                             consulting with a legal professional to review your policies.
                                         </AlertDescription>
                                     </Alert>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Global Discounts Tab Content */}
+                        <TabsContent value="discounts" className="mt-0 space-y-6">
+                            <Card className="border shadow-xs">
+                                <CardHeader className="bg-linear-to-r from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 border-b">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
+                                            <Tag className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Global Discount Settings</CardTitle>
+                                            <CardDescription>Configure site-wide discounts and promotional codes</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-6">
+                                    {/* Global Discount Toggle */}
+                                    <Card className="border shadow-xs">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                    <Percent className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+                                                    Global Discount
+                                                </CardTitle>
+                                                <Switch 
+                                                    id="global-discount" 
+                                                    checked={globalDiscount.enabled}
+                                                    onCheckedChange={(checked) => setGlobalDiscount(prev => ({ ...prev, enabled: checked }))}
+                                                />
+                                            </div>
+                                            <CardDescription>Set default discount settings for new tour creation</CardDescription>
+                                        </CardHeader>
+                                        {globalDiscount.enabled && (
+                                            <CardContent className="pt-0 space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Default Discount Type</Label>
+                                                        <Select 
+                                                            value={globalDiscount.defaultType} 
+                                                            onValueChange={(value) => setGlobalDiscount(prev => ({ ...prev, defaultType: value }))}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select discount type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="percentage">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Percent className="h-4 w-4" />
+                                                                        Percentage
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="fixed">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <DollarSign className="h-4 w-4" />
+                                                                        Fixed Amount
+                                                                    </div>
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Default Discount Value</Label>
+                                                        <div className="flex items-center">
+                                                            <Input 
+                                                                type="number" 
+                                                                placeholder={globalDiscount.defaultType === 'percentage' ? 'e.g. 15' : 'e.g. 50'}
+                                                                value={globalDiscount.defaultValue}
+                                                                onChange={(e) => setGlobalDiscount(prev => ({ ...prev, defaultValue: Number(e.target.value) }))}
+                                                                className="max-w-[180px]" 
+                                                            />
+                                                            <span className="ml-2 text-muted-foreground">
+                                                                {globalDiscount.defaultType === 'percentage' ? '%' : '$'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">Description (Optional)</Label>
+                                                    <Input 
+                                                        type="text" 
+                                                        placeholder="e.g. Summer Sale - Limited Time Offer"
+                                                        value={globalDiscount.description}
+                                                        onChange={(e) => setGlobalDiscount(prev => ({ ...prev, description: e.target.value }))}
+                                                    />
+                                                    <p className="text-xs text-muted-foreground">This description will be shown to customers</p>
+                                                </div>
+
+                                                <Alert className="bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-900/50">
+                                                    <AlertCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    <AlertTitle>How it works</AlertTitle>
+                                                    <AlertDescription className="text-purple-800 dark:text-purple-300">
+                                                        When creating new tours, the discount form will be pre-populated with 
+                                                        {globalDiscount.defaultType === 'percentage' 
+                                                            ? ` ${globalDiscount.defaultValue}% percentage discount`
+                                                            : ` $${globalDiscount.defaultValue} fixed amount discount`
+                                                        } as the default. Users can still modify or disable it for individual tours.
+                                                    </AlertDescription>
+                                                </Alert>
+                                            </CardContent>
+                                        )}
+                                    </Card>
+
+                                    {/* Coupon Code Management */}
+                                    <Card className="border shadow-xs">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <Tag className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+                                                Discount Coupon Codes
+                                            </CardTitle>
+                                            <CardDescription>Generate and manage promotional coupon codes</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-0 space-y-4">
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Coupon Code</Label>
+                                                        <Input 
+                                                            type="text" 
+                                                            placeholder="Enter custom coupon code"
+                                                            value={newCouponCode}
+                                                            onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">Expiry Date</Label>
+                                                        <Input 
+                                                            type="date" 
+                                                            value={newCouponExpiry}
+                                                            onChange={(e) => setNewCouponExpiry(e.target.value)}
+                                                            min={new Date().toISOString().split('T')[0]}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        onClick={addCouponCode}
+                                                        disabled={!newCouponCode.trim() || !newCouponExpiry}
+                                                        className="flex-1"
+                                                    >
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Add Custom Code
+                                                    </Button>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        onClick={generateRandomCoupon}
+                                                        disabled={!newCouponExpiry}
+                                                        className="flex-1"
+                                                    >
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Generate Random
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Active Coupon Codes */}
+                                            {activeCoupons.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="text-sm font-medium">Active Coupon Codes</h4>
+                                                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                                            {activeCoupons.length}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {activeCoupons.map((coupon, index) => {
+                                                            const originalIndex = globalDiscount.couponCodes.findIndex(c => c.code === coupon.code)
+                                                            const daysUntilExpiry = Math.ceil((new Date(coupon.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-800"
+                                                                >
+                                                                    <div className="flex-1">
+                                                                        <div className="font-mono text-sm font-medium">{coupon.code}</div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            Expires: {new Date(coupon.expiryDate).toLocaleDateString()}
+                                                                            {daysUntilExpiry <= 7 && (
+                                                                                <span className="ml-2 text-amber-600 dark:text-amber-400">
+                                                                                    ({daysUntilExpiry} days left)
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => copyCouponCode(coupon.code)}
+                                                                            className="h-8 w-8 p-0"
+                                                                        >
+                                                                            <Copy className="h-3 w-3" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => removeCouponCode(originalIndex)}
+                                                                            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Inactive Coupon Codes */}
+                                            {inactiveCoupons.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="text-sm font-medium text-muted-foreground">Expired Coupon Codes</h4>
+                                                        <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                                            {inactiveCoupons.length}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {inactiveCoupons.map((coupon, index) => {
+                                                            const originalIndex = globalDiscount.couponCodes.findIndex(c => c.code === coupon.code)
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="flex items-center justify-between bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800 opacity-75"
+                                                                >
+                                                                    <div className="flex-1">
+                                                                        <div className="font-mono text-sm font-medium line-through">{coupon.code}</div>
+                                                                        <div className="text-xs text-red-600 dark:text-red-400">
+                                                                            Expired: {new Date(coupon.expiryDate).toLocaleDateString()}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => removeCouponCode(originalIndex)}
+                                                                            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Empty State */}
+                                            {globalDiscount.couponCodes.length === 0 && (
+                                                <div className="border rounded-lg p-6 text-center bg-muted/50">
+                                                    <Tag className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                                    <p className="text-sm text-muted-foreground">No coupon codes created yet</p>
+                                                    <p className="text-xs text-muted-foreground/70">Add or generate your first coupon code above</p>
+                                                </div>
+                                            )}
+
+                                            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/50">
+                                                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                <AlertTitle>Coupon Code Management</AlertTitle>
+                                                <AlertDescription className="text-blue-800 dark:text-blue-300">
+                                                    Customers can enter these coupon codes during checkout to receive discounts. 
+                                                    Codes automatically expire on their set date and move to the inactive section. 
+                                                    Codes are case-insensitive and can be shared via marketing campaigns.
+                                                </AlertDescription>
+                                            </Alert>
+                                        </CardContent>
+                                    </Card>
                                 </CardContent>
                             </Card>
                         </TabsContent>

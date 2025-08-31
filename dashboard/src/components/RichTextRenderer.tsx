@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface RichTextRendererProps {
-  content: string;
+  content: string | string[] | any; // Updated to accept strings, arrays, or any to prevent runtime errors
   className?: string;
 }
 
@@ -47,16 +47,30 @@ interface JsonContent {
 }
 
 // Helper function to parse rich text content
-const parseRichText = (content: string): { __html: string } => {
+const parseRichText = (content: string | string[] | any): { __html: string } => {
+  // Handle empty content
   if (!content) return { __html: "No content available" };
-
+  
+  // Handle array input (like include/exclude arrays)
+  if (Array.isArray(content)) {
+    // If it's an array with content, use the first element
+    if (content.length > 0) {
+      return parseRichText(content[0]);
+    } else {
+      return { __html: "No content available" };
+    }
+  }
+  
+  // Convert non-string content to string to prevent errors
+  const contentStr = typeof content === 'string' ? content : String(content);
+  
   // Check if the content looks like JSON (starts with { and ends with })
-  const isLikelyJSON = content.trim().startsWith('{') && content.trim().endsWith('}');
+  const isLikelyJSON = contentStr.trim().startsWith('{') && contentStr.trim().endsWith('}');
 
   if (isLikelyJSON) {
     try {
       // Try to parse as JSON
-      const jsonData = JSON.parse(content) as JsonContent;
+      const jsonData = JSON.parse(contentStr) as JsonContent;
 
       // Process the content recursively to handle nested elements
       const processContent = (content: ContentNode[]): string => {
@@ -170,14 +184,19 @@ const parseRichText = (content: string): { __html: string } => {
 
   // Handle as plain text
   // Format plain text with paragraphs
-  const formattedText = content
-    .split('\n\n')
-    .map(paragraph => paragraph.trim())
-    .filter(paragraph => paragraph.length > 0)
-    .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
-    .join('');
+  try {
+    const formattedText = contentStr
+      .split('\n\n')
+      .map(paragraph => paragraph.trim())
+      .filter(paragraph => paragraph.length > 0)
+      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+      .join('');
 
-  return { __html: formattedText || content };
+    return { __html: formattedText || contentStr };
+  } catch (e) {
+    console.error("Error formatting text content:", e);
+    return { __html: String(content) || "No content available" };
+  }
 };
 
 /**

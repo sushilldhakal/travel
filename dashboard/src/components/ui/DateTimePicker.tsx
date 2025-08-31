@@ -18,12 +18,12 @@ interface DateTimePickerProps {
   className?: string
 }
 
-export function DateTimePicker({ 
-  value, 
-  onChange, 
-  placeholder = "Pick a date and time", 
+export function DateTimePicker({
+  value,
+  onChange,
+  placeholder = "Pick a date and time",
   disabled = false,
-  className 
+  className
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -39,28 +39,28 @@ export function DateTimePicker({
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return
-    
+
     // Parse the current time value
     const [hours, minutes] = timeValue.split(':').map(Number)
-    
+
     // Set the time on the selected date
     const newDateTime = new Date(date)
     newDateTime.setHours(hours, minutes, 0, 0)
-    
+
     setSelectedDate(newDateTime)
     onChange?.(newDateTime.toISOString())
   }
 
   const handleTimeChange = (newTime: string) => {
     if (!isValidTimeFormat(newTime)) return
-    
+
     setTimeValue(newTime)
-    
+
     if (selectedDate) {
       const [hours, minutes] = newTime.split(':').map(Number)
       const newDateTime = new Date(selectedDate)
       newDateTime.setHours(hours, minutes, 0, 0)
-      
+
       setSelectedDate(newDateTime)
       onChange?.(newDateTime.toISOString())
     }
@@ -92,14 +92,13 @@ export function DateTimePicker({
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-fit p-0 min-w-[340px]" align="start" sideOffset={4}>
+      <PopoverContent className="w-fit p-0" align="start" sideOffset={4}>
         <div className="p-3">
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
             disabled={(date) => date < new Date()}
-            initialFocus
             captionLayout="dropdown"
           />
           <div className="border-t pt-3 mt-3">

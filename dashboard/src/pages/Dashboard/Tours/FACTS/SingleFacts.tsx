@@ -327,7 +327,7 @@ const SingleFact = memo(({
 
     // Memoize loading and error states
     const loadingComponent = useMemo(() => (
-        <Card className="shadow-sm animate-pulse">
+        <Card className="shadow-xs animate-pulse">
             <CardContent className="p-6 space-y-4">
                 <div className="h-5 bg-muted rounded w-3/4"></div>
                 <div className="h-20 bg-muted rounded w-full"></div>
@@ -336,7 +336,7 @@ const SingleFact = memo(({
     ), []);
 
     const errorComponent = useMemo(() => (
-        <Card className="shadow-sm border-destructive/50 bg-destructive/5">
+        <Card className="shadow-xs border-destructive/50 bg-destructive/5">
             <CardContent className="p-6">
                 <p className="text-destructive">Error loading fact details. Please try again later.</p>
             </CardContent>
@@ -354,7 +354,7 @@ const SingleFact = memo(({
                 form.handleSubmit(handleUpdateFact)();
             }}>
                 <Card className={cn(
-                    "shadow-sm overflow-hidden transition-all",
+                    "shadow-xs overflow-hidden transition-all",
                     isEditMode ? "border-primary/30 bg-primary/5" : "hover:border-border/80"
                 )}>
                     <CardContent className="p-0">
@@ -505,7 +505,7 @@ const SingleFact = memo(({
                             <div className="p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                     {fact?.icon ? (
-                                        <div className="flex-shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <div className="shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
                                             <Icon name={fact.icon} size={20} />
                                         </div>
                                     ) : (

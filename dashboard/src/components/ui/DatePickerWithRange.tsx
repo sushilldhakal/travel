@@ -46,9 +46,9 @@ export function DatePickerWithRange({
                 <PopoverTrigger asChild>
                     <Button
                         id="date"
-                        variant={"outline"}
+                        variant={"outline-solid"}
                         className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "w-full justify-start text-left font-norma",
                             !selectedDate?.from && "text-muted-foreground"
                         )}
                     >
@@ -67,7 +67,7 @@ export function DatePickerWithRange({
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-fit p-0 min-w-[800px]" align="start" sideOffset={4}>
+                <PopoverContent className="w-fit p-0" align="start" sideOffset={4}>
                     <Calendar
                         mode="range"
                         defaultMonth={selectedDate?.from}
@@ -78,7 +78,7 @@ export function DatePickerWithRange({
                         fixedWeeks
                         showOutsideDays
                         disabled={(date) => date < new Date("1900-01-01")}
-                        className="p-4 [--cell-size:--spacing(10)]"
+                        className="p-4"
                     />
                 </PopoverContent>
             </Popover>

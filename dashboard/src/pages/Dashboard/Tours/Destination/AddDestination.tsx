@@ -117,7 +117,7 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                 e.preventDefault();
                 form.handleSubmit(handleCreateDestination)();
             }}>
-                <Card className="shadow-sm border-primary/30 bg-primary/5">
+                <Card className="shadow-xs border-primary/30 bg-primary/5">
                     <CardHeader className="pb-3">
                         <div className="flex items-center gap-2 mb-2">
                             <Badge variant="outline" className="bg-primary/10 text-primary">

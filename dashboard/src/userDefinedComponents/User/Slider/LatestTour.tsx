@@ -31,11 +31,17 @@ const LatestTour = () => {
     const { data } = useQuery({
         queryKey: ['tours'],
         queryFn: getLatestTours,
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
     });
 
-    const sortedTours = data?.data?.tours?.sort((a: Tour, b: Tour) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ).slice(0, 10);
+
+    // The API returns data in a nested structure: data.data.data.tours
+    // Use proper data access pattern with safe optional chaining
+    const sortedTours = data?.data?.tours
+        ? data.data.tours
+            .sort((a: Tour, b: Tour) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 10)
+        : [];
 
     return (
         <div className="relative">
@@ -78,7 +84,7 @@ const LatestTour = () => {
                 <CarouselContent className="-ml-4">
                     {sortedTours?.map((tour: Tour, index: number) => (
                         <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/2">
-                            <div className="bg-secondary rounded-md overflow-hidden shadow-sm border border-gray-200">
+                            <div className="bg-secondary rounded-md overflow-hidden shadow-xs border border-gray-200">
                                 {/* Tour Image */}
                                 <div className="relative h-[420px] overflow-hidden">
                                     <img

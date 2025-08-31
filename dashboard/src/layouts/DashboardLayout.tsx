@@ -37,7 +37,7 @@ const DashboardLayout = () => {
           {/* Modern Sidebar */}
           <div className={cn(
             "hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex flex-col transition-all duration-300 overflow-hidden",
-            "bg-gradient-to-b from-blue-50 via-blue-100 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900",
+            "bg-linear-to-b from-blue-50 via-blue-100 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900",
             "border-r border-blue-200 dark:border-slate-700/50 shadow-2xl backdrop-blur-xl",
             isCollapsed ? "w-[70px]" : "w-[280px]"
           )} style={{ height: '100vh' }}>
@@ -45,7 +45,7 @@ const DashboardLayout = () => {
             {/* Enhanced Header/Branding */}
             <div className={cn(
               "flex items-center border-b border-slate-700/50",
-              "bg-gradient-to-r from-blue-600/10 to-purple-600/10 backdrop-blur-sm",
+              "bg-linear-to-r from-blue-600/10 to-purple-600/10 backdrop-blur-xs",
               isCollapsed ? "h-[70px] justify-center p-2" : "h-[80px] justify-between p-4"
             )}>
               {/* Logo/Brand Section */}
@@ -58,8 +58,8 @@ const DashboardLayout = () => {
                 aria-label="Dashboard Home"
               >
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-lg">
+                  <div className="absolute inset-0 bg-linear-to-r from-blue-500 to-purple-600 rounded-lg blur-sm opacity-75 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-linear-to-r from-blue-500 to-purple-600 p-2 rounded-lg">
                     <Package2 className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -67,7 +67,7 @@ const DashboardLayout = () => {
                   "transition-all duration-300 overflow-hidden",
                   isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
                 )}>
-                  <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  <span className="text-xl font-bold bg-linear-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                     eTravel
                   </span>
                   <div className="text-xs text-slate-400 font-medium tracking-wide">
@@ -85,7 +85,7 @@ const DashboardLayout = () => {
 
             {/* Footer/Bottom Section */}
             <div className={cn(
-              "p-4 border-t border-slate-700/50 bg-slate-900/50 backdrop-blur-sm",
+              "p-4 border-t border-slate-700/50 bg-slate-900/50 backdrop-blur-xs",
               isCollapsed ? "px-2" : "px-4"
             )}>
               <div className={cn(
@@ -110,7 +110,7 @@ const DashboardLayout = () => {
               !isCollapsed ? "md:ml-[280px]" : "md:ml-[70px]"
             )}
           >
-            <div className="min-h-screen bg-gradient-to-b from-blue-50 via-blue-100 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+            <div className="min-h-screen bg-linear-to-b from-blue-50 via-blue-100 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
               <DashboardHeader
                 handleLogout={handleLogout}
                 isCollapsed={isCollapsed}
@@ -123,7 +123,7 @@ const DashboardLayout = () => {
                 <div className="flex items-center">
                   <h1 className="text-lg font-semibold md:text-2xl"><GetTitle /></h1>
                 </div>
-                <div className="flex-1 rounded-xl dark:bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 shadow-2xl p-4 md:p-6">
+                <div className="flex-1 rounded-xl dark:bg-slate-900/50 backdrop-blur-xs border border-slate-700/50 shadow-2xl p-4 md:p-6">
                   <Outlet />
                 </div>
               </main>

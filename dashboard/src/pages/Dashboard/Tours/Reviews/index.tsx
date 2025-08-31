@@ -86,7 +86,6 @@ const ReviewsManagement = () => {
     },
   });
 
-  console.log("allReviewsData", allReviewsData)
 
   // Memoized filtered reviews based on activeTab
   const reviews = useMemo(() => {

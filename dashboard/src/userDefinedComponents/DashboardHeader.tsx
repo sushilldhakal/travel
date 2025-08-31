@@ -28,8 +28,8 @@ const DashboardHeader = ({ handleLogout, isCollapsed, setIsCollapsed }: Dashboar
   }
   return (
     <header className={cn(
-      "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 from-slate-900 via-slate-800 to-slate-900",
-      "border-blue-200 bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 dark:border-slate-700/50 dark:bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900",
+      "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 bg-linear-to-r from-blue-50 via-blue-100 to-blue-50 from-slate-900 via-slate-800 to-slate-900",
+      "border-blue-200 bg-linear-to-r from-blue-50 via-blue-100 to-blue-50 dark:border-slate-700/50 dark:bg-linear-to-r from-slate-900 via-slate-800 to-slate-900",
     )}>
       <Sheet>
         <SheetTrigger asChild>
@@ -54,7 +54,7 @@ const DashboardHeader = ({ handleLogout, isCollapsed, setIsCollapsed }: Dashboar
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
               "h-9 w-9 rounded-lg transition-all duration-300 group",
-              "bg-blue-100 hover:bg-blue-200 border border-blue-200 shadow-sm",
+              "bg-blue-100 hover:bg-blue-200 border border-blue-200 shadow-xs",
               "flex items-center justify-center",
               "hover:shadow-md hover:border-blue-300",
               "dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600",

@@ -42,14 +42,14 @@ const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
             <div
                 className={cn(
                     // caveat: :has() variant requires tailwind v3.4 or above: https://tailwindcss.com/blog/tailwindcss-v3-4#new-has-variant
-                    "has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neutral-950 has-[:focus-visible]:ring-offset-2 dark:has-[:focus-visible]:ring-neutral-300 min-h-10 flex w-full flex-wrap gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-white  disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950 dark:ring-offset-neutral-950",
+                    "has-focus-visible:outline-hidden has-focus-visible:ring-2 has-focus-visible:ring-neutral-950 has-focus-visible:ring-offset-2 dark:has-focus-visible:ring-neutral-300 min-h-10 flex w-full flex-wrap gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-white  disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950 dark:ring-offset-neutral-950",
                     className
                 )}
             >
                 <div className="flex w-full">
 
                     <Input
-                        className="flex-1 outline-none placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+                        className="flex-1 outline-hidden placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
                         value={pendingDataPoint}
                         onChange={(e) => setPendingDataPoint(e.target.value)}
                         onKeyDown={(e) => {
@@ -71,7 +71,7 @@ const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
                 </div>
                 {
                     value && value.length > 0 && (
-                        <div className="border rounded-md min-h-[2.5rem] overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
+                        <div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
                             {value.map((item, idx) => (
                                 <Badge key={idx} variant="secondary">
                                     {item}
