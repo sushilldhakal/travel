@@ -660,67 +660,8 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       }
       if (discountData.dateRange) {
         formData.append("discountDateRange", JSON.stringify(discountData.dateRange));
-
-            // For objects, create a clean version without temporary properties
-            const cleanItem = { ...item };
-
-            // Remove client-side temporary ID if it exists
-            if (cleanItem.tempId) {
-              delete cleanItem.tempId;
-            }
-
-            // Only include _id if it's a valid MongoDB ObjectId (24 chars)
-            if (cleanItem._id && (typeof cleanItem._id !== 'string' || cleanItem._id.length !== 24)) {
-              delete cleanItem._id;
-            }
-
-            return cleanItem;
-          });
-
-          formData.append('gallery', JSON.stringify(processedGallery));
-        }
-      } else if (field === "file") {
-        const fileValue = processedValues.file;
-        if (Array.isArray(fileValue) && fileValue.length > 0) {
-          formData.append(field, String(fileValue[0] || ""));
-        } else {
-          formData.append(field, String(fileValue || ""));
-        }
-      } else {
-        formData.append(field, String(processedValues[field] || ""));
       }
     }
-  });
-
-  if (values.facts && hasChanged('facts', values.facts)) {
-    changedFieldCount++;
-    formData.append("facts", JSON.stringify(values.facts));
-  }
-
-  // Handle FAQs if present
-  if (values.faqs && hasChanged('faqs', values.faqs)) {
-    changedFieldCount++;
-    formData.append("faqs", JSON.stringify(values.faqs));
-  }
-
-  // Handle discount fields separately - backend expects individual fields, not a JSON object
-  // Prioritize pricing.discount over direct discount field as it contains the correct UI values
-  const discountData = values.pricing?.discount || values.discount;
-
-  if (discountData) {
-    changedFieldCount++;
-
-    // Send individual discount fields instead of a JSON object
-    if (discountData.discountEnabled !== undefined) {
-      formData.append("discountEnabled", String(discountData.discountEnabled));
-    }
-    if (discountData.discountPrice !== undefined) {
-      formData.append("discountPrice", String(discountData.discountPrice));
-    }
-    if (discountData.dateRange) {
-      formData.append("discountDateRange", JSON.stringify(discountData.dateRange));
-    }
-  }
 
 
 
@@ -817,8 +758,15 @@ export const TourProvider: React.FC<TourProviderProps> = ({
           recurrenceEndDate: departure.recurrenceEndDate ? new Date(departure.recurrenceEndDate) : undefined,
           pricingCategory: departure.pricingCategory || undefined,
           capacity: departure.capacity ? Number(departure.capacity) : undefined
+        };
+      }) : []
+    };
 
-    // Process pricing data and ensure minSize and maxSize are sent under pricing object
+    console.log('🎯 Formatted dates being sent to server:', formattedDates);
+    formData.append("dates", JSON.stringify(formattedDates));
+  }
+
+  // Process pricing data and ensure minSize and maxSize are sent under pricing object
     if (shouldIncludeField('price', values.price, isCreating) ||
       shouldIncludeField('minSize', values.minSize, isCreating) ||
       shouldIncludeField('maxSize', values.maxSize, isCreating) ||
