@@ -56,7 +56,10 @@ export interface pricingOptions {
     enabled: boolean;
     options?: DiscountOption[];
   };
-  paxRange?: [number, number];
+  paxRange?: {
+    minPax: number;
+    maxPax: number;
+  };
 }
 
 export type TourDateMode = "flexible" | "fixed" | "multiple";

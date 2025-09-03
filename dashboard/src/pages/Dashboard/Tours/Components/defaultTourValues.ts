@@ -10,7 +10,6 @@ export const defaultTourValues: Partial<Tour> = {
   coverImage: '',
   file: '',
   category: [],
-  outline: '',
   destination: '',
   enquiry: true,
   featured: false,
@@ -33,29 +32,25 @@ export const defaultTourValues: Partial<Tour> = {
   dates: {
     days: 0,
     nights: 0,
-    fixedDeparture: false,
-    multipleDates: false,
     departures: [],
     singleDateRange: { from: new Date(), to: new Date() },
-    scheduleType: 'fixed'
+    scheduleType: 'fixed',
+    selectedPricingOptions: [],
+    isRecurring: false,
+    recurrencePattern: 'weekly',
+    recurrenceInterval: 1
   },
   pricing: {
     price: 0,
     pricePerPerson: true,
     paxRange: [1, 10] as [number, number],
+    minSize: 1,
+    maxSize: 10,
+    groupSize: 1,
     discount: {
       discountEnabled: false,
-      isActive: false,
-      percentageOrPrice: false,
-      percentage: 0,
       discountPrice: 0,
-      discountCode: '',
-      maxDiscountAmount: 0,
-      description: '',
-      dateRange: {
-        from: new Date(),
-        to: new Date()
-      }
+      dateRange: { from: new Date(), to: new Date() }
     },
     pricingOptionsEnabled: false,
     pricingOptions: [],
@@ -67,15 +62,18 @@ export const defaultTourValues: Partial<Tour> = {
 export const generateUniqueId = () => Math.random().toString(36).substr(2, 9);
 
 // Helper to get default departure
-export const getDefaultDeparture = (departure?: Partial<departures>): departures => ({
+export const getDefaultDeparture = (departure?: Partial<departures & { pricingCategory?: string[]; days?: number; nights?: number; }>): departures & { pricingCategory: string[]; days: number; nights: number; } => ({
   id: departure?.id || generateUniqueId(),
   label: departure?.label || '',
   dateRange: departure?.dateRange || { from: new Date(), to: new Date() },
   isRecurring: departure?.isRecurring || false,
-  recurrencePattern: departure?.recurrencePattern || 'none',
+  recurrencePattern: departure?.recurrencePattern || undefined,
   recurrenceEndDate: departure?.recurrenceEndDate || new Date(),
   selectedPricingOptions: departure?.selectedPricingOptions || [],
-  priceLockedUntil: departure?.priceLockedUntil || new Date(),
+  // Map pricingCategory from either pricingCategory or selectedPricingOptions for form compatibility
+  pricingCategory: departure?.pricingCategory || departure?.selectedPricingOptions || [],
+  days: departure?.days || 0,
+  nights: departure?.nights || 0,
   capacity: departure?.capacity || 0
 });
 
@@ -83,23 +81,17 @@ export const getDefaultDeparture = (departure?: Partial<departures>): departures
 export const getDefaultPricingOption = (opt?: Partial<pricingOptions>): pricingOptions => ({
   id: opt?.id || generateUniqueId(),
   name: opt?.name || '',
-  category: opt?.category || '',
+  category: opt?.category || 'adult',
   customCategory: opt?.customCategory || '',
   price: opt?.price || 0,
   discount: {
-    discountEnabled: opt?.discount?.discountEnabled || false,
-    isActive: opt?.discount?.isActive || false,
-    percentageOrPrice: opt?.discount?.percentageOrPrice || false,
-    percentage: opt?.discount?.percentage || 0,
-    discountPrice: opt?.discount?.discountPrice || 0,
-    discountCode: opt?.discount?.discountCode || '',
-    maxDiscountAmount: opt?.discount?.maxDiscountAmount || 0,
-    description: opt?.discount?.description || '',
-    dateRange: opt?.discount?.dateRange || { from: new Date(), to: new Date() },
+    enabled: opt?.discount?.enabled || false,
+    options: opt?.discount?.options || []
   },
-  paxRange: Array.isArray(opt?.paxRange) && opt.paxRange.length === 2
-    ? [Number(opt.paxRange[0]), Number(opt.paxRange[1])] as [number, number]
-    : [1, 10] as [number, number]
+  paxRange: {
+    minPax: opt?.paxRange?.minPax || 1,
+    maxPax: opt?.paxRange?.maxPax || 10
+  }
 });
 
 // Main function to get tour values with proper defaults
@@ -112,23 +104,22 @@ export const getTourWithDefaults = (values: Partial<Tour> = {}): Tour => {
     ...values,
     location: { ...defaults.location, ...values.location },
     dates: {
-      ...defaults.dates,
+      ...defaults.dates!,
       ...values.dates,
       departures: Array.isArray(values.dates?.departures)
         ? values.dates.departures.map(d => getDefaultDeparture(d))
-        : defaults.dates.departures,
-      singleDateRange: values.dates?.singleDateRange || defaults.dates.singleDateRange
+        : defaults.dates!.departures
     },
     pricing: {
-      ...defaults.pricing,
+      ...defaults.pricing!,
       ...values.pricing,
       discount: {
-        ...defaults.pricing.discount,
+        ...defaults.pricing!.discount,
         ...values.pricing?.discount
       },
       pricingOptions: Array.isArray(values.pricing?.pricingOptions)
         ? values.pricing.pricingOptions.map(opt => getDefaultPricingOption(opt))
-        : defaults.pricing.pricingOptions
+        : defaults.pricing!.pricingOptions
     }
   } as Tour;
 

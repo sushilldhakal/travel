@@ -79,6 +79,8 @@ export function DatePickerWithRange({
                         showOutsideDays
                         disabled={(date) => date < new Date("1900-01-01")}
                         className="p-4"
+                        fromYear={new Date().getFullYear()}
+                        toYear={new Date().getFullYear() + 20}
                     />
                 </PopoverContent>
             </Popover>

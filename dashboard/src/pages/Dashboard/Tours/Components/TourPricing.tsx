@@ -35,7 +35,7 @@ export function TourPricing() {
                     dateRange: { from: undefined, to: undefined }
                 }]
             },
-            paxRange: p.paxRange || [1, 10],
+            paxRange: p.paxRange || { minPax: 1, maxPax: 10 },
         })) : [];
     }, [form,]);
 
@@ -76,7 +76,7 @@ export function TourPricing() {
                     }
                 }]
             },
-            paxRange: [1, 10]
+            paxRange: { minPax: 1, maxPax: 10 }
         };
 
         if (pricingAppend) {
@@ -609,7 +609,7 @@ export function TourPricing() {
                                                                 <div className="grid grid-cols-2 gap-4">
                                                                     <FormField
                                                                         control={form.control}
-                                                                        name={`pricingOptions.${index}.paxRange.0`}
+                                                                        name={`pricingOptions.${index}.paxRange.minPax`}
                                                                         render={({ field }) => (
                                                                             <FormItem>
                                                                                 <FormLabel>Min Pax</FormLabel>
@@ -629,7 +629,7 @@ export function TourPricing() {
 
                                                                     <FormField
                                                                         control={form.control}
-                                                                        name={`pricingOptions.${index}.paxRange.1`}
+                                                                        name={`pricingOptions.${index}.paxRange.maxPax`}
                                                                         render={({ field }) => (
                                                                             <FormItem>
                                                                                 <FormLabel>Max Pax</FormLabel>

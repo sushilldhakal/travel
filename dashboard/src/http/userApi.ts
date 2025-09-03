@@ -128,98 +128,14 @@ export const updateUser = async (userId: string, data: { name: string; email: st
     }
 };
     
-// Mock data for seller applications until the backend is ready
-const mockSellerApplications = [
-    {
-        _id: 'sa1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1234567890',
-        roles: ['user'],
-        avatar: null,
-        sellerApplicationStatus: 'pending',
-        sellerInfo: {
-            companyName: 'Adventure Tours Inc.',
-            companyAddress: '123 Main St, City, Country',
-            businessType: 'Tour Operator',
-            registrationNumber: 'BUS123456',
-            registrationDate: '2023-01-15T00:00:00.000Z',
-            taxId: 'TAX987654',
-            description: 'We offer premium adventure tours across the globe.',
-            website: 'https://adventuretours.example.com',
-            socialMediaLinks: {
-                facebook: 'https://facebook.com/adventuretours',
-                instagram: 'https://instagram.com/adventuretours'
-            }
-        },
-        createdAt: '2023-06-10T00:00:00.000Z',
-        updatedAt: '2023-06-10T00:00:00.000Z'
-    },
-    {
-        _id: 'sa2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        phone: '+1987654321',
-        roles: ['user'],
-        avatar: null,
-        sellerApplicationStatus: 'approved',
-        sellerInfo: {
-            companyName: 'Exotic Travels',
-            companyAddress: '456 Elm St, Metro City, Country',
-            businessType: 'Travel Agency',
-            registrationNumber: 'BUS789012',
-            registrationDate: '2023-02-20T00:00:00.000Z',
-            taxId: 'TAX123456',
-            description: 'Specialized in exotic destinations and cultural experiences.',
-            website: 'https://exotictravels.example.com',
-            socialMediaLinks: {
-                facebook: 'https://facebook.com/exotictravels',
-                twitter: 'https://twitter.com/exotictravels'
-            }
-        },
-        createdAt: '2023-05-15T00:00:00.000Z',
-        updatedAt: '2023-06-15T00:00:00.000Z'
-    },
-    {
-        _id: 'sa3',
-        name: 'Robert Johnson',
-        email: 'robert@example.com',
-        phone: '+1122334455',
-        roles: ['user'],
-        avatar: null,
-        sellerApplicationStatus: 'rejected',
-        rejectionReason: 'Insufficient business information provided.',
-        sellerInfo: {
-            companyName: 'City Tours',
-            companyAddress: '789 Oak St, Old Town, Country',
-            businessType: 'Local Tour Guide',
-            registrationNumber: 'BUS345678',
-            registrationDate: '2023-03-10T00:00:00.000Z',
-            taxId: 'TAX345678',
-            description: 'Local city tours with experienced guides.',
-            website: 'https://citytours.example.com'
-        },
-        createdAt: '2023-04-05T00:00:00.000Z',
-        updatedAt: '2023-04-20T00:00:00.000Z'
-    }
-];
 
 export const getSellerApplications = async () => {
     try {
-        // Attempt to get data from API
         const response = await api.get('/api/users/seller-applications');
-        return response.data;
+        // console.log("applications" , response.data)
+        return response.data.data;
     } catch (error) {
-        console.warn('Using mock data for seller applications as the API endpoint returned an error:', error);
-        
-        // Return mock data with a structure similar to the expected API response
-        return {
-            success: true,
-            data: mockSellerApplications
-        };
-        
-        // Uncomment this to throw the actual error instead of using mock data
-        // return handleApiError(error, 'fetching seller applications');
+        return handleApiError(error, 'fetching seller applications');
     }
 };
 
@@ -230,21 +146,25 @@ export const approveSellerApplication = async (userId: string) => {
     } catch (error) {
         if (isAxiosError(error)) {
             throw new Error(`Error approving seller application: ${error.response?.data.message || error.message}`);
-        } else {
-            throw new Error(`Error approving seller application: ${String(error)}`);
         }
+        throw error;
     }
 };
 
-export const rejectSellerApplication = async (userId: string, reason?: string) => {
+export const rejectSellerApplication = async (userId: string, reason: string) => {
     try {
         const response = await api.patch(`/api/users/${userId}/reject-seller`, { reason });
         return response.data;
     } catch (error) {
-        if (isAxiosError(error)) {
-            throw new Error(`Error rejecting seller application: ${error.response?.data.message || error.message}`);
-        } else {
-            throw new Error(`Error rejecting seller application: ${String(error)}`);
-        }
+        return handleApiError(error, 'rejecting seller application');
+    }
+};
+
+export const deleteSellerApplication = async (userId: string) => {
+    try {
+        const response = await api.delete(`/api/users/${userId}/delete-seller`);
+        return response.data;
+    } catch (error) {
+        return handleApiError(error, 'deleting seller application');
     }
 };

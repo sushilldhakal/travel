@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2, Calendar, Clock, CalendarDays, CalendarRange, CalendarPlus, ArrowRight } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect, type Option } from '@/components/ui/MultiSelect';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -19,9 +20,28 @@ export function TourDates() {
     const { form } = useTourForm();
 
     const [dateType, setDateType] = useState<TourDateMode>('flexible');
+    const [hasAutoDetected, setHasAutoDetected] = useState(false);
 
     // Get pricing options from the form - check both nested and flat structure
     const pricingOptionsFromForm = form.watch('pricingOptions') || form.watch('pricing.pricingOptions') || [];
+
+    // Simple tab detection: scheduleType directly maps to dateType
+    useEffect(() => {
+        if (hasAutoDetected) return; // Skip if already auto-detected
+
+        const scheduleType = form.getValues('dates.scheduleType');
+              
+        // Direct mapping: scheduleType -> dateType
+        if (scheduleType === 'fixed') {
+            setDateType('fixed');
+        } else if (scheduleType === 'multiple') {
+            setDateType('multiple');
+        } else {
+            setDateType('flexible'); // Default for 'flexible' or undefined
+        }
+        
+        setHasAutoDetected(true);
+    }, [form, hasAutoDetected]);
 
     return (
         <Card className="mb-6 shadow-xs border">
@@ -70,6 +90,11 @@ export function TourDates() {
                                     onClick={() => {
                                         setDateType('multiple');
                                         field.onChange('multiple');
+                                        // Ensure departures array exists when switching to multiple mode
+                                        const currentDepartures = form.getValues('dates.departures') || [];
+                                        if (currentDepartures.length === 0) {
+                                            form.setValue('dates.departures', []);
+                                        }
                                     }}
                                     icon={<CalendarPlus className="h-4 w-4 mr-2" />}
                                     label="Multiple Departures"
@@ -222,6 +247,20 @@ function PricingCategorySelector({
     const fieldPath = createFieldPathHelper(basePath);
     const pricingCategoryPath = fieldPath('pricingCategory');
 
+  
+    // Convert pricing options to MultiSelect format
+    const multiSelectOptions: Option[] = pricingOptions.length > 0 
+        ? pricingOptions.map((option, index) => ({
+            value: option.id || `option-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+            label: `${option.name || 'Option'} - ${option.category} - $${option.price}`,
+            disable: false
+        }))
+        : [
+            { value: 'standard', label: 'Standard - Regular pricing', disable: false },
+            { value: 'premium', label: 'Premium - Enhanced pricing', disable: false },
+            { value: 'vip', label: 'VIP - Premium pricing', disable: false }
+        ];
+
     return (
         <div className="p-4 bg-muted/10 rounded-lg border">
             <h3 className="text-sm font-medium flex items-center mb-4">
@@ -231,64 +270,42 @@ function PricingCategorySelector({
             <FormField
                 control={form.control}
                 name={pricingCategoryPath as any}
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Pricing Category</FormLabel>
-                        <Select
-                            value={field.value || ''}
-                            onValueChange={(value) => {
-                                field.onChange(value);
-                            }}
-                        >
+                render={({ field }) => {
+                            
+                    // Ensure field.value is an array for MultiSelect
+                    const fieldValue = Array.isArray(field.value) ? field.value : (field.value ? [field.value] : []);
+                    
+                    return (
+                        <FormItem>
+                            <FormLabel>Pricing Categories</FormLabel>
                             <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select pricing category" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="z-50">
-                                {pricingOptions.length > 0 ? (
-                                    pricingOptions.map((option, index) => {
-                                        // Ensure we have a valid ID for the SelectItem
-                                        const optionId = option.id || `option-${index}`;
-                                        return (
-                                            <SelectItem
-                                                key={optionId}
-                                                value={optionId}
-                                            >
-                                                {option.name || 'Option'} - {option.category} - ${option.price}
-                                            </SelectItem>
+                                <MultiSelect
+                                    options={multiSelectOptions}
+                                    value={fieldValue.map(val => {
+                                        // Find the matching option to get the proper label
+                                        const matchingOption = multiSelectOptions.find(opt => opt.value === val);
+                                        return matchingOption || { value: val, label: val };
+                                    })}
+                                    onValueChange={(selectedValues) => {
+                                        const values = selectedValues.map(item => 
+                                            typeof item === 'string' ? item : item.value
                                         );
-                                    })
-                                ) : (
-                                    <>
-                                        <SelectItem value="standard">
-                                            <div className="flex items-center">
-                                                <Badge variant="outline" className="mr-2">Standard</Badge>
-                                                <span>Regular pricing</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="premium">
-                                            <div className="flex items-center">
-                                                <Badge variant="secondary" className="mr-2">Premium</Badge>
-                                                <span>Enhanced pricing</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="vip">
-                                            <div className="flex items-center">
-                                                <Badge variant="default" className="mr-2">VIP</Badge>
-                                                <span>Premium pricing</span>
-                                            </div>
-                                        </SelectItem>
-                                    </>
-                                )}
-                            </SelectContent>
-                        </Select>
-                        <FormDescription>
-                            Associate this date with a specific pricing tier
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
+                                        console.log('📝 Pricing categories changed to:', values);
+                                        field.onChange(values);
+                                    }}
+                                    placeholder="Select pricing categories"
+                                    searchPlaceholder="Search pricing options..."
+                                    emptyMessage="No pricing options available"
+                                    className="w-full"
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Select multiple pricing categories for this date. Users can choose from any of the selected options.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    );
+                }}
             />
         </div>
     );
@@ -449,6 +466,27 @@ function MultipleDeparturesForm({ pricingOptions = [] }: { pricingOptions: prici
 
                                     <FormField
                                         control={form.control}
+                                        name={`dates.departures.${index}.label`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Departure Label</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Enter departure name"
+                                                        {...field}
+                                                        value={field.value || ''}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    A descriptive name for this departure (e.g., "Summer Season", "Holiday Special")
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
                                         name={`dates.departures.${index}.dateRange`}
                                         render={({ field }) => (
                                             <FormItem className="flex flex-col">
@@ -497,14 +535,13 @@ function MultipleDeparturesForm({ pricingOptions = [] }: { pricingOptions: prici
                     type="button"
                     onClick={() => append({
                         id: crypto.randomUUID(),
-                        label: 'New Departure',
+                        label: `Departure ${fields.length + 1}`,
                         dateRange: {
                             from: new Date(),
                             to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
                         },
                         isRecurring: false,
-                        selectedPricingOptions: [],
-                        capacity: 10
+                        selectedPricingOptions: []
                     })}
                     className="w-full"
                 >
@@ -512,6 +549,25 @@ function MultipleDeparturesForm({ pricingOptions = [] }: { pricingOptions: prici
                     Add Departure
                 </Button>
             </div>
+
+            {/* Show aggregated pricing categories from all departures */}
+            {fields.length > 0 && (
+                <div className="mt-6">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h3 className="text-sm font-medium flex items-center mb-3 text-blue-800 dark:text-blue-200">
+                            <Badge className="h-4 w-4 mr-2 p-1" variant="outline">📊</Badge>
+                            Overall Tour Pricing Categories
+                        </h3>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mb-4">
+                            These are all the pricing options collected from your departures. This shows what customers will see as available pricing tiers for this tour.
+                        </p>
+                        <PricingCategorySelector 
+                            basePath="dates"
+                            pricingOptions={pricingOptions}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -100,6 +100,8 @@ export function DateTimePickerSimple({
                         onSelect={handleDateSelect}
                         disabled={(date) => date < new Date()}
                         initialFocus
+                        fromYear={new Date().getFullYear()}
+                        toYear={new Date().getFullYear() + 20}
                         captionLayout="dropdown"
                         className="rounded-md border-0"
                     />

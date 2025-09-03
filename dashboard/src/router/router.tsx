@@ -35,7 +35,7 @@ import Comments from '@/pages/Dashboard/Post/Comments';
 import BlogList from '@/pages/FrontEnd/Blog/BlogList';
 import SingleBlog from '@/pages/FrontEnd/Blog/SingleBlog';
 import Destination from '@/pages/Dashboard/Tours/Destination';
-import Seller from '@/pages/FrontEnd/Seller/Seller';
+import SellerWizard from '@/pages/FrontEnd/Seller/SellerWizard';
 
 const router = createBrowserRouter([
   {
@@ -84,7 +84,7 @@ const router = createBrowserRouter([
         path: routePaths.home.applySeller,
         element: (
           <Suspense fallback={<div>Loading...</div>}>
-            <Seller />
+            <SellerWizard />
           </Suspense>
         ),
       }

@@ -154,18 +154,18 @@ export const TourProvider: React.FC<TourProviderProps> = ({
       const processPricingOptions = (pricingOptions: unknown) => {
         if (pricingOptions === null || pricingOptions === undefined) return pricingOptions;
         if (Array.isArray(pricingOptions)) {
-          return pricingOptions.map((option: unknown) => {
+          return pricingOptions.map((option: unknown, index: number) => {
             const opt = option as Record<string, any>;
             return {
-              id: opt.id || Date.now().toString(),
+              id: opt.id || `pricing_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
               name: opt.name || '',
               category: opt.category || 'adult',
               customCategory: opt.customCategory || '',
               price: opt.price || 0,
-              paxRange: [
-                opt.paxRange?.from || opt.minPax || 1,
-                opt.paxRange?.to || opt.maxPax || 10
-              ],
+              paxRange: {
+                minPax: opt.paxRange?.minPax || opt.paxRange?.from || opt.minPax || 1,
+                maxPax: opt.paxRange?.maxPax || opt.paxRange?.to || opt.maxPax || 10
+              },
               minPax: opt.paxRange?.from || opt.minPax || 1,
               maxPax: opt.paxRange?.to || opt.maxPax || 10,
               discount: {
@@ -187,11 +187,63 @@ export const TourProvider: React.FC<TourProviderProps> = ({
         return pricingOptions;
       };
 
+      // Process tour dates from server response
+      const processTourDates = (tourDates: any) => {
+            
+        if (!tourDates) return undefined;
+        
+        const processedDates = {
+          days: tourDates.days || 0,
+          nights: tourDates.nights || 0,
+          scheduleType: tourDates.scheduleType || 'flexible',
+          pricingCategory: Array.isArray(tourDates.pricingCategory) 
+            ? tourDates.pricingCategory 
+            : (tourDates.pricingCategory ? [tourDates.pricingCategory] : []),
+          isRecurring: Boolean(tourDates.isRecurring),
+          recurrencePattern: tourDates.recurrencePattern || 'weekly',
+          recurrenceInterval: tourDates.recurrenceInterval || 1,
+          recurrenceEndDate: tourDates.recurrenceEndDate ? new Date(tourDates.recurrenceEndDate) : undefined,
+          // Process defaultDateRange for fixed dates
+          dateRange: tourDates.defaultDateRange ? {
+            from: new Date(tourDates.defaultDateRange.from),
+            to: new Date(tourDates.defaultDateRange.to)
+          } : undefined,
+          // Process departures array for multiple departure dates
+          departures: Array.isArray(tourDates.departures) ? tourDates.departures.map((dep: any) => {
+                  
+            return {
+              id: dep.id || crypto.randomUUID(),
+              label: dep.label || 'Departure',
+              dateRange: dep.dateRange ? {
+                from: new Date(dep.dateRange.from),
+                to: new Date(dep.dateRange.to)
+              } : undefined,
+              days: dep.days || 0,
+              nights: dep.nights || 0,
+              isRecurring: Boolean(dep.isRecurring),
+              recurrencePattern: dep.recurrencePattern || undefined,
+              recurrenceInterval: dep.recurrenceInterval || undefined,
+              recurrenceEndDate: dep.recurrenceEndDate ? new Date(dep.recurrenceEndDate) : undefined,
+              pricingCategory: Array.isArray(dep.selectedPricingOptions) 
+                ? dep.selectedPricingOptions 
+                : (Array.isArray(dep.pricingCategory) 
+                  ? dep.pricingCategory 
+                  : (dep.pricingCategory ? [dep.pricingCategory] : [])),
+              capacity: dep.capacity || undefined
+            };
+          }) : []
+        };
+        
+            return processedDates;
+      };
+
       const processedTourData = {
         ...actualTourData,
         category: processCategories(actualTourData.category),
         itinerary: processItinerary(actualTourData.itinerary),
         pricingOptions: processPricingOptions(actualTourData.pricingOptions),
+        // Process tour dates from server
+        dates: processTourDates(actualTourData.tourDates),
         include: Array.isArray(actualTourData.include) && actualTourData.include.length > 0
           ? JSON.parse(actualTourData.include[0])
           : actualTourData.include,
@@ -421,7 +473,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({
           dateRange: { from: undefined, to: undefined }
         } as any;
       }
-      if (!processedItem.paxRange) processedItem.paxRange = [1, 10];
+      if (!processedItem.paxRange) processedItem.paxRange = { minPax: 1, maxPax: 10 };
       return processedItem as pricingOptions;
     };
 
@@ -678,13 +730,15 @@ export const TourProvider: React.FC<TourProviderProps> = ({
   // Process dates data with automatic days/nights calculation
   if (shouldIncludeField('dates', values.dates, isCreating)) {
     console.log('🔍 Processing dates data:', values.dates);
+    console.log('🔍 Raw dateRange from form:', values.dates?.dateRange);
+    console.log('🔍 Schedule type:', values.dates?.scheduleType);
     changedFieldCount++;
     
     const datesData = values.dates || {};
     let calculatedDays: number | undefined;
     let calculatedNights: number | undefined;
 
-    // Calculate days/nights based on schedule type
+    // Calculate days/nights based on schedule type - handle both new and legacy data structures
     if (datesData.scheduleType === 'flexible') {
       // For flexible dates, use manually entered days/nights
       calculatedDays = datesData.days ? Number(datesData.days) : undefined;
@@ -712,6 +766,11 @@ export const TourProvider: React.FC<TourProviderProps> = ({
         calculatedNights = calculated.nights;
         console.log('🔢 Calculated from multiple departures:', { days: calculatedDays, nights: calculatedNights });
       }
+    } else {
+      // Fallback: use existing days/nights values if available
+      calculatedDays = datesData.days ? Number(datesData.days) : undefined;
+      calculatedNights = datesData.nights ? Number(datesData.nights) : undefined;
+      console.log('🔄 Using existing days/nights values:', { days: calculatedDays, nights: calculatedNights });
     }
     
     // Create formatted dates object

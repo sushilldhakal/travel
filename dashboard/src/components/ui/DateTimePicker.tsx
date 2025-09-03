@@ -100,6 +100,8 @@ export function DateTimePicker({
             onSelect={handleDateSelect}
             disabled={(date) => date < new Date()}
             captionLayout="dropdown"
+            fromYear={new Date().getFullYear()}
+            toYear={new Date().getFullYear() + 20}
           />
           <div className="border-t pt-3 mt-3">
             <div className="flex items-center space-x-2">
