@@ -9,19 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { FileText, MapPin, Image as ImageIcon, Save, Trash2, X, FolderPlus } from "lucide-react";
-import { getUserId } from "@/util/authUtils";
-import { addDestination, getUserToursTitle } from "@/http";
-import GalleryPage from "../../Gallery/GalleryPage";
+import { Image as ImageIcon, Save, Trash2, X, FolderPlus } from "lucide-react";
+import { useDestination, useAllDestinations, useUserDestinations } from "./useDestination";
+import { addDestination, addExistingDestinationToSeller, getUserToursTitle } from "@/http";
+import { Destination } from "@/Provider/types";
+import GalleryPage from "@/pages/Dashboard/Gallery/GalleryPage";
+import useTokenStore from '@/store/store';
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { JSONContent } from "novel";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { MultiSelect, SelectValue } from "@/components/ui/MultiSelect";
-
+import { getUserId } from "@/util/authUtils";
 
 interface DestinationFormData {
     name: string;
     coverImage: string;
     description: string;
+    reason: string;
     isActive: boolean;
     country: string;
     region: string;
@@ -35,18 +39,56 @@ interface TourTitle {
     title: string;
 }
 
-const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void }) => {
-    const userId = getUserId();
+interface SearchDestination {
+    _id: string;
+    name: string;
+    city?: string;
+    region?: string;
+    country: string;
+    description: string;
+    coverImage: string;
+    isActive: boolean;
+    featuredTours?: string[];
+    popularity?: number;
+    createdAt: string;
+    userId?: string;
+    approvalStatus?: string;
+}
+
+interface AddDestinationProps {
+    onDestinationAdded: () => void;
+}
+
+const AddDestination = ({ onDestinationAdded }: AddDestinationProps) => {
+    const token = useTokenStore((state) => state.token);
+    const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
+    const [addingDestinationId, setAddingDestinationId] = useState<string | null>(null);
+
+    // Debug token
+    console.log('AddDestination - Token exists:', !!token);
+    console.log('AddDestination - Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
+
+    // All destinations hook for MultiSelect
+    const { data: allDestinations, isLoading: isLoadingAll } = useAllDestinations();
+    
+    // User's current destinations to filter out already added ones
+    const { data: userDestinations } = useUserDestinations();
+    
+    // Filter out destinations that user already has
+    const availableDestinations = allDestinations?.data?.filter(destination => 
+        !userDestinations?.data?.some((userDest: Destination) => userDest._id === destination._id)
+    ) || [];
+
     const [dialogOpen, setDialogOpen] = useState(false);
     const [descriptionContent, setDescriptionContent] = useState<JSONContent>({
         type: "doc",
-        content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
+        content: [{ type: "paragraph", content: [] }]
     });
 
     const { data: tourTitles } = useQuery({
-        queryKey: ['tourTitles', userId],
-        queryFn: () => getUserToursTitle(userId!),
-        enabled: !!userId,
+        queryKey: ['tour-titles'],
+        queryFn: () => getUserToursTitle(getUserId() || ''),
+        enabled: true,
     });
 
 
@@ -55,12 +97,13 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
             name: "",
             coverImage: "",
             description: "",
+            reason: "",
             isActive: true,
             country: "",
             region: "",
             city: "",
             popularity: 0,
-            featuredTours: []
+            featuredTours: [],
         }
     });
     // Destination mutation for creating new destinations
@@ -68,8 +111,8 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
         mutationFn: (data: FormData) => addDestination(data),
         onSuccess: () => {
             toast({
-                title: "Destination added",
-                description: "The destination has been added successfully.",
+                title: "Destination submitted",
+                description: "The destination has been submitted successfully.",
             });
             form.reset();
             onDestinationAdded();
@@ -84,11 +127,33 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
         }
     });
 
+    // Mutation for adding existing destination to seller's list
+    const addExistingDestinationMutation = useMutation({
+        mutationFn: (destinationId: string) => addExistingDestinationToSeller(destinationId),
+        onSuccess: () => {
+            toast({
+                title: "Destination added to your list",
+                description: "The existing destination has been added to your destinations.",
+            });
+            setAddingDestinationId(null);
+            onDestinationAdded();
+        },
+        onError: () => {
+            toast({
+                title: "Failed to add destination",
+                description: "There was an error adding the existing destination.",
+                variant: "destructive",
+            });
+            setAddingDestinationId(null);
+        }
+    });
+
     // Handle form submission
-    const handleCreateDestination = async (values: DestinationFormData) => {
+    const onSubmit = async (values: DestinationFormData) => {
         const formData = new FormData();
         formData.append('name', values.name);
         formData.append('description', values.description);
+        formData.append('reason', values.reason);
         formData.append('coverImage', values.coverImage);
         formData.append('isActive', values.isActive.toString());
         formData.append('country', values.country);
@@ -96,7 +161,6 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
         formData.append('city', values.city);
         formData.append('popularity', values.popularity.toString());
         values.featuredTours.forEach((id) => formData.append('featuredTours[]', id));
-        if (userId) formData.append('userId', userId);
         await destinationMutation.mutateAsync(formData);
     };
 
@@ -113,10 +177,7 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
 
     return (
         <Form {...form}>
-            <form onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit(handleCreateDestination)();
-            }}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Card className="shadow-xs border-primary/30 bg-primary/5">
                     <CardHeader className="pb-3">
                         <div className="flex items-center gap-2 mb-2">
@@ -134,6 +195,38 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                     </CardHeader>
 
                     <CardContent className="grid gap-6">
+                        {/* Search existing destinations */}
+                        <SearchableSelect
+                            title="Add Existing Destinations"
+                            description="Search and select existing destinations to add to your list instead of creating duplicates."
+                            icon={<FolderPlus className="h-5 w-5" />}
+                            options={availableDestinations?.map((dest: SearchDestination) => ({
+                                value: dest._id,
+                                label: dest.name,
+                                description: `${[dest.city, dest.region, dest.country].filter(Boolean).join(", ")}`,
+                                imageUrl: dest.coverImage,
+                                disable: false
+                            })) || []}
+                            value={selectedDestinations}
+                            onValueChange={(selected) => {
+                                setSelectedDestinations(selected);
+                                // Auto-add selected destinations
+                                selected.forEach((destId) => {
+                                    addExistingDestinationMutation.mutate(destId);
+                                });
+                                // Clear selection after adding
+                                setTimeout(() => setSelectedDestinations([]), 500);
+                            }}
+                            placeholder={isLoadingAll ? "Loading destinations..." : "Search and select existing destinations..."}
+                            searchPlaceholder="Search destinations by name, city, or country..."
+                            emptyMessage="No destinations found"
+                            loading={isLoadingAll}
+                            className="w-full"
+                        />
+                        <div className="mt-3 text-xs text-chart-4 bg-chart-4/10 p-2 rounded border border-chart-4/30">
+                            Selected destinations will be added to your list automatically
+                        </div>
+
                         {/* Split layout */}
                         <div className="grid md:grid-cols-3 gap-6">
                             {/* Left: Image selector */}
@@ -148,7 +241,11 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                                 <div className="relative mt-2 rounded-md overflow-hidden border">
                                                     <img src={field.value} alt="Cover" className="w-full h-[300px] object-cover rounded-md" />
                                                     <div className="absolute top-2 right-2 flex gap-2">
-                                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => window.open(field.value, '_blank')}>
+                                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => {
+                                                            if (typeof field.value === 'string' && field.value) {
+                                                                window.open(field.value, '_blank');
+                                                            }
+                                                        }}>
                                                             <ImageIcon className="w-4 h-4" />
                                                         </Button>
                                                         <Button type="button" size="icon" variant="destructive" className="h-8 w-8" onClick={() => handleRemoveImage(field.onChange)}>
@@ -171,7 +268,7 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                                         </DialogHeader>
                                                         <GalleryPage
                                                             isGalleryPage={false}
-                                                            onImageSelect={(url) => handleImageSelect(url, field.onChange)}
+                                                            onImageSelect={(url) => handleImageSelect(url || '', field.onChange)}
                                                         />
                                                     </DialogContent>
                                                 </Dialog>
@@ -243,14 +340,6 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                                 }
                                             }
 
-                                            // Map our string array to object format needed by MultiSelect
-                                            const optionsMulti = Array.isArray(fieldValue)
-                                                ? fieldValue.map((option: string) => ({
-                                                    value: option,
-                                                    label: option,
-                                                }))
-                                                : [];
-
                                             // Format current values to match MultiSelect expected format
                                             const currentValues: SelectValue[] = Array.isArray(fieldValue) ?
                                                 fieldValue.map(val => {
@@ -271,10 +360,10 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                                     <FormLabel>Featured Tours</FormLabel>
                                                     <FormControl>
                                                         <MultiSelect
-                                                            options={(tourTitles?.data?.data || []).map((item: TourTitle) => ({
+                                                            options={Array.isArray(tourTitles?.data) ? tourTitles.data.map((item: TourTitle) => ({
                                                                 value: item._id,
                                                                 label: item.title,
-                                                            }))}
+                                                            })) : []}
                                                             value={currentValues}
                                                             onValueChange={(selectedValues) => {
                                                                 // Ensure only the string values (IDs) are passed to RHF
@@ -334,6 +423,8 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                             </div>
                         </div>
 
+
+
                         {/* Description section (Full width) */}
                         <FormField
                             control={form.control}
@@ -353,6 +444,24 @@ const AddDestination = ({ onDestinationAdded }: { onDestinationAdded: () => void
                                             }}
                                         />
                                     </div>
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Reason section */}
+                        <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem className="mt-6">
+                                    <FormLabel>Reason for Adding Destination</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="e.g., Popular tourist destination with high demand, unique cultural significance, etc."
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

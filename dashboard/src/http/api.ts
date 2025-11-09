@@ -312,8 +312,8 @@ export const deleteMedia = async (userId: string, imageIds: string | string[], m
   };
 
 
-// category
-export const getCategories = async () => api.get('/api/category');
+// category - deprecated, use getAllCategories from categoryApi instead
+// export const getCategories = async () => api.get('/api/category');
 
 export const getUserCategories = async (userId: string) => {
     try {

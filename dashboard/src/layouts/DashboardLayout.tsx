@@ -10,24 +10,38 @@ import { BreadcrumbsProvider } from '@/Provider/BreadcrumbsProvider';
 import { startTransition, useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { getAccessToken, isValidToken } from '@/util/authUtils';
+import useTokenExpiration from '@/hooks/useTokenExpiration';
 
 const DashboardLayout = () => {
-  const { token, setToken } = useTokenStore((state) => state);
+  const { token } = useTokenStore((state) => state);
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // ... your useEffect for resizing and localStorage here ...
+  // Use the token expiration hook
+  const { clearTokenData } = useTokenExpiration({
+    checkInterval: 30000, // Check every 30 seconds
+    redirectTo: '/', // Redirect to home page
+    onTokenExpired: () => {
+      console.log('Session expired, redirecting to home page');
+    }
+  });
 
   const handleLogout = () => {
     startTransition(() => {
-      localStorage.removeItem("token");
-      setToken('');
-      navigate("/login");
+      clearTokenData(); // Use the hook's clear function
+      navigate("/"); // Redirect to home page instead of login
     });
   };
 
-  if (!token) {
-    return <Navigate to="/login" />;
+  // Check token validity before rendering
+  const currentToken = getAccessToken();
+  if (!token || !currentToken || !isValidToken(currentToken)) {
+    // Clear invalid token and redirect to home page
+    if (token) {
+      clearTokenData();
+    }
+    return <Navigate to="/" replace />;
   }
 
   return (

@@ -1,9 +1,11 @@
 import { getTours } from "@/http/tourApi";
-import { getCategories } from "@/http/categoryApi";
+import { getAllCategories } from "@/http/categoryApi";
+import { getAllDestinations } from "@/http/destinationApi";
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useCallback } from "react";
 import { Link } from "react-router-dom";
 import RichTextRenderer from "@/components/RichTextRenderer";
-import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
@@ -13,6 +15,14 @@ import BreadCrumbTourList from "./BreadCrumbTourList";
 interface Category {
     _id: string;
     name: string;
+}
+
+interface Destination {
+    _id: string;
+    name: string;
+    country: string;
+    region?: string;
+    city?: string;
 }
 
 interface TourCategory {
@@ -42,7 +52,8 @@ interface Tour {
     price: number;
     originalPrice?: number;
     coverImage: string;
-    category?: string;
+    category?: string | Category[];
+    destination?: string;
     discount?: Discount;
     duration?: string;
     createdAt: string;
@@ -65,7 +76,8 @@ interface Tour {
 }
 
 interface TourResponse {
-    items: Tour[];
+    // Local server format
+    items?: Tour[];
     nextCursor?: number;
     pagination?: {
         currentPage: number;
@@ -79,19 +91,21 @@ interface TourResponse {
     totalTours?: number;
     hasNextPage?: boolean;
     hasPrevPage?: boolean;
+    
+    // Production server format
+    success?: boolean;
+    data?: {
+        tours: Tour[];
+    };
+    message?: string;
+    
+    // Direct production format
+    tours?: Tour[];
 }
 
 const FrontTours = () => {
 
-    const {
-        data: toursData,
-        isLoading: isToursLoading,
-        isError: isToursError,
-        error,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage
-    } = useInfiniteQuery<TourResponse, Error>({
+    const { data: toursData, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: isToursLoading, error: isToursError } = useInfiniteQuery<TourResponse, Error>({
         queryKey: ['tour'],
         queryFn: ({ pageParam = 0 }) => {
             return getTours({ pageParam: pageParam as number });
@@ -114,14 +128,42 @@ const FrontTours = () => {
 
 
     const { data: categoriesData, isLoading: isCategoriesLoading } = useQuery({
-        queryKey: ['categories'],
-        queryFn: getCategories,
+        queryKey: ['global-categories-approved'],
+        queryFn: getAllCategories,
     });
+
+    const { data: destinationsData, isLoading: isDestinationsLoading } = useQuery({
+        queryKey: ['global-destinations-approved'],
+        queryFn: getAllDestinations,
+    });
+
+    // Debug logging for global data
+    useEffect(() => {
+        if (categoriesData) {
+            console.log('🔍 FrontTours - Categories data:', categoriesData);
+            console.log('🔍 FrontTours - Categories structure:', {
+                hasData: !!categoriesData?.data,
+                dataType: typeof categoriesData?.data,
+                isArray: Array.isArray(categoriesData?.data),
+                length: categoriesData?.data?.length
+            });
+        }
+        if (destinationsData) {
+            console.log('🔍 FrontTours - Destinations data:', destinationsData);
+            console.log('🔍 FrontTours - Destinations structure:', {
+                hasData: !!destinationsData?.data,
+                dataType: typeof destinationsData?.data,
+                isArray: Array.isArray(destinationsData?.data),
+                length: destinationsData?.data?.length
+            });
+        }
+    }, [categoriesData, destinationsData]);
 
     // State for filtering and sorting
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [priceRange, setPriceRange] = useState<string>("all");
     const [sortOption, setSortOption] = useState<string>("featured");
+    const [selectedDestination, setSelectedDestination] = useState<string>("all");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
     // Reference for infinite scroll
@@ -151,7 +193,74 @@ const FrontTours = () => {
         };
     }, [handleObserver]);
 
-    const getPriceRangeValues = (range: string) => {
+    // Flatten the pages data for filtering
+    const tours = useMemo(() => {
+        if (!toursData?.pages) {
+            return [];
+        }
+
+        // Flatten the pages and extract tours from different response formats
+        const flattenedTours = toursData.pages.flatMap((page) => {
+            if (!page || typeof page !== 'object') {
+                return [];
+            }
+
+            const typedPage = page as unknown as TourResponse;
+            
+            // Handle different response formats
+            if (typedPage.success && typedPage.data?.tours) {
+                // Local server format: { success: true, data: { tours: [...] } }
+                return typedPage.data.tours;
+            } else if (typedPage.tours) {
+                // Production server format: { tours: [...] }
+                return typedPage.tours;
+            } else if (Array.isArray(typedPage.items)) {
+                // Paginated format: { items: [...] }
+                return typedPage.items;
+            }
+            
+            return [];
+        });
+
+        return flattenedTours;
+    }, [toursData]);
+
+    // Generate dynamic price ranges based on actual tour prices
+    const dynamicPriceRanges = useMemo(() => {
+        if (!tours.length) return [];
+        
+        const prices = tours.map(tour => tour.price).filter(price => price > 0);
+        if (prices.length === 0) return [];
+        
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const range = maxPrice - minPrice;
+        const step = Math.ceil(range / 5); // Create 5 price ranges
+        
+        const ranges = [];
+        for (let i = 0; i < 5; i++) {
+            const min = minPrice + (i * step);
+            const max = i === 4 ? maxPrice : minPrice + ((i + 1) * step) - 1;
+            ranges.push({
+                value: `${min}-${max}`,
+                label: `$${min} - $${max}`,
+                min,
+                max: i === 4 ? Infinity : max
+            });
+        }
+        
+        return ranges;
+    }, [tours]);
+
+    const getPriceRangeValues = useCallback((range: string) => {
+        if (range === "all") return { min: 0, max: Infinity };
+        
+        const dynamicRange = dynamicPriceRanges.find(r => r.value === range);
+        if (dynamicRange) {
+            return { min: dynamicRange.min, max: dynamicRange.max };
+        }
+        
+        // Fallback to static ranges if dynamic ones aren't available
         switch (range) {
             case "under-25":
                 return { min: 0, max: 25 };
@@ -166,43 +275,23 @@ const FrontTours = () => {
             default:
                 return { min: 0, max: Infinity };
         }
-    };
-
-    // Flatten the pages data for filtering
-    const tours = useMemo(() => {
-        if (!toursData?.pages) {
-            return [];
-        }
-
-        // Debug full response structure
-
-        // Flatten the pages and extract the items array from each page
-        // Using explicit type assertion for each page as TourResponse
-        const flattenedTours = toursData.pages.flatMap((page, index) => {
-            if (!page || typeof page !== 'object') {
-                return [];
-            }
-
-            // Type assertion to ensure TypeScript knows page has items
-            const typedPage = page as TourResponse;
-            if (!Array.isArray(typedPage.items)) {
-                return [];
-            }
-
-            // Get the current page number from either pagination or direct property
-            const currentPage = typedPage.pagination?.currentPage ?? typedPage.currentPage ?? 'unknown';
-            return typedPage.items;
-        });
-
-        return flattenedTours;
-    }, [toursData]);
+    }, [dynamicPriceRanges]);
 
 
     const filteredTours = useMemo(() => {
         let filtered = [...tours] as Tour[];
 
         if (selectedCategory !== "all") {
-            filtered = filtered.filter(tour => tour.category === selectedCategory);
+            filtered = filtered.filter(tour => {
+                if (Array.isArray(tour.category)) {
+                    return tour.category.some(cat => cat._id === selectedCategory || cat.id === selectedCategory);
+                }
+                return tour.category === selectedCategory;
+            });
+        }
+
+        if (selectedDestination !== "all") {
+            filtered = filtered.filter(tour => tour.destination === selectedDestination);
         }
 
         if (priceRange !== "all") {
@@ -228,7 +317,7 @@ const FrontTours = () => {
         });
 
         return filtered;
-    }, [tours, selectedCategory, priceRange, sortOption]);
+    }, [tours, selectedCategory, selectedDestination, priceRange, sortOption, getPriceRangeValues]);
 
     return (
         <div className="bg-background text-foreground min-h-screen">
@@ -275,30 +364,11 @@ const FrontTours = () => {
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover text-popover-foreground border-border">
                                             <SelectItem value="all">All Prices</SelectItem>
-                                            <SelectItem value="under-25">Under $25</SelectItem>
-                                            <SelectItem value="25-50">$25 to $50</SelectItem>
-                                            <SelectItem value="50-100">$50 to $100</SelectItem>
-                                            <SelectItem value="100-200">$100 to $200</SelectItem>
-                                            <SelectItem value="200-plus">$200 & Above</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="relative min-w-[120px]">
-                                    <Select
-                                        value={sortOption}
-                                        onValueChange={(value) => setSortOption(value)}
-                                    >
-                                        <SelectTrigger className="bg-background border-border text-foreground h-10">
-                                            <SelectValue placeholder="Trip Type" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-popover text-popover-foreground border-border">
-                                            <SelectItem value="featured">All Types</SelectItem>
-                                            <SelectItem value="newest">Adventure</SelectItem>
-                                            <SelectItem value="name-asc">Sightseeing</SelectItem>
-                                            <SelectItem value="name-desc">Cultural</SelectItem>
-                                            <SelectItem value="price-asc">Beach</SelectItem>
-                                            <SelectItem value="price-desc">Mountain</SelectItem>
+                                            {dynamicPriceRanges.map((range) => (
+                                                <SelectItem key={range.value} value={range.value}>
+                                                    {range.label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -309,13 +379,32 @@ const FrontTours = () => {
                                         onValueChange={(value) => setSelectedCategory(value)}
                                     >
                                         <SelectTrigger className="bg-background border-border text-foreground h-10">
-                                            <SelectValue placeholder="Location" />
+                                            <SelectValue placeholder="Category" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover text-popover-foreground border-border">
-                                            <SelectItem value="all">All Locations</SelectItem>
-                                            {!isCategoriesLoading && categoriesData?.data?.categories?.map((category: Category) => (
+                                            <SelectItem value="all">All Categories</SelectItem>
+                                            {!isCategoriesLoading && categoriesData?.data && Array.isArray(categoriesData.data) && categoriesData.data.map((category: Category) => (
                                                 <SelectItem key={category._id} value={category._id}>
                                                     {category.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="relative min-w-[120px]">
+                                    <Select
+                                        value={selectedDestination}
+                                        onValueChange={(value) => setSelectedDestination(value)}
+                                    >
+                                        <SelectTrigger className="bg-background border-border text-foreground h-10">
+                                            <SelectValue placeholder="Destination" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover text-popover-foreground border-border">
+                                            <SelectItem value="all">All Destinations</SelectItem>
+                                            {!isDestinationsLoading && destinationsData?.data && Array.isArray(destinationsData.data) && destinationsData.data.map((destination: Destination) => (
+                                                <SelectItem key={destination._id} value={destination._id}>
+                                                    {destination.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -328,6 +417,7 @@ const FrontTours = () => {
                                     onClick={() => {
                                         setSelectedCategory("all");
                                         setPriceRange("all");
+                                        setSelectedDestination("all");
                                         setSortOption("featured");
                                     }}
                                 >

@@ -102,10 +102,13 @@ const LoginPage = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (response) => {
+      console.log('Login successful, token received:', response.data.accessToken ? 'Yes' : 'No');
       setToken(response.data.accessToken);
-      const accessToken = localStorage.getItem("token-store");
-      if (!accessToken) return false;
-      const decoded = jwtDecode(accessToken) as { roles?: string };
+      
+      // Decode the actual token we just received, not from localStorage
+      const decoded = jwtDecode(response.data.accessToken) as { roles?: string };
+      console.log('Decoded token roles:', decoded.roles);
+      
       if (decoded.roles === 'admin' || decoded.roles === 'seller') {
         navigate('/dashboard/home');
       } else {

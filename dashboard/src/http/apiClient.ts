@@ -9,10 +9,32 @@ export const api = axios.create({
 
 // Request interceptor to add authorization token
 api.interceptors.request.use((config) => {
-    const token = useTokenStore.getState().token;
+    // Try multiple ways to get the token
+    let token = useTokenStore.getState().token;
+    
+    // If no token from Zustand, try localStorage directly
+    if (!token) {
+        try {
+            const stored = localStorage.getItem('token-store');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                token = parsed?.state?.token || parsed?.token;
+            }
+        } catch (e) {
+            console.warn('Failed to parse token from localStorage:', e);
+        }
+    }
+    
+    console.log('API Request - Token found:', !!token);
+    console.log('API Request - URL:', config.url);
+    
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('API Request - Authorization header set');
+    } else {
+        console.warn('API Request - No token available');
     }
+    
     return config;
 });
 

@@ -24,3 +24,4 @@ export * from './aiApi';
 export * from './destinationApi';
 export * from './tourSettingApi';
 export * from './companyApi';
+export * from './bookingApi';

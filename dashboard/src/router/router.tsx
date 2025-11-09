@@ -36,6 +36,9 @@ import BlogList from '@/pages/FrontEnd/Blog/BlogList';
 import SingleBlog from '@/pages/FrontEnd/Blog/SingleBlog';
 import Destination from '@/pages/Dashboard/Tours/Destination';
 import SellerWizard from '@/pages/FrontEnd/Seller/SellerWizard';
+import AllDestinations from '@/pages/FrontEnd/Destinations/AllDestinations';
+import SingleDestination from '@/pages/FrontEnd/Destinations/SingleDestination';
+import Bookings from '@/pages/Dashboard/Tours/Bookings';
 
 const router = createBrowserRouter([
   {
@@ -76,6 +79,20 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<div>Loading...</div>}>
             <SingleBlog />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.destinations,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AllDestinations />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.singleDestination,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <SingleDestination />
           </Suspense>
         ),
       },
@@ -261,6 +278,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<div>Loading...</div>}>
                 <Destination />
+              </Suspense>
+            ),
+          },
+          {
+            path: routePaths.dashboard.tourBookings,
+            element: (
+              <Suspense fallback={<div>Loading...</div>}>
+                <Bookings />
               </Suspense>
             ),
           },

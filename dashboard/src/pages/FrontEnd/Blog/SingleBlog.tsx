@@ -19,6 +19,9 @@ import { Heart, Eye, MessageSquare, Share2, ArrowLeft } from 'lucide-react';
 import useTokenStore from '@/store/store';
 import { toast } from '@/components/ui/use-toast';
 import { getUserId } from '@/util/authUtils';
+import { getSinglePost, likePost, viewPost } from '@/http/postApi';
+import { viewComment, addComment, addReply, likeComment } from '@/http/commentApi';
+import RichTextRenderer from '@/components/RichTextRenderer';
 
 interface Author {
   _id: string;
@@ -57,19 +60,7 @@ interface Post {
   liked?: boolean;
 }
 
-interface BlockContent {
-  type: string;
-  text: string;
-}
-
-interface Block {
-  type: string;
-  content: BlockContent[];
-}
-
-interface ParsedContent {
-  content: Block[];
-}
+// Removed unused interfaces - content parsing is handled by RichTextRenderer
 
 const SingleBlog: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,59 +70,114 @@ const SingleBlog: React.FC = () => {
   const userId = getUserId();
   const commentsRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-
   const { data, isLoading, error: fetchError } = useQuery({
     queryKey: ['post', id],
     queryFn: async () => {
       if (!id) throw new Error("Post ID is required");
 
       try {
-        // Add a timestamp to prevent caching
-        const timestamp = new Date().getTime();
-        const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/posts/${id}?t=${timestamp}`);
+        console.log('🔍 Fetching single post with ID:', id);
+        const responseData = await getSinglePost(id);
+        console.log('✅ Post data received:', responseData);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
-          throw new Error(`Failed to fetch post: ${response.status} ${response.statusText}`);
-        }
+        // Extract post data from the response (API returns {post: {...}, breadcrumbs: [...]})
+        const postData = responseData.post || responseData;
+        
+        // Transform comment structure to match component expectations
+        const transformedComments = Array.isArray(postData.comments) 
+          ? postData.comments.map((comment: any) => ({
+              _id: comment._id,
+              content: comment.text || comment.content || '',
+              author: {
+                _id: comment.user?._id || comment.author?._id || '',
+                name: comment.user?.name || comment.author?.name || 'Unknown',
+                email: comment.user?.email || comment.author?.email || '',
+                avatar: comment.user?.avatar || comment.author?.avatar || ''
+              },
+              post: comment.post || postData._id,
+              likes: typeof comment.likes === 'number' ? comment.likes : 0,
+              views: typeof comment.views === 'number' ? comment.views : 0,
+              replies: Array.isArray(comment.replies) ? comment.replies : [],
+              createdAt: comment.created_at || comment.createdAt || new Date().toISOString(),
+              updatedAt: comment.updated_at || comment.updatedAt || new Date().toISOString(),
+              liked: !!comment.liked
+            }))
+          : [];
 
-        const responseData = await response.json();
-
-        // Transform the data if needed
+        // Transform the post data to match component expectations
         return {
-          ...responseData,
-          comments: Array.isArray(responseData.comments) ? responseData.comments : [],
-          tags: Array.isArray(responseData.tags) ? responseData.tags : [],
-          likes: typeof responseData.likes === 'number' ? responseData.likes : 0,
-          views: typeof responseData.views === 'number' ? responseData.views : 0
+          _id: postData._id,
+          title: postData.title || 'Untitled Post',
+          content: postData.content || '',
+          author: {
+            _id: postData.author?._id || '',
+            name: postData.author?.name || 'Unknown Author',
+            email: postData.author?.email || '',
+            avatar: postData.author?.avatar || ''
+          },
+          tags: Array.isArray(postData.tags) ? postData.tags : [],
+          image: postData.image || '',
+          status: postData.status || 'Published',
+          likes: typeof postData.likes === 'number' ? postData.likes : 0,
+          comments: transformedComments,
+          enableComments: postData.enableComments !== false,
+          views: typeof postData.views === 'number' ? postData.views : 0,
+          createdAt: postData.createdAt || new Date().toISOString(),
+          updatedAt: postData.updatedAt || new Date().toISOString(),
+          liked: !!postData.liked
         };
       } catch (error) {
-        console.error('Error fetching post:', error);
+        console.error('❌ Error fetching post:', error);
         throw error;
       }
     },
     enabled: !!id,
-    retry: 1,
-    staleTime: 30000 // 30 seconds
+    retry: 2,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache the data (renamed from cacheTime)
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
 
   const [post, setPost] = useState<Post | null>(null);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
+  const [hasCheckedLikedStatus, setHasCheckedLikedStatus] = useState(false);
+  const [viewedComments, setViewedComments] = useState<Set<string>>(new Set());
+
+  // Reset tracking states when post ID changes
+  useEffect(() => {
+    setHasTrackedView(false);
+    setHasCheckedLikedStatus(false);
+    setViewedComments(new Set()); // Clear viewed comments for new post
+  }, [id]);
 
   useEffect(() => {
     if (data) {
       setPost(data);
+      
+      // Track post view only once when data is first loaded
+      if (id && !hasTrackedView) {
+        console.log('📊 Tracking view for post:', id);
+        viewPost(id)
+          .then(() => {
+            console.log('✅ View tracked successfully');
+            setHasTrackedView(true);
+          })
+          .catch(error => {
+            console.error('❌ Error tracking post view:', error);
+          });
+      }
     }
-  }, [data]);
+  }, [data, id, hasTrackedView]);
 
-  // Check if user has liked the post
-  const checkLikedStatus = useCallback(async () => {
-    if (!post || !userId || !token) return;
-
+  // Check if user has liked the post - REMOVED CALLBACK TO PREVENT INFINITE LOOPS
+  const checkLikedStatus = async (postId: string, userIdParam: string, tokenParam: string) => {
+    console.log('🔍 Checking liked status for post:', postId);
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/users/${userId}/liked-posts`, {
+      const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/users/${userIdParam}/liked-posts`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${tokenParam}`
         }
       });
 
@@ -147,10 +193,10 @@ const SingleBlog: React.FC = () => {
         });
 
         // Also check for liked comments
-        if (post.comments && post.comments.length > 0) {
-          const likedCommentsResponse = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/users/${userId}/liked-comments`, {
+        if (post && post.comments && post.comments.length > 0) {
+          const likedCommentsResponse = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/users/${userIdParam}/liked-comments`, {
             headers: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${tokenParam}`
             }
           });
 
@@ -176,59 +222,47 @@ const SingleBlog: React.FC = () => {
           }
         }
       }
+      
+      console.log('✅ Liked status checked successfully');
+      setHasCheckedLikedStatus(true);
     } catch (error) {
-      console.error('Error checking liked status:', error);
+      console.error('❌ Error checking liked status:', error);
     }
-  }, [post, userId, token]);
+  };
 
+  // Single effect to check liked status - ONLY PRIMITIVE DEPENDENCIES
   useEffect(() => {
-    if (post) {
-      checkLikedStatus();
+    const postId = post?._id;
+    console.log('🔄 Liked status effect triggered:', {
+      postId,
+      userId: !!userId,
+      token: !!token,
+      hasCheckedLikedStatus,
+      shouldCheck: !!(postId && userId && token && !hasCheckedLikedStatus)
+    });
+    
+    if (postId && userId && token && !hasCheckedLikedStatus) {
+      checkLikedStatus(postId, userId, token);
     }
-  }, [post, checkLikedStatus]);
+  }, [post?._id, userId, token, hasCheckedLikedStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleView = useCallback(async () => {
-    if (!id) return;
-
-    try {
-      // Direct API call
-      await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/posts/view/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-
-      // Update local state to reflect the view
-      setPost(prevPost => {
-        if (!prevPost) return null;
-        return {
-          ...prevPost,
-          views: prevPost.views + 1
-        };
-      });
-    } catch (error) {
-      console.error('Error tracking view:', error);
-    }
-  }, [id, token]);
-
-  useEffect(() => {
-    if (post?._id) {
-      handleView();
-    }
-  }, [post?._id, handleView]);
+  // REMOVED DUPLICATE VIEW TRACKING - Already handled in the main useEffect with viewPost()
 
   // Wrap handleCommentView in useCallback
   const handleCommentView = useCallback(async (commentId: string) => {
+    // Check if this comment has already been viewed
+    if (viewedComments.has(commentId)) {
+      console.log('⏭️ Comment already viewed, skipping:', commentId);
+      return;
+    }
+
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/comments/view/${commentId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
+      console.log('📊 Tracking comment view:', commentId);
+      await viewComment(commentId);
+      console.log('✅ Comment view tracked successfully');
+      
+      // Mark this comment as viewed
+      setViewedComments(prev => new Set([...prev, commentId]));
 
       // Update local state
       setPost(prevPost => {
@@ -263,25 +297,22 @@ const SingleBlog: React.FC = () => {
     } catch (error) {
       console.error('Error tracking comment view:', error);
     }
-  }, [token]);
+  }, [viewedComments, setViewedComments]); // Remove token dependency, add viewedComments
 
   const addCommentMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
-      // Use JSON instead of FormData
-      const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ content })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add comment');
+      console.log('🔍 Adding comment to post:', postId);
+      
+      // Create FormData as expected by the API
+      const formData = new FormData();
+      formData.append('text', content);
+      if (userId) {
+        formData.append('user', userId);
       }
-
-      return response.json();
+      
+      const response = await addComment(formData, postId);
+      console.log('✅ Comment added successfully');
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['post', id] });
@@ -315,19 +346,8 @@ const SingleBlog: React.FC = () => {
     }
 
     try {
-      // Direct API call
-      const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/posts/like/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to like post');
-      }
+      console.log('🔍 Liking post with ID:', id, 'User ID:', userId);
+      await likePost(id!, userId!);
 
       // Optimistic update
       setPost(prevPost => {
@@ -365,19 +385,8 @@ const SingleBlog: React.FC = () => {
     }
 
     try {
-      // Direct API call
-      const response = await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/comments/like/${commentId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to like comment');
-      }
+      console.log('🔍 Liking comment:', commentId, 'User:', userId);
+      await likeComment(commentId, userId!);
 
       // Optimistic update
       setPost(prevPost => {
@@ -488,39 +497,34 @@ const SingleBlog: React.FC = () => {
       return;
     }
 
-    // Direct API call with JSON body instead of FormData
-    await fetch(`${import.meta.env.VITE_PUBLIC_BACKEND_URL}/api/comments/${commentId}/reply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ content, userId })
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to add reply');
-        }
-        return response.json();
-      })
-      .then(() => {
-        // Refetch post data to get updated comments
-        queryClient.invalidateQueries({ queryKey: ['post', id] });
-        toast({
-          title: 'Reply added',
-          description: 'Your reply has been added successfully.',
-          duration: 3000,
-        });
-      })
-      .catch(error => {
-        console.error('Error adding reply:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to add reply. Please try again.',
-          variant: 'destructive',
-          duration: 3000,
-        });
+    try {
+      console.log('🔍 Adding reply to comment:', commentId);
+      
+      const replyData = {
+        text: content,
+        user: userId!,
+        post: post!._id
+      };
+      
+      await addReply(replyData, commentId);
+      console.log('✅ Reply added successfully');
+      
+      // Refetch post data to get updated comments
+      queryClient.invalidateQueries({ queryKey: ['post', id] });
+      toast({
+        title: 'Reply added',
+        description: 'Your reply has been added successfully.',
+        duration: 3000,
       });
+    } catch (error) {
+      console.error('❌ Error adding reply:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add reply. Please try again.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
   };
 
   const handleShare = async () => {
@@ -679,33 +683,110 @@ const SingleBlog: React.FC = () => {
     liked: !!post.liked
   } : null;
 
-  // Parse JSON content
-  let parsedContent: ParsedContent;
-  try {
-    // Check if post.content is defined and not empty
-    if (post?.content) {
-      parsedContent = JSON.parse(post.content);
-    } else {
-      // Default content for undefined or empty content
-      parsedContent = {
-        content: [{
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'No content available' }]
-        }]
-      };
-    }
-  } catch (e) {
-    console.error('Error parsing content:', e);
-    parsedContent = {
-      content: [{
-        type: 'paragraph',
-        content: [{ type: 'text', text: 'Content unavailable' }]
-      }]
-    };
+  // Content parsing is now handled by RichTextRenderer
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-12">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/blog" className="inline-flex items-center text-primary hover:underline mb-8">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Blog
+          </Link>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+            <div className="h-64 bg-gray-200 rounded mb-6"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Extract text content for display
-  const contentBlocks = parsedContent?.content || [];
+  // Error state
+  if (fetchError) {
+    return (
+      <div className="container mx-auto py-12">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/blog" className="inline-flex items-center text-primary hover:underline mb-8">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Blog
+          </Link>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Post</h1>
+              <p className="text-muted-foreground mb-4">
+                {fetchError instanceof Error ? fetchError.message : 'Failed to load the blog post. Please try again later.'}
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // No post found
+  if (!post) {
+    return (
+      <div className="container mx-auto py-12">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/blog" className="inline-flex items-center text-primary hover:underline mb-8">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Blog
+          </Link>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
+              <p className="text-muted-foreground mb-4">
+                The blog post you're looking for doesn't exist or has been removed.
+              </p>
+              <Link to="/blog">
+                <Button>
+                  Back to Blog
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Additional safety check
+  if (!safePost) {
+    return (
+      <div className="container mx-auto py-12">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/blog" className="inline-flex items-center text-primary hover:underline mb-8">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Blog
+          </Link>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <h1 className="text-2xl font-bold mb-4">Post Not Available</h1>
+              <p className="text-muted-foreground mb-4">
+                The blog post data is not available.
+              </p>
+              <Link to="/blog">
+                <Button>
+                  Back to Blog
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-12">
@@ -784,21 +865,10 @@ const SingleBlog: React.FC = () => {
           </div>
 
           <div className="prose prose-lg max-w-none mb-12">
-            {contentBlocks.map((block, blockIndex) => {
-              if (block.type === 'paragraph') {
-                return (
-                  <div key={blockIndex} className="mb-4">
-                    {block.content.map((item, itemIndex) => {
-                      if (item.type === 'text') {
-                        return <p key={itemIndex}>{item.text}</p>;
-                      }
-                      return null;
-                    })}
-                  </div>
-                );
-              }
-              return null;
-            })}
+            <RichTextRenderer 
+              content={safePost.content} 
+              className="text-base leading-relaxed"
+            />
           </div>
         </div>
 

@@ -399,6 +399,8 @@ export interface CategoryData {
   imageUrl: string;
   isActive: boolean;
   userId: string;
+  isApproved: boolean;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
 }
 
 export interface FactData {

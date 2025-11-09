@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { getSingleCategory, updateCategory } from "@/http";
+import { updateCategory, getCategory, toggleCategoryActiveStatus, removeExistingCategoryFromSeller } from "@/http/categoryApi";
 import { toast } from "@/components/ui/use-toast";
+import { getAuthUserRoles } from "@/util/authUtils";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,13 +13,19 @@ import { Button } from "@/components/ui/button";
 import { CategoryData } from "@/Provider/types";
 import {
     Check,
+    Clock,
     Edit,
     FileText,
     FolderClosed,
     Image as ImageIcon,
+    Minus,
     Save,
     Trash2,
-    X
+    X,
+    ToggleLeft,
+    ToggleRight,
+    Eye,
+    EyeOff
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -28,12 +35,14 @@ import { Separator } from "@/components/ui/separator";
 
 interface SingleCategoryProps {
     category?: CategoryData;
-    DeleteCategory?: (id: string) => void;
+    onDelete?: (id: string) => void;
+    onUpdate?: () => void;
 }
 
-const SingleCategory = ({
+const SingleCategory: React.FC<SingleCategoryProps> = ({
     category,
-    DeleteCategory,
+    onDelete,
+    onUpdate,
 }: SingleCategoryProps) => {
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,33 +50,171 @@ const SingleCategory = ({
     const [uploadSubmit, setUploadSubmit] = useState(false);
 
     const queryClient = useQueryClient();
+
+    // Check user role for query invalidation
+    const userRole = getAuthUserRoles();
+    const isAdmin = userRole === 'admin';
+    
+    // Debug user role
+    console.log('🔍 Current user role:', userRole);
+    console.log('🔍 Is admin:', isAdmin);
+
     const form = useForm({
+        mode: 'onChange',
         defaultValues: {
             name: '',
             description: '',
             imageUrl: '',
             isActive: true,
         },
+        resolver: async (values) => {
+            const errors: { [key: string]: { message: string } } = {};
+            if (!values.name) {
+                errors.name = { message: 'Name is required' };
+            }
+            return { values, errors };
+        },
+    });
+
+    // Remove category from seller's list mutation (user-specific)
+    const removeCategoryMutation = useMutation({
+        mutationFn: () => removeExistingCategoryFromSeller(category?._id || ''),
+        onSuccess: (data) => {
+            toast({
+                title: "Category removed",
+                description: data.message || "Category has been removed from your list successfully.",
+            });
+            // Invalidate the appropriate query based on user role
+            if (isAdmin) {
+                queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            }
+            if (onUpdate) onUpdate();
+        },
+        onError: (error) => {
+            toast({
+                title: "Failed to remove category",
+                description: "An error occurred while removing the category from your list.",
+                variant: "destructive",
+            });
+            console.error('Error removing category:', error);
+        },
     });
 
     // Fetch single category data if categoryId is provided
-    const { data: categorySingle, isLoading, isError } = useQuery<CategoryData>({
-        queryKey: ['singleCategory', category?.id],
-        queryFn: () => category?.id ? getSingleCategory(category?.id) : Promise.reject('No category ID provided'),
-        enabled: isEditMode && !!category?.id,
+    const { data: categorySingle, isLoading, isError, error } = useQuery<CategoryData>({
+        queryKey: ['singleCategory', category?._id],
+        queryFn: async () => {
+            console.log('🔍 Fetching category data for ID:', category?._id);
+            console.log('🔍 User role:', userRole, 'isAdmin:', isAdmin);
+            
+            if (category?._id) {
+                try {
+                    const result = await getCategory(category._id);
+                    console.log('🔍 Category data fetched successfully:', result);
+                    return result;
+                } catch (error) {
+                    console.error('❌ Error fetching category:', error);
+                    throw error;
+                }
+            }
+            console.error('❌ No category ID provided');
+            return Promise.reject('No category ID provided');
+        },
+        enabled: false, // Disable automatic fetching, we'll use existing category data
+        retry: 1,
+        onError: (error) => {
+            console.error('❌ Query error:', error);
+            toast({
+                title: "Failed to load category data",
+                description: "Could not fetch the latest category information. Using existing data.",
+                variant: "destructive",
+            });
+        }
     });
 
+    // Initialize form with category data when component mounts or category changes
+    useEffect(() => {
+        if (category) {
+            console.log('🔍 Initializing form with category data:', category);
+            console.log('🔍 Category fields - name:', category.name, 'description:', category.description, 'imageUrl:', category.imageUrl, 'isActive:', category.isActive);
+            
+            const formData = {
+                name: category.name || '',
+                description: category.description || '',
+                imageUrl: category.imageUrl || '',
+                isActive: category.isActive ?? true,
+            };
+            console.log('🔍 Form data being set:', formData);
+            
+            form.reset(formData);
+            
+            // Also set values individually as a fallback
+            form.setValue('name', category.name || '');
+            form.setValue('description', category.description || '');
+            form.setValue('imageUrl', category.imageUrl || '');
+            form.setValue('isActive', category.isActive ?? true);
+            
+            console.log('🔍 Form values after reset:', form.getValues());
+        }
+    }, [category, form]);
+
+    // Update form when entering edit mode with existing category data
+    useEffect(() => {
+        if (isEditMode && category) {
+            console.log('🔍 Entering edit mode, updating form with category data:', category);
+            console.log('🔍 Edit mode - isEditMode:', isEditMode);
+            
+            // Force form to update with category data
+            setTimeout(() => {
+                const formData = {
+                    name: category.name || '',
+                    description: category.description || '',
+                    imageUrl: category.imageUrl || '',
+                    isActive: category.isActive ?? true,
+                };
+                console.log('🔍 Edit mode - Setting form data:', formData);
+                form.reset(formData);
+                
+                // Force individual field updates
+                form.setValue('name', category.name || '', { shouldValidate: true });
+                form.setValue('description', category.description || '', { shouldValidate: true });
+                form.setValue('imageUrl', category.imageUrl || '', { shouldValidate: true });
+                form.setValue('isActive', category.isActive ?? true, { shouldValidate: true });
+                
+                console.log('🔍 Edit mode - Form values after update:', form.getValues());
+            }, 100);
+        }
+    }, [isEditMode, category, form]);
+
+    // Update form when fresh category data is loaded from API (optional)
     useEffect(() => {
         if (categorySingle && isEditMode) {
-            form.setValue('name', categorySingle.name);
-            form.setValue('description', categorySingle.description);
-            form.setValue('imageUrl', categorySingle.imageUrl);
-            form.setValue('isActive', categorySingle.isActive);
+            console.log('🔍 Fresh category data loaded from API:', categorySingle);
+            form.reset({
+                name: categorySingle.name || '',
+                description: categorySingle.description || '',
+                imageUrl: categorySingle.imageUrl || '',
+                isActive: categorySingle.isActive ?? true,
+            });
         }
     }, [categorySingle, isEditMode, form]);
 
+    // Show error message if API call fails but continue with existing data
+    useEffect(() => {
+        if (isError && isEditMode) {
+            console.log('⚠️ API call failed, but continuing with existing category data');
+            toast({
+                title: "Using existing data",
+                description: "Could not fetch latest data, but you can still edit with current information.",
+                variant: "default",
+            });
+        }
+    }, [isError, isEditMode]);
+
     const updateCategoryMutation = useMutation({
-        mutationFn: (categoryData: FormData) => updateCategory(categoryData, category?.id || ''),
+        mutationFn: (categoryData: FormData) => updateCategory(category?._id || '', categoryData),
         onSuccess: () => {
             toast({
                 title: 'Category updated successfully',
@@ -76,9 +223,13 @@ const SingleCategory = ({
             });
             setIsEditMode(false);
             setUploadSubmit(!uploadSubmit);
-            queryClient.invalidateQueries({
-                queryKey: ['categories'], // Match the query key used in useQuery
-            });
+            // Invalidate the appropriate query based on user role
+            if (isAdmin) {
+                queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            }
+            if (onUpdate) onUpdate();
         },
         onError: (error) => {
             toast({
@@ -90,15 +241,49 @@ const SingleCategory = ({
         },
     });
 
+    // Toggle category active status mutation (user-specific)
+    const toggleStatusMutation = useMutation({
+        mutationFn: () => toggleCategoryActiveStatus(category?._id || ''),
+        onSuccess: (data) => {
+            toast({
+                title: "Status updated",
+                description: data.message || "Category status has been updated successfully.",
+            });
+            // Invalidate the appropriate query based on user role
+            if (isAdmin) {
+                queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            }
+            if (onUpdate) onUpdate();
+        },
+        onError: (error) => {
+            toast({
+                title: "Failed to update status",
+                description: "An error occurred while updating the category status.",
+                variant: "destructive",
+            });
+            console.error('Error toggling category status:', error);
+        },
+    });
+
     const handleUpdateCategory = async () => {
         if (form.formState.isValid) {
             const formData = new FormData();
+            console.log('Form Values:', form.getValues()); // Debug log to check form values
             formData.append('name', form.getValues('name') || '');
             formData.append('description', form.getValues('description') || '');
             formData.append('imageUrl', form.getValues('imageUrl') || '');
 
-            // Convert boolean to string for FormData
-            formData.append('isActive', form.getValues('isActive') ? 'true' : 'false');
+            // Note: isActive is user-specific and handled separately via toggleCategoryActiveStatus
+            // It should not be sent as part of global category updates
+            console.log('📝 isActive field not included in global category update (user-specific)');
+
+            // Log each key-value pair in FormData for debugging
+            console.log('FormData contents:');
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
 
             try {
                 setUploadSubmit(true);
@@ -120,8 +305,8 @@ const SingleCategory = ({
 
     // This function is called when the user confirms deletion in the dialog
     const confirmDeleteCategory = () => {
-        if (DeleteCategory && category?.id) {
-            DeleteCategory(category.id);
+        if (DeleteCategory && category?._id) {
+            DeleteCategory(category._id);
             setDeleteDialogOpen(false);
             toast({
                 title: "Category deleted",
@@ -148,19 +333,58 @@ const SingleCategory = ({
 
     const handleEditClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        console.log('🔍 Edit button clicked!');
+        console.log('🔍 Category data available:', !!category);
+        console.log('🔍 Category object:', category);
+        
         if (category) {
-            // Initialize form with category data
-            form.setValue('name', category.name);
-            form.setValue('description', category.description);
-            form.setValue('imageUrl', category.imageUrl);
-            form.setValue('isActive', category.isActive);
+            const formData = {
+                name: category.name || '',
+                description: category.description || '',
+                imageUrl: category.imageUrl || '',
+                isActive: category.isActive ?? true,
+            };
+            
+            console.log('🔍 Form data to be set in handleEditClick:', formData);
+            
+            // Initialize form with category data immediately
+            form.reset(formData);
+            
+            // Also set values individually
+            form.setValue('name', category.name || '');
+            form.setValue('description', category.description || '');
+            form.setValue('imageUrl', category.imageUrl || '');
+            form.setValue('isActive', category.isActive ?? true);
+            
+            console.log('🔍 Form values after handleEditClick:', form.getValues());
+            
             setIsEditMode(true);
+            
+            console.log('🔍 Edit mode set to true');
+        } else {
+            console.log('❌ No category data available for editing');
         }
     };
 
     const handleCancelClick = () => {
         setIsEditMode(false);
         form.reset();
+    };
+
+    // Test function to manually set form values
+    const testFormValues = () => {
+        console.log('🧪 Testing form values...');
+        form.setValue('name', 'Test Name');
+        form.setValue('description', 'Test Description');
+        form.setValue('imageUrl', 'test-image.jpg');
+        form.setValue('isActive', true);
+        console.log('🧪 Form values after manual set:', form.getValues());
+    };
+
+    const handleToggleStatus = () => {
+        if (category?._id) {
+            toggleStatusMutation.mutate();
+        }
     };
 
     if (isLoading) return (
@@ -352,26 +576,62 @@ const SingleCategory = ({
                         </>
                     ) : (
                         <>
-                            <div className="relative">
+                            <div className="relative overflow-hidden rounded-t-lg">
                                 {category?.imageUrl ? (
-                                    <img
-                                        src={category.imageUrl as string}
-                                        alt={category.name || 'Category'}
-                                        className="w-full h-[200px] object-cover"
-                                    />
+                                    <>
+                                        <img
+                                            src={category.imageUrl as string}
+                                            alt={category.name || 'Category'}
+                                            className="w-full h-[200px] object-cover transition-transform duration-300 hover:scale-105"
+                                        />
+                                        {/* Subtle gradient overlay for better badge visibility */}
+                                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent pointer-events-none" />
+                                    </>
                                 ) : (
-                                    <div className="w-full h-[200px] bg-muted flex items-center justify-center">
+                                    <div className="w-full h-[200px] bg-gradient-to-br from-muted to-muted/70 flex items-center justify-center">
                                         <ImageIcon className="h-16 w-16 text-muted-foreground/40" />
                                     </div>
                                 )}
+                                
+                                {/* Active/Inactive Status Badge - Top Left */}
                                 {category?.isActive ? (
-                                    <Badge className="absolute top-2 right-2 bg-green-500/20 text-green-700 border-green-500/30">
-                                        <Check className="mr-1 h-3 w-3" /> Active
-                                    </Badge>
+                                    <div className="absolute top-3 left-3 z-10">
+                                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-2 border-white/20 shadow-xl backdrop-blur-md font-semibold px-3 py-2 text-xs rounded-full transition-all duration-200">
+                                            <Eye className="mr-1.5 h-3.5 w-3.5" /> 
+                                            <span>Active</span>
+                                        </Badge>
+                                    </div>
                                 ) : (
-                                    <Badge className="absolute top-2 right-2 bg-muted/20 text-muted-foreground border-muted/30">
-                                        <X className="mr-1 h-3 w-3" /> Inactive
-                                    </Badge>
+                                    <div className="absolute top-3 left-3 z-10">
+                                        <Badge className="bg-gray-700 hover:bg-gray-800 text-white border-2 border-white/20 shadow-xl backdrop-blur-md font-semibold px-3 py-2 text-xs rounded-full transition-all duration-200">
+                                            <EyeOff className="mr-1.5 h-3.5 w-3.5" /> 
+                                            <span>Inactive</span>
+                                        </Badge>
+                                    </div>
+                                )}
+                                
+                                {/* Approval Status Badge - Top Right */}
+                                {category?.approvalStatus === 'approved' ? (
+                                    <div className="absolute top-3 right-3 z-10">
+                                        <Badge className="bg-green-600 hover:bg-green-700 text-white border-2 border-white/20 shadow-xl backdrop-blur-md font-semibold px-3 py-2 text-xs rounded-full transition-all duration-200">
+                                            <Check className="mr-1.5 h-3.5 w-3.5" /> 
+                                            <span>Approved</span>
+                                        </Badge>
+                                    </div>
+                                ) : category?.approvalStatus === 'rejected' ? (
+                                    <div className="absolute top-3 right-3 z-10">
+                                        <Badge className="bg-red-600 hover:bg-red-700 text-white border-2 border-white/20 shadow-xl backdrop-blur-md font-semibold px-3 py-2 text-xs rounded-full transition-all duration-200">
+                                            <X className="mr-1.5 h-3.5 w-3.5" /> 
+                                            <span>Rejected</span>
+                                        </Badge>
+                                    </div>
+                                ) : (
+                                    <div className="absolute top-3 right-3 z-10">
+                                        <Badge className="bg-orange-600 hover:bg-orange-700 text-white border-2 border-white/20 shadow-xl backdrop-blur-md font-semibold px-3 py-2 text-xs rounded-full transition-all duration-200">
+                                            <Clock className="mr-1.5 h-3.5 w-3.5" /> 
+                                            <span>Pending</span>
+                                        </Badge>
+                                    </div>
                                 )}
                             </div>
 
@@ -424,26 +684,72 @@ const SingleCategory = ({
                             </>
                         ) : (
                             <>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleEditClick}
-                                    className="text-muted-foreground hover:text-primary gap-1.5"
-                                >
-                                    <Edit className="h-3.5 w-3.5" />
-                                    Edit
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteCategory()}
-                                    className="text-muted-foreground hover:text-destructive gap-1.5"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    Delete
-                                </Button>
+                                {/* Toggle button for non-admin users */}
+                                {!isAdmin && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleToggleStatus}
+                                        disabled={toggleStatusMutation.isPending}
+                                        className={cn(
+                                            "gap-1.5",
+                                            category?.isActive
+                                                ? "text-green-600 hover:text-green-700"
+                                                : "text-muted-foreground hover:text-primary"
+                                        )}
+                                    >
+                                        {category?.isActive ? (
+                                            <ToggleRight className="h-3.5 w-3.5" />
+                                        ) : (
+                                            <ToggleLeft className="h-3.5 w-3.5" />
+                                        )}
+                                        {category?.isActive ? 'Deactivate' : 'Activate'}
+                                    </Button>
+                                )}
+
+                                {/* Remove button for sellers (removes from their list only) */}
+                                {!isAdmin && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeCategoryMutation.mutate()}
+                                        disabled={removeCategoryMutation.isPending}
+                                        className="text-muted-foreground hover:text-red-600 gap-1.5"
+                                    >
+                                        <Minus className="h-3.5 w-3.5" />
+                                        {removeCategoryMutation.isPending ? 'Removing...' : 'Remove'}
+                                    </Button>
+                                )}
+
+                                {/* Edit button for admin users */}
+                                {isAdmin && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleEditClick}
+                                        className="text-muted-foreground hover:text-primary gap-1.5"
+                                    >
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                    </Button>
+                                )}
+
+                                {/* Delete button for admin users */}
+                                {isAdmin && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteCategory()}
+                                        className="text-muted-foreground hover:text-destructive gap-1.5"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Delete
+                                    </Button>
+                                )}
                             </>
                         )}
 

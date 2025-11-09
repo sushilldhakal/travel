@@ -1,9 +1,8 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { deleteCategory } from "@/http";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { deleteCategory, approveCategory, rejectCategory } from "@/http/categoryApi";
 import { toast } from "@/components/ui/use-toast";
 import SingleCategory from "./SingleCategory";
 import AddCategory from "./AddCategory";
-import { getUserId } from "@/util/authUtils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,26 +12,92 @@ import {
     FolderPlus,
     Plus,
     Search,
-    X
+    X,
+    AlertTriangle,
+    Check,
+    XIcon
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useCategories } from "./useCategories";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useCategoriesRoleBased, usePendingCategories } from "./useCategories";
+import { CategoryData } from "@/Provider/types";
+import { getAuthUserRoles } from "@/util/authUtils";
 
 const TourCategory = () => {
-    const userId = getUserId();
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
 
-    // Fetch all categories for the user
-    const { data: categories, isLoading, isError } = useCategories(userId);
+    // Check user role for query invalidation
+    const userRole = getAuthUserRoles();
+    const isAdmin = userRole === 'admin';
+
+    // Fetch categories based on user role (admin sees all, users see their personal categories)
+    const { data: categories, isLoading, isError } = useCategoriesRoleBased();
+    
+    // Fetch pending categories for admin users
+    const { data: pendingCategories, isLoading: pendingLoading, isError: pendingError } = usePendingCategories();
 
     // Filter categories based on search query
-    const filteredCategories = categories?.filter(category => {
+    const filteredCategories = categories?.filter((category: CategoryData) => {
         const nameMatch = category.name.toLowerCase().includes(searchQuery.toLowerCase());
         const descriptionMatch = category.description?.toLowerCase().includes(searchQuery.toLowerCase());
         return nameMatch || descriptionMatch;
+    });
+
+    // Admin mutations
+    const approveMutation = useMutation({
+        mutationFn: (categoryId: string) => approveCategory(categoryId),
+        onSuccess: () => {
+            toast({
+                title: "Category approved",
+                description: "The category has been approved and is now available.",
+                variant: "default",
+            });
+            // Invalidate both query types since approval affects both admin and user views
+            queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-categories'] });
+        },
+        onError: () => {
+            toast({
+                title: "Failed to approve category",
+                description: "There was an error approving the category.",
+                variant: "destructive",
+            });
+        },
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: ({ categoryId, reason }: { categoryId: string; reason: string }) =>
+            rejectCategory(categoryId, reason),
+        onSuccess: () => {
+            toast({
+                title: "Category rejected",
+                description: "The category has been rejected.",
+                variant: "default",
+            });
+            // Invalidate both query types since rejection affects both admin and user views
+            queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-categories'] });
+            setRejectDialogOpen(false);
+            setRejectReason("");
+            setSelectedCategory(null);
+        },
+        onError: () => {
+            toast({
+                title: "Failed to reject category",
+                description: "There was an error rejecting the category.",
+                variant: "destructive",
+            });
+        },
     });
 
     const handleDeleteCategory = async (categoryId: string) => {
@@ -43,9 +108,12 @@ const TourCategory = () => {
                 description: 'The category has been removed.',
                 variant: 'default',
             });
-            queryClient.invalidateQueries({
-                queryKey: ['categories', userId], // Match the query key used in useQuery
-            });
+            // Invalidate the appropriate query based on user role
+            if (isAdmin) {
+                queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+            }
         } catch (error) {
             toast({
                 title: 'Failed to delete category',
@@ -120,17 +188,93 @@ const TourCategory = () => {
                 <>
                     <Separator className="my-4" />
                     <AddCategory
-                        onCategoryAdded={() => {
-                            setIsAddingCategory(false);
-                            if (userId) {
-                                queryClient.invalidateQueries({ queryKey: ['categories', userId] });
-                            }
-                        }}
+                            onCategoryAdded={() => {
+                                setIsAddingCategory(false);
+                                // Invalidate the appropriate query based on user role
+                                if (isAdmin) {
+                                    queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+                                } else {
+                                    queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+                                }
+                            }}
                     />
                 </>
             )}
 
             <Separator className="my-4" />
+
+            {/* Admin: Pending Categories Section */}
+            {isAdmin && pendingCategories && pendingCategories.length > 0 && (
+                <>
+                    <div className="flex items-center gap-2 mb-6">
+                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        <h2 className="text-xl font-semibold">Pending Categories for Approval</h2>
+                        <Badge variant="outline" className="ml-2 bg-orange-100 text-orange-700 border-orange-300">
+                            {pendingCategories.length} pending
+                        </Badge>
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                        {pendingCategories.map((category) => (
+                            <Card key={category._id} className="overflow-hidden border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 hover:shadow-lg transition-all duration-200">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Folder className="h-5 w-5 text-orange-600" />
+                                                <CardTitle className="text-lg">{category.name}</CardTitle>
+                                                <Badge className="bg-orange-500 hover:bg-orange-600 text-white">
+                                                    Pending
+                                                </Badge>
+                                            </div>
+                                            <CardDescription className="text-sm text-muted-foreground">
+                                                {category.description || 'No description provided'}
+                                            </CardDescription>
+                                        </div>
+                                        {category.imageUrl && (
+                                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted ml-4">
+                                                <img
+                                                    src={category.imageUrl}
+                                                    alt={category.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => approveMutation.mutate(category._id)}
+                                            disabled={approveMutation.isPending}
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                        >
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Approve
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSelectedCategory(category);
+                                                setRejectDialogOpen(true);
+                                            }}
+                                            disabled={rejectMutation.isPending}
+                                            className="border-red-300 text-red-700 hover:bg-red-50"
+                                        >
+                                            <XIcon className="h-4 w-4 mr-1" />
+                                            Reject
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    <Separator className="my-6" />
+                </>
+            )}
 
             {isLoading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -147,7 +291,14 @@ const TourCategory = () => {
                         <Button
                             className="mt-4"
                             variant="outline"
-                            onClick={() => queryClient.invalidateQueries({ queryKey: ['categories', userId] })}
+                            onClick={() => {
+                                // Invalidate the appropriate query based on user role
+                                if (isAdmin) {
+                                    queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+                                } else {
+                                    queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+                                }
+                            }}
                         >
                             Try Again
                         </Button>
@@ -160,6 +311,14 @@ const TourCategory = () => {
                             key={category.id}
                             category={category}
                             DeleteCategory={handleDeleteCategory}
+                            onUpdate={() => {
+                                // Invalidate the appropriate query based on user role
+                                if (isAdmin) {
+                                    queryClient.invalidateQueries({ queryKey: ['seller-categories'] });
+                                } else {
+                                    queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+                                }
+                            }}
                         />
                     ))}
                 </div>
@@ -200,6 +359,52 @@ const TourCategory = () => {
                     </CardContent>
                 </Card>
             )}
+
+            {/* Rejection Dialog */}
+            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reject Category</DialogTitle>
+                        <DialogDescription>
+                            Please provide a reason for rejecting "{selectedCategory?.name}". This will help the seller understand why their category was not approved.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            placeholder="Enter rejection reason..."
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            className="min-h-[100px]"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setRejectDialogOpen(false);
+                                setRejectReason("");
+                                setSelectedCategory(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                if (selectedCategory && rejectReason.trim()) {
+                                    rejectMutation.mutate({
+                                        categoryId: selectedCategory._id,
+                                        reason: rejectReason.trim()
+                                    });
+                                }
+                            }}
+                            disabled={!rejectReason.trim() || rejectMutation.isPending}
+                        >
+                            {rejectMutation.isPending ? "Rejecting..." : "Reject Category"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

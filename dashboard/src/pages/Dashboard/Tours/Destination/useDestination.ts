@@ -1,18 +1,66 @@
-// src/hooks/useCategories.ts
+// src/hooks/useDestination.ts
 import { useQuery } from '@tanstack/react-query';
-import { getUserDestinations } from '@/http';
+import { getSellerDestinations, getUserDestinations, getPendingDestinations, searchDestinations } from '@/http';
 import { Destination } from '@/Provider/types';
 
-export const useDestination = (userId: string | null) => {
-  return useQuery<Destination[]>({
-    queryKey: ['destination', userId],
-    queryFn: () => {
-      if (!userId) {
-        return Promise.reject('No user ID provided');
-      }
-      return getUserDestinations(userId);
-    },
-    enabled: !!userId, // Only fetch if userId is defined
+export const useDestination = () => {
+  return useQuery<{
+    success: boolean;
+    data: Destination[];
+    count: number;
+  }>({
+    queryKey: ['seller-destinations'],
+    queryFn: getSellerDestinations,
+    enabled: true, // Always enabled since authentication is handled by backend
+  });
+};
+
+// New hook for user-specific destinations (includes user's personal isActive status)
+export const useUserDestinations = () => {
+  return useQuery<{
+    success: boolean;
+    data: Destination[];
+    count: number;
+  }>({
+    queryKey: ['user-destinations'],
+    queryFn: getUserDestinations,
+    enabled: true, // Always enabled since authentication is handled by backend
+  });
+};
+
+export const usePendingDestinations = () => {
+  return useQuery<{
+    success: boolean;
+    data: Destination[];
+    count: number;
+  }>({
+    queryKey: ['pending-destinations'],
+    queryFn: getPendingDestinations,
+    enabled: true, // Always enabled since authentication is handled by backend
+  });
+};
+
+export const useSearchDestinations = (query: string, options?: { enabled?: boolean }) => {
+  return useQuery<{
+    success: boolean;
+    data: Destination[];
+    count: number;
+  }>({
+    queryKey: ['search-destinations', query],
+    queryFn: () => searchDestinations({ query }),
+    enabled: options?.enabled || false,
+  });
+};
+
+export const useAllDestinations = () => {
+  return useQuery<{
+    success: boolean;
+    data: Destination[];
+    count: number;
+  }>({
+    queryKey: ['all-destinations'],
+    queryFn: () => searchDestinations({}), // Empty search returns all destinations
+    enabled: true,
   });
 };
 

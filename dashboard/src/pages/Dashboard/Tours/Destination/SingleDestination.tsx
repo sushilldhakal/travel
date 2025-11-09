@@ -2,21 +2,21 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { Edit, FileText, MapPin, Image as ImageIcon, Save, Trash2, X } from "lucide-react";
-import { getDestination, updateDestination, deleteDestination, getUserToursTitle } from "@/http";
-import { getUserId } from "@/util/authUtils";
+import { Edit, FileText, MapPin, Image as ImageIcon, Save, Trash2, X, Eye, EyeOff, Globe, Users, Star, Calendar } from "lucide-react";
+import { updateDestination, removeExistingDestinationFromSeller, deleteDestination, getUserToursTitle, getSellerDestinations, getUserDestinations, toggleDestinationActiveStatus } from "@/http";
+import { getUserId, getAuthUserRoles } from "@/util/authUtils";
 import GalleryPage from "../../Gallery/GalleryPage";
 import Editor from "@/userDefinedComponents/editor/advanced-editor";
 import { MultiSelect, SelectValue } from "@/components/ui/MultiSelect";
+import RichTextRenderer from "@/components/RichTextRenderer";
 
 interface SingleDestinationProps {
     destinationId: string;
@@ -46,6 +46,17 @@ interface DescriptionContent {
     }>;
 }
 
+interface OriginalDestinationValues {
+    name: string;
+    description: string;
+    coverImage: string;
+    isActive: boolean;
+    country: string;
+    region: string;
+    city: string;
+    featuredTours: string[];
+}
+
 const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinationProps) => {
     const userId = getUserId();
     const queryClient = useQueryClient();
@@ -54,6 +65,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
     const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
     const [descriptionContent, setDescriptionContent] = useState<DescriptionContent | string>('');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
     const form = useForm({
         defaultValues: {
             name: '',
@@ -67,15 +79,31 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         }
     });
 
-    // Fetch destination data
-    // In SingleDestination.tsx
-    const { data: response, isLoading, isError } = useQuery({
-        queryKey: ['destination', destinationId],
-        queryFn: () => getDestination(destinationId),
-        enabled: !!destinationId,
+    // Check user role to determine which data source to use
+    const userRole = getAuthUserRoles();
+    const isAdmin = userRole === 'admin';
+
+    // Fetch destinations based on user role
+    // Admin: Use global destinations, Seller: Use user-specific destinations
+    const { data: globalDestinations, isLoading: globalLoading, isError: globalError } = useQuery({
+        queryKey: ['seller-destinations'],
+        queryFn: getSellerDestinations,
+        enabled: isAdmin, // Only fetch for admin users
     });
 
-    const destination = response; // Access the data property from the response
+    const { data: userDestinations, isLoading: userLoading, isError: userError } = useQuery({
+        queryKey: ['user-destinations'],
+        queryFn: getUserDestinations,
+        enabled: !isAdmin, // Only fetch for non-admin users
+    });
+
+    // Choose the appropriate data source
+    const destinationsData = isAdmin ? globalDestinations : userDestinations;
+    const isLoading = isAdmin ? globalLoading : userLoading;
+    const isError = isAdmin ? globalError : userError;
+
+    // Find the specific destination from the appropriate data source
+    const destination = destinationsData?.data?.find((dest: { _id: string }) => dest._id === destinationId);
 
 
     // Fetch tour titles
@@ -116,13 +144,55 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         }
     });
 
-    // Delete destination mutation
-    const deleteMutation = useMutation({
-        mutationFn: () => deleteDestination(destinationId),
+    // Toggle active status mutation
+    const toggleActiveMutation = useMutation({
+        mutationFn: () => toggleDestinationActiveStatus(destinationId),
+        onSuccess: (data) => {
+            toast({
+                title: "Status updated",
+                description: data.message || "Destination status has been updated successfully.",
+            });
+            // Update the form value to reflect the new status
+            if (data.data?.isActive !== undefined) {
+                form.setValue('isActive', data.data.isActive);
+            }
+
+            // Invalidate the appropriate query based on user role
+            if (isAdmin) {
+                queryClient.invalidateQueries({ queryKey: ['seller-destinations'] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['user-destinations'] });
+            }
+
+            onUpdate();
+        },
+        onError: (error) => {
+            toast({
+                title: "Failed to update status",
+                description: `There was an error updating the destination status: ${error.message}`,
+                variant: "destructive",
+            });
+        }
+    });
+
+    // Remove destination mutation
+    const removeMutation = useMutation({
+        mutationFn: () => {
+            // Check if user is admin to determine which deletion method to use
+            const userRole = getAuthUserRoles();
+            console.log('🔍 User role for deletion:', userRole);
+            if (userRole === 'admin') {
+                console.log('🔧 Using admin deleteDestination for:', userRole);
+                return deleteDestination(destinationId);
+            } else {
+                console.log('🔧 Using seller removeExistingDestinationFromSeller for:', destinationId);
+                return removeExistingDestinationFromSeller(destinationId);
+            }
+        },
         onSuccess: () => {
             toast({
-                title: "Destination deleted",
-                description: "The destination has been deleted successfully.",
+                title: "Destination removed",
+                description: "The destination has been removed from your list successfully.",
             });
             setDeleteDialogOpen(false);
             onUpdate();
@@ -130,8 +200,8 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         },
         onError: (error) => {
             toast({
-                title: "Failed to delete",
-                description: `There was an error deleting the destination: ${error.message}`,
+                title: "Failed to remove",
+                description: `There was an error removing the destination: ${error.message}`,
                 variant: "destructive",
             });
         }
@@ -154,16 +224,25 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
             // Initialize rich text editor content if description exists
             if (destination.description) {
                 try {
-                    // Try to parse if it's JSON content
-                    setDescriptionContent({
-                        type: "doc",
-                        content: [{
-                            type: "paragraph",
-                            content: [{ type: "text", text: destination.description }]
-                        }]
-                    });
+                    // Check if the description is already JSON format
+                    const isLikelyJSON = destination.description.trim().startsWith('{') && destination.description.trim().endsWith('}');
+
+                    if (isLikelyJSON) {
+                        // Try to parse as JSON and use it directly
+                        const parsedContent = JSON.parse(destination.description);
+                        setDescriptionContent(parsedContent);
+                    } else {
+                        // If it's plain text, wrap it in proper document structure
+                        setDescriptionContent({
+                            type: "doc",
+                            content: [{
+                                type: "paragraph",
+                                content: [{ type: "text", text: destination.description }]
+                            }]
+                        });
+                    }
                 } catch (e) {
-                    // If it's not JSON, create a simple text content
+                    // If JSON parsing fails, treat as plain text
                     setDescriptionContent({
                         type: "doc",
                         content: [{
@@ -176,7 +255,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         }
     }, [destination, form]);
 
-    // Handle form submission for updating destination
+    // Handle form submission for updating destination with smart change detection
     const handleUpdateDestination = (values: {
         name: string;
         description: string;
@@ -187,6 +266,49 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         city: string;
         featuredTours: string[];
     }) => {
+        // Get original values for comparison
+        const originalValues: OriginalDestinationValues = (window as any).originalDestinationValues || {};
+
+        // Check what fields have actually changed
+        const hasContentChanges =
+            values.name !== originalValues.name ||
+            values.description !== originalValues.description ||
+            values.coverImage !== originalValues.coverImage ||
+            values.country !== originalValues.country ||
+            values.region !== originalValues.region ||
+            values.city !== originalValues.city;
+
+        // Check if only isActive changed
+        const onlyStatusChanged =
+            !hasContentChanges &&
+            values.isActive !== originalValues.isActive;
+
+        // Check featured tours changes
+        const originalTours = Array.isArray(destination.featuredTours)
+            ? destination.featuredTours.map((tour: string) => typeof tour === 'string' ? tour : tour)
+            : [];
+        const updatedTours = values.featuredTours || [];
+        const originalTourIds = originalTours.map((tour: string) => tour);
+        const updatedTourIds = updatedTours.map((tour: string) => tour);
+        const areToursDifferent = originalTourIds.length !== updatedTourIds.length ||
+            !originalTourIds.every((tourId: string) => updatedTourIds.includes(tourId));
+
+        console.log('🔍 Field change analysis:', {
+            hasContentChanges,
+            onlyStatusChanged,
+            areToursDifferent,
+            statusChange: `${originalValues.isActive} → ${values.isActive}`
+        });
+
+        // If only status changed, use the toggle endpoint
+        if (onlyStatusChanged && !areToursDifferent) {
+            console.log('✅ Using toggle endpoint for status-only change');
+            toggleActiveMutation.mutate();
+            return;
+        }
+
+        // Otherwise, use the full update endpoint
+        console.log('📝 Using full update endpoint for content changes');
         const formData = new FormData();
         formData.append('name', values.name);
         formData.append('description', JSON.stringify(descriptionContent));
@@ -195,22 +317,10 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         formData.append('country', values.country);
         formData.append('region', values.region);
         formData.append('city', values.city);
-        // Compare featuredTours only if changed
-        const originalTours = Array.isArray(destination.featuredTours)
-            ? destination.featuredTours.map((tour: string) => typeof tour === 'string' ? tour : tour)
-            : [];
-        const updatedTours = values.featuredTours || [];
-
-        const originalTourIds = originalTours.map((tour: string) => tour); // Get only the ids
-        const updatedTourIds = updatedTours.map((tour: string) => tour); // Get only the ids
-
-        // Check if arrays of tour ids are different
-        const areToursDifferent = originalTourIds.length !== updatedTourIds.length ||
-            !originalTourIds.every((tourId: string) => updatedTourIds.includes(tourId));
 
         if (areToursDifferent) {
             updatedTourIds.forEach((tourId: string) => {
-                formData.append('featuredTours[]', tourId); // Append only the ids
+                formData.append('featuredTours[]', tourId);
             });
         }
         if (userId) formData.append('userId', userId);
@@ -228,10 +338,22 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
         onChange('');
     };
 
-    // Handle edit button click
+    // Handle edit button click with smart field change detection
     const handleEditClick = (e: React.MouseEvent) => {
         e.preventDefault();
         if (destination) {
+            // Store original values for comparison
+            const originalValues = {
+                name: destination.name,
+                description: destination.description || '',
+                coverImage: destination.coverImage || '',
+                isActive: destination.isActive,
+                country: destination.country || '',
+                region: destination.region || '',
+                city: destination.city || '',
+                featuredTours: destination.featuredTours || []
+            };
+
             // Initialize form with destination data
             form.setValue('name', destination.name);
             form.setValue('description', destination.description || '');
@@ -241,6 +363,42 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
             form.setValue('region', destination.region || '');
             form.setValue('city', destination.city || '');
             form.setValue('featuredTours', destination.featuredTours || []);
+
+            // Initialize rich text editor content for edit mode
+            if (destination.description) {
+                try {
+                    // Check if the description is already JSON format
+                    const isLikelyJSON = destination.description.trim().startsWith('{') && destination.description.trim().endsWith('}');
+
+                    if (isLikelyJSON) {
+                        // Try to parse as JSON and use it directly
+                        const parsedContent = JSON.parse(destination.description);
+                        setDescriptionContent(parsedContent);
+                    } else {
+                        // If it's plain text, wrap it in proper document structure
+                        setDescriptionContent({
+                            type: "doc",
+                            content: [{
+                                type: "paragraph",
+                                content: [{ type: "text", text: destination.description }]
+                            }]
+                        });
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, treat as plain text
+                    setDescriptionContent({
+                        type: "doc",
+                        content: [{
+                            type: "paragraph",
+                            content: [{ type: "text", text: destination.description }]
+                        }]
+                    });
+                }
+            }
+
+            // Store original values for later comparison
+            (window as any).originalDestinationValues = originalValues;
+
             setIsEditMode(true);
         }
     };
@@ -547,149 +705,220 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="isActive"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">
-                                                Active Status
-                                            </FormLabel>
-                                            <FormDescription className="text-sm text-muted-foreground">
-                                                {field.value
-                                                    ? "This destination is currently active and visible."
-                                                    : "This destination is currently inactive and hidden."}
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
                         </form>
                     </Form>
                 ) : (
-                    // View Mode
+                    // View Mode - Enhanced Design
                     <>
-                        <div className="relative">
+                        {/* Hero Image Section with Overlay */}
+                        <div className="relative overflow-hidden">
                             {destination?.coverImage ? (
-                                <img
-                                    src={destination.coverImage as string}
-                                    alt={destination.name || 'Destination'}
-                                    className="w-full h-[200px] object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-[200px] bg-muted flex items-center justify-center">
-                                    <MapPin className="h-12 w-12 text-muted-foreground" />
+                                <div className="relative">
+                                    <img
+                                        src={destination.coverImage as string}
+                                        alt={destination.name || 'Destination'}
+                                        className="w-full h-[240px] object-cover transition-transform duration-300 hover:scale-105"
+                                    />
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                                 </div>
-                            )}
-                            {destination?.isActive !== undefined && (
-                                <Badge
-                                    className={cn(
-                                        "absolute top-2 right-2",
-                                        destination.isActive
-                                            ? "bg-primary/90 hover:bg-primary/80"
-                                            : "bg-muted hover:bg-muted text-muted-foreground"
-                                    )}
-                                >
-                                    {destination.isActive ? "Active" : "Inactive"}
-                                </Badge>
-                            )}
-                        </div>
-
-                        <CardContent className="p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <MapPin className="h-5 w-5 text-primary" />
-                                <h3 className="text-lg font-semibold">
-                                    {destination?.name}
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-6 mb-4">
-                                <div className="space-y-3">
-                                    <div className="flex items-start gap-2">
-                                        <Badge variant="outline" className="h-6 bg-secondary/50">Location</Badge>
-                                        <div className="space-y-1.5">
-                                            {destination?.country && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-medium">Country:</span>
-                                                    <span className="text-sm text-muted-foreground">{destination.country}</span>
-                                                </div>
-                                            )}
-                                            {destination?.region && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-medium">Region:</span>
-                                                    <span className="text-sm text-muted-foreground">{destination.region}</span>
-                                                </div>
-                                            )}
-                                            {destination?.city && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-medium">City:</span>
-                                                    <span className="text-sm text-muted-foreground">{destination.city}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                            ) : (
+                                <div className="w-full h-[240px] bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <MapPin className="h-16 w-16 text-primary/60 mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground">No image uploaded</p>
                                     </div>
                                 </div>
+                            )}
+                            {destination.approvalStatus && (
+                                <div className="absolute top-3 left-3">
+                                    <Badge
+                                        className={cn(
+                                            "shadow-lg backdrop-blur-sm",
+                                            destination.approvalStatus === 'pending'
+                                                ? "bg-orange-500/90 hover:bg-orange-600/90 text-white border-orange-400/50"
+                                                : destination.isApproved
+                                                    ? "bg-green-500/90 hover:bg-green-600/90 text-white border-green-400/50"
+                                                    : "bg-gray-500/90 hover:bg-gray-600/90 text-white border-gray-400/50"
+                                        )}
+                                    >
 
-                                <div className="space-y-3">
-                                    {destination?.featuredTours && destination.featuredTours.length > 0 && (
-                                        <div className="flex flex-col gap-2">
-                                            <Badge variant="outline" className="w-fit h-6 bg-secondary/50">Featured Tours</Badge>
-                                            <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {destination.featuredTours.map((tour: string | TourObject) => {
-                                                    // Handle both string IDs and full tour objects
-                                                    const tourId = typeof tour === 'string' ? tour : (tour._id || tour.id || '');
-                                                    const tourTitle = typeof tour === 'string'
-                                                        ? (tourTitles?.data?.data?.find((t: TourTitle) => t._id === tourId)?.title || tourId)
-                                                        : (tour.title || 'Unknown Tour');
+                                        <Calendar className="h-3 w-3 mr-1" />
+                                        {destination.approvalStatus === 'pending' ? 'Pending Approval' : destination.approvalStatus === 'approved' ? 'Approved' : 'Rejected'}
 
-                                                    return (
-                                                        <Badge
-                                                            key={tourId}
-                                                            variant="secondary"
-                                                            className="text-xs"
-                                                        >
-                                                            {tourTitle}
-                                                        </Badge>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                    </Badge>
+                                </div>
+                            )}
+
+                            {/* Status Badge */}
+                            <div className="absolute top-3 right-3">
+                                <Badge
+                                    className={cn(
+                                        "shadow-lg backdrop-blur-sm",
+                                        destination.approvalStatus === 'pending'
+                                            ? "bg-orange-500/90 hover:bg-orange-600/90 text-white border-orange-400/50"
+                                            : destination.isActive
+                                                ? "bg-green-500/90 hover:bg-green-600/90 text-white border-green-400/50"
+                                                : "bg-gray-500/90 hover:bg-gray-600/90 text-white border-gray-400/50"
                                     )}
+                                >
+                                    {destination.approvalStatus === 'pending' ? (
+                                        <>
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            Pending Approval
+                                        </>
+                                    ) : destination.isActive ? (
+                                        <>
+                                            <Eye className="h-3 w-3 mr-1" />
+                                            Active
+                                        </>
+                                    ) : (
+                                        <>
+                                            <EyeOff className="h-3 w-3 mr-1" />
+                                            Inactive
+                                        </>
+                                    )}
+                                </Badge>
+                            </div>
+
+
+
+                            {/* Title Overlay */}
+                            <div className="absolute bottom-4 left-4 right-4">
+                                <div className="flex items-end justify-between">
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
+                                            {destination?.name}
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-white/90">
+                                            <Globe className="h-4 w-4" />
+                                            <span className="text-sm font-medium">
+                                                {[destination?.city, destination?.region, destination?.country]
+                                                    .filter(Boolean)
+                                                    .join(', ')}
+                                            </span>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <CardContent className="p-6 space-y-6">
+                            {/* Quick Stats Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 p-4 rounded-lg border border-green-200/50 dark:border-green-800/50">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Star className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                        <span className="text-xs font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">Status</span>
+                                    </div>
+                                    <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                                        {destination.approvalStatus === 'approved' ? 'Approved' :
+                                            destination.approvalStatus === 'pending' ? 'Pending' : 'Draft'}
+                                    </p>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 p-4 rounded-lg border border-purple-200/50 dark:border-purple-800/50">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">Tours</span>
+                                    </div>
+                                    <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                                        {destination?.featuredTours?.length || 0} Featured
+                                    </p>
                                 </div>
                             </div>
 
-                            <Separator className="my-4" />
+                            {/* Enhanced Toggle Control */}
+                            <div className="">
+                                {destination?.approvalStatus === 'approved' && (
+                                    <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="">
 
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4 text-primary" />
-                                    <h4 className="font-medium">Description</h4>
+                                                <div className="text-left">
+                                                    <div className="text-sm font-medium text-white">
+                                                        {destination.isActive ? 'Live' : 'Hidden'}
+                                                    </div>
+                                                    <div className="text-xs text-white/70">
+                                                        {destination.isActive ? 'Customers can see' : 'Not visible'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+
+                                                <Switch
+                                                    checked={destination.isActive}
+                                                    onCheckedChange={() => toggleActiveMutation.mutate()}
+                                                    disabled={toggleActiveMutation.isPending}
+                                                    className="data-[state=checked]:bg-green-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+
+                            {/* Featured Tours Section */}
+                            {destination?.featuredTours && destination.featuredTours.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Star className="h-5 w-5 text-amber-500" />
+                                        <h4 className="font-semibold text-lg">Featured Tours</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {destination.featuredTours.map((tour: string | TourObject) => {
+                                            const tourId = typeof tour === 'string' ? tour : (tour._id || tour.id || '');
+                                            const tourTitle = typeof tour === 'string'
+                                                ? (tourTitles?.data?.data?.find((t: TourTitle) => t._id === tourId)?.title || tourId)
+                                                : (tour.title || 'Unknown Tour');
+
+                                            return (
+                                                <div
+                                                    key={tourId}
+                                                    className="bg-gradient-to-r from-primary/5 to-primary/10 p-3 rounded-lg border border-primary/20 hover:border-primary/40 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                                                        <span className="text-sm font-medium text-foreground">{tourTitle}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground bg-secondary/20 p-3 rounded-md">
-                                    {destination?.description && destination.description.length > 300 ? (
-                                        <span>
-                                            {destination.description.substring(0, 300)}...
-                                            <Button
-                                                type="button"
-                                                variant="link"
-                                                size="sm"
-                                                className="text-primary px-1"
-                                                onClick={() => setDescriptionDialogOpen(true)}
-                                            >
-                                                Read more
-                                            </Button>
-                                        </span>
+                            )}
+
+                            {/* Description Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                    <h4 className="font-semibold text-lg">About This Destination</h4>
+                                </div>
+                                <div className="bg-gradient-to-br from-secondary/30 to-secondary/10 p-4 rounded-lg border border-secondary/40">
+                                    {destination?.description ? (
+                                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                                            <RichTextRenderer content={destination.description} />
+                                            {destination.description.length > 300 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-primary hover:text-primary/80 p-0 h-auto font-medium mt-3"
+                                                    onClick={() => setDescriptionDialogOpen(true)}
+                                                >
+                                                    Read full description →
+                                                </Button>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <span>
-                                            {destination?.description || "No description provided"}
-                                        </span>
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                            <p className="text-sm">No description available</p>
+                                            <p className="text-xs">Add a description to help customers learn about this destination</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -698,57 +927,66 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                 )}
             </CardContent>
 
-            <CardFooter className={cn(
-                "flex justify-end gap-2 px-5 py-3 bg-secondary/50 border-t",
-                isEditMode && "bg-primary/5 border-primary/20"
-            )}>
+            <CardFooter
+                className={cn(
+                    "flex flex-col gap-4 px-6 py-4 bg-gradient-to-r from-secondary/30 to-secondary/20 border-t border-secondary/40",
+                    isEditMode && "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20"
+                )}
+            >
                 {isEditMode ? (
                     <>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsEditMode(false)}
-                            className="gap-1.5"
-                        >
-                            <X className="h-3.5 w-3.5" />
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="default"
-                            size="sm"
-                            onClick={form.handleSubmit(handleUpdateDestination)}
-                            disabled={updateMutation.isPending}
-                            className="gap-1.5"
-                        >
-                            <Save className="h-3.5 w-3.5" />
-                            Save Changes
-                        </Button>
+                        <div className="text-sm text-muted-foreground w-full">
+                            Make your changes and save to request an update for the destination
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsEditMode(false)}
+                                className="gap-2 hover:bg-secondary/80"
+                            >
+                                <X className="h-4 w-4" />
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="default"
+                                size="sm"
+                                onClick={form.handleSubmit(handleUpdateDestination)}
+                                disabled={updateMutation.isPending}
+                                className="gap-2 bg-primary hover:bg-primary/90"
+                            >
+                                <Save className="h-4 w-4" />
+                                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                            </Button>
+                        </div>
                     </>
                 ) : (
-                    <>
+                    <div className="flex gap-3">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={handleEditClick}
-                            className="gap-1.5"
+                            className="gap-2 hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
                         >
-                            <Edit className="h-3.5 w-3.5" />
-                            Edit
+                            <Edit className="h-4 w-4" />
+                            Edit Details
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
                             onClick={() => setDeleteDialogOpen(true)}
-                            className="gap-1.5"
+                            className="gap-2 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            <Trash2 className="h-4 w-4" />
+                            Remove
                         </Button>
-                    </>
+                    </div>
                 )}
             </CardFooter>
+
 
             {/* Description Dialog */}
             <Dialog open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
@@ -763,7 +1001,7 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                     </DialogDescription>
                     <div className="max-h-[60vh] overflow-y-auto">
                         <div className="text-sm space-y-4 leading-relaxed">
-                            {destination?.description || "No description provided"}
+                            <RichTextRenderer content={destination?.description || 'No description provided'} />
                         </div>
                     </div>
                 </DialogContent>
@@ -773,9 +1011,9 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogTitle>Confirm Removal</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this destination? This action cannot be undone.
+                            Are you sure you want to remove this destination from your list? You can add it back later if needed.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-3 mt-4">
@@ -787,10 +1025,10 @@ const SingleDestination = ({ destinationId, onUpdate, onDelete }: SingleDestinat
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={() => deleteMutation.mutate()}
+                            onClick={() => removeMutation.mutate()}
                         >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            Remove
                         </Button>
                     </div>
                 </DialogContent>

@@ -15,7 +15,15 @@ export const getAllUserPosts = async () => api.get('/api/posts/user');
 
 export const getSinglePost = async (postId: string) => {
     try {
-        const response = await api.get(`/api/posts/${postId}`);
+        // Add timestamp to prevent caching issues
+        const timestamp = new Date().getTime();
+        const response = await api.get(`/api/posts/${postId}`, {
+            params: { _t: timestamp },
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         
         return response.data;
     } catch (error: unknown) {

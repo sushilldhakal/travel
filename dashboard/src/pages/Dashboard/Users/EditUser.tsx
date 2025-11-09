@@ -44,7 +44,7 @@ const passwordFormSchema = z.object({
 const userFormSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
     email: z.string().email({ message: "Please enter a valid email address." }),
-    phone: z.number().optional(),
+    phone: z.string().optional(),
     roles: z.string(),
 });
 
@@ -258,7 +258,7 @@ const EditUser = () => {
                                             <FormItem>
                                                 <FormLabel>Phone</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Enter your phone number" {...field} />
+                                                    <Input type="number" placeholder="Enter your phone number" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import './MenuBarSearch.css';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CategoryData, Tour } from "@/Provider/types";
-import { getCategories, getLatestTours, searchTours } from "@/http"; // Adjust API function
+import { getAllCategories, getLatestTours, searchTours } from "@/http"; // Adjust API function
 import { Link } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { debounce } from "lodash";
@@ -30,10 +30,26 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
     const [showSearchResults, setShowSearchResults] = useState(false); // State to manage view
     const [isHeaderFixed, setIsHeaderFixed] = useState(false);
 
-    const { data: categories } = useQuery({
-        queryKey: ['categories'],
-        queryFn: getCategories,
+    const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery({
+        queryKey: ['global-categories-approved'],
+        queryFn: getAllCategories,
     });
+
+    // Debug logging for categories
+    useEffect(() => {
+        if (categories) {
+            console.log('🔍 MenuBarSearch - Categories data:', categories);
+            console.log('🔍 MenuBarSearch - Categories structure:', {
+                hasData: !!categories?.data,
+                dataType: typeof categories?.data,
+                isArray: Array.isArray(categories?.data),
+                length: categories?.data?.length
+            });
+        }
+        if (categoriesError) {
+            console.error('❌ MenuBarSearch - Categories error:', categoriesError);
+        }
+    }, [categories, categoriesError]);
 
     const { data: latestTours } = useQuery({
         queryKey: ['tours'],
@@ -211,11 +227,21 @@ const MenuBarSearch = ({ handleSearch, headerSearch }: { handleSearch: () => voi
                                     <SelectItem value="all">
                                         Select all Category
                                     </SelectItem>
-                                    {categories?.data.categories && categories?.data.categories.map((category: CategoryData) => (
-                                        <SelectItem key={category._id} value={category._id}>
-                                            {category.name}
+                                    {categoriesLoading ? (
+                                        <SelectItem value="loading" disabled>
+                                            Loading categories...
                                         </SelectItem>
-                                    ))}
+                                    ) : categories?.data && Array.isArray(categories.data) ? (
+                                        categories.data.map((category: CategoryData) => (
+                                            <SelectItem key={category._id} value={category._id}>
+                                                {category.name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="error" disabled>
+                                            No categories available
+                                        </SelectItem>
+                                    )}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>

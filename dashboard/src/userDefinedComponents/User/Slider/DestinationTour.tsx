@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Destination } from "@/Provider/types";
+import RichTextRenderer from "@/components/RichTextRenderer";
 
 
 
@@ -20,17 +21,33 @@ const DestinationTour = () => {
     const [api, setApi] = useState<CarouselApi | null>(null);
 
     // Fetch destinations with proper caching
-    const { data, isLoading } = useQuery({
-        queryKey: ['destinations'],
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['global-destinations-approved'],
         queryFn: getAllDestinations,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
+    // Debug logging for destinations
+    useEffect(() => {
+        if (data) {
+            console.log('🔍 DestinationTour - Destinations data:', data);
+            console.log('🔍 DestinationTour - Data structure:', {
+                hasData: !!data?.data,
+                dataType: typeof data?.data,
+                isArray: Array.isArray(data?.data),
+                length: data?.data?.length
+            });
+        }
+        if (error) {
+            console.error('❌ DestinationTour - Destinations error:', error);
+        }
+    }, [data, error]);
+
     // Memoize the sorted destinations to prevent recalculation on every render
     const sortedDestinations = useMemo(() => {
-        if (!data?.destinations) return [];
+        if (!data?.data || !Array.isArray(data.data)) return [];
 
-        return [...data.destinations]
+        return [...data.data]
             .sort((a: Destination, b: Destination) => {
                 // First sort by popularity if available
                 if (a.popularity && b.popularity) {
@@ -40,7 +57,7 @@ const DestinationTour = () => {
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             })
             .slice(0, 8); // Show up to 8 destinations
-    }, [data?.destinations]);
+    }, [data?.data]);
 
     // Set up carousel API
     useEffect(() => {
@@ -82,25 +99,32 @@ const DestinationTour = () => {
                         <Globe className="text-primary h-6 w-6" />
                         <h2 className="text-2xl font-bold">Explore Destinations</h2>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => api?.scrollPrev()}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                            <span className="sr-only">Previous slide</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => api?.scrollNext()}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                            <span className="sr-only">Next slide</span>
-                        </Button>
+                    <div className="flex items-center gap-4">
+                        <Link to="/destinations">
+                            <Button variant="default" size="sm">
+                                View All Destinations
+                            </Button>
+                        </Link>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                                onClick={() => api?.scrollPrev()}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                <span className="sr-only">Previous slide</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                                onClick={() => api?.scrollNext()}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                                <span className="sr-only">Next slide</span>
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -130,9 +154,12 @@ const DestinationTour = () => {
                                     </div>
                                     <CardContent className="p-4">
                                         <h3 className="font-semibold text-lg mb-2 line-clamp-1">{destination.name}</h3>
-                                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                                            {destination.description}
-                                        </p>
+                                        <div className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                                            <RichTextRenderer 
+                                                content={destination.description} 
+                                                className="text-sm [&>p]:mb-0 [&>p]:leading-relaxed" 
+                                            />
+                                        </div>
                                         <div className="flex flex-col gap-1 text-sm">
                                             <div className="flex items-center gap-1 text-muted-foreground">
                                                 <MapPin className="h-3.5 w-3.5" />
