@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { createBooking } from '@/http';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -26,6 +27,7 @@ interface BookingFormData {
 }
 
 const FrontBooking: React.FC<FrontBookingProps> = ({ tourData }) => {
+    const navigate = useNavigate();
     const [bookingForm, setBookingForm] = useState<BookingFormData>({
         fullName: '',
         email: '',
@@ -335,10 +337,21 @@ const FrontBooking: React.FC<FrontBookingProps> = ({ tourData }) => {
             };
         }) => createBooking(bookingData),
         onSuccess: (response) => {
+            const bookingData = response.data;
             toast({
                 title: "Booking Successful!",
-                description: `Your booking reference is: ${response.data.bookingReference}. We'll contact you soon to confirm your booking.`,
+                description: `Your booking reference is: ${bookingData.bookingReference}. Redirecting to cart...`,
             });
+            
+            // Store booking in localStorage for cart
+            const existingBookings = JSON.parse(localStorage.getItem('cartBookings') || '[]');
+            existingBookings.push({
+                ...bookingData,
+                tourImage: tourData.coverImage,
+                quantity: 1
+            });
+            localStorage.setItem('cartBookings', JSON.stringify(existingBookings));
+            
             // Reset form
             setBookingForm({
                 fullName: '',
@@ -349,6 +362,10 @@ const FrontBooking: React.FC<FrontBookingProps> = ({ tourData }) => {
                 children: 0,
                 specialRequests: ''
             });
+            // Redirect to cart page
+            setTimeout(() => {
+                navigate('/cart', { state: { newBooking: bookingData } });
+            }, 1500);
         },
         onError: (error: Error) => {
             toast({
@@ -408,9 +425,11 @@ const FrontBooking: React.FC<FrontBookingProps> = ({ tourData }) => {
                 adults: bookingForm.adults,
                 children: bookingForm.children
             },
-            contactName: bookingForm.fullName,
-            contactEmail: bookingForm.email,
-            contactPhone: bookingForm.phone,
+            contactInfo: {
+                fullName: bookingForm.fullName,
+                email: bookingForm.email,
+                phone: bookingForm.phone
+            },
             specialRequests: bookingForm.specialRequests,
             pricing: {
                 basePrice: pricing.basePrice,

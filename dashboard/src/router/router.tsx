@@ -38,7 +38,16 @@ import Destination from '@/pages/Dashboard/Tours/Destination';
 import SellerWizard from '@/pages/FrontEnd/Seller/SellerWizard';
 import AllDestinations from '@/pages/FrontEnd/Destinations/AllDestinations';
 import SingleDestination from '@/pages/FrontEnd/Destinations/SingleDestination';
+import AllCategories from '@/pages/FrontEnd/Categories/AllCategories';
+import SingleCategory from '@/pages/FrontEnd/Categories/SingleCategory';
 import Bookings from '@/pages/Dashboard/Tours/Bookings';
+import BookingList from '@/pages/FrontEnd/Booking/BookingList';
+import SingleBooking from '@/pages/FrontEnd/Booking/SingleBooking';
+import Cart from '@/pages/FrontEnd/Cart/Cart';
+import Checkout from '@/pages/FrontEnd/Checkout/Checkout';
+import EnquiryList from '@/pages/FrontEnd/Enquiry/EnquiryList';
+import SingleEnquiry from '@/pages/FrontEnd/Enquiry/SingleEnquiry';
+import UserProfile from '@/pages/FrontEnd/Profile/UserProfile';
 
 const router = createBrowserRouter([
   {
@@ -95,6 +104,20 @@ const router = createBrowserRouter([
             <SingleDestination />
           </Suspense>
         ),
+      }, {
+        path: routePaths.home.categories,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AllCategories />
+          </Suspense>
+        ),
+      }, {
+        path: routePaths.home.singleCategory,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <SingleCategory />
+          </Suspense>
+        ),
       },
 
       {
@@ -102,6 +125,62 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<div>Loading...</div>}>
             <SellerWizard />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.booking,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <BookingList />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.singleBooking,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <SingleBooking />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.cart,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <Cart />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.checkout,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <Checkout />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.enquiry,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <EnquiryList />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.singleEnquiry,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <SingleEnquiry />
+          </Suspense>
+        ),
+      },
+      {
+        path: routePaths.home.singleProfile,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <UserProfile />
           </Suspense>
         ),
       }

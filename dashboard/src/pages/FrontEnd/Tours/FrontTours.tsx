@@ -194,6 +194,54 @@ const FrontTours = () => {
     }, [handleObserver]);
 
     // Flatten the pages data for filtering
+    // Helper function to calculate discount pricing for a tour
+    const getTourPricing = (tour: Tour) => {
+        let originalPrice = tour.price || 0;
+        let displayPrice = originalPrice;
+        let hasDiscount = false;
+        let discountPercentage = 0;
+
+        // Check sale price first (highest priority)
+        const tourAny = tour as any;
+        if (tourAny.saleEnabled && tourAny.salePrice) {
+            hasDiscount = true;
+            displayPrice = tourAny.salePrice;
+            discountPercentage = Math.round(((originalPrice - displayPrice) / originalPrice) * 100);
+        }
+        // Check pricing options with discount
+        else if (tourAny.pricingOptions && tourAny.pricingOptions.length > 0) {
+            const firstOption = tourAny.pricingOptions[0];
+            if (firstOption.price) {
+                originalPrice = firstOption.price;
+                displayPrice = firstOption.price;
+
+                // Check if discount is enabled
+                const discountData = firstOption.discount;
+                if (discountData?.discountEnabled && discountData.discountDateRange) {
+                    const now = new Date();
+                    const discountStart = new Date(discountData.discountDateRange.from);
+                    const discountEnd = new Date(discountData.discountDateRange.to);
+
+                    // Check if discount is currently valid
+                    if (now >= discountStart && now <= discountEnd) {
+                        hasDiscount = true;
+                        if (discountData.percentageOrPrice) {
+                            // Percentage discount
+                            discountPercentage = discountData.discountPercentage || 0;
+                            displayPrice = originalPrice - (originalPrice * discountPercentage / 100);
+                        } else {
+                            // Fixed price discount
+                            displayPrice = discountData.discountPrice || originalPrice;
+                            discountPercentage = Math.round(((originalPrice - displayPrice) / originalPrice) * 100);
+                        }
+                    }
+                }
+            }
+        }
+
+        return { originalPrice, displayPrice, hasDiscount, discountPercentage };
+    };
+
     const tours = useMemo(() => {
         if (!toursData?.pages) {
             return [];
@@ -548,22 +596,29 @@ const FrontTours = () => {
                                                             <span className="ml-1 text-xs text-muted-foreground">({tour.reviewCount || 0})</span>
                                                         </div>
                                                         <div className="flex items-center">
-                                                            {/* Show original price if there's a discount, otherwise don't show "From" price */}
-                                                            {tour.discount && tour.discount.isActive ? (
-                                                                <>
-                                                                    <div className="text-muted-foreground text-sm line-through mr-2">
-                                                                        From ${tour.originalPrice || Math.round(tour.price / (1 - tour.discount.percentage / 100))}
-                                                                    </div>
-                                                                    <div className="font-bold text-xl text-primary">${tour.price}</div>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <div className="text-muted-foreground text-sm mr-2">
-                                                                        From
-                                                                    </div>
-                                                                    <div className="font-bold text-xl text-primary">${tour.price}</div>
-                                                                </>
-                                                            )}
+                                                            {(() => {
+                                                                const { originalPrice, displayPrice, hasDiscount, discountPercentage } = getTourPricing(tour);
+                                                                return hasDiscount ? (
+                                                                    <>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-sm line-through text-muted-foreground">
+                                                                                ${originalPrice.toFixed(0)}
+                                                                            </span>
+                                                                            <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded">
+                                                                                -{discountPercentage}%
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="font-bold text-xl text-green-600 ml-2">${displayPrice.toFixed(0)}</div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="text-muted-foreground text-sm mr-2">
+                                                                            From
+                                                                        </div>
+                                                                        <div className="font-bold text-xl text-primary">${displayPrice.toFixed(0)}</div>
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
 
@@ -656,20 +711,28 @@ const FrontTours = () => {
                                             <div className="p-4 text-center border-l border-border flex flex-col justify-between items-center w-1/4">
                                                 <div className="w-full text-center">
                                                     {/* Price display */}
-                                                    {tour.discount && tour.discount.isActive ? (
-                                                        <>
-                                                            <div className="text-muted-foreground text-sm line-through mb-1 text-center">
-                                                                ${tour.originalPrice || Math.round(tour.price / (1 - tour.discount.percentage / 100))}
-                                                            </div>
-                                                            <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
-                                                            <div className="font-bold text-xl text-primary mb-3 text-center">${tour.price}</div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
-                                                            <div className="font-bold text-xl text-primary mb-3 text-center">${tour.price}</div>
-                                                        </>
-                                                    )}
+                                                    {(() => {
+                                                        const { originalPrice, displayPrice, hasDiscount, discountPercentage } = getTourPricing(tour);
+                                                        return hasDiscount ? (
+                                                            <>
+                                                                <div className="flex items-center justify-center gap-1 mb-1">
+                                                                    <span className="text-sm line-through text-muted-foreground">
+                                                                        ${originalPrice.toFixed(0)}
+                                                                    </span>
+                                                                    <span className="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded">
+                                                                        -{discountPercentage}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
+                                                                <div className="font-bold text-xl text-green-600 mb-3 text-center">${displayPrice.toFixed(0)}</div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="text-muted-foreground text-sm mb-1 text-center">From</div>
+                                                                <div className="font-bold text-xl text-primary mb-3 text-center">${displayPrice.toFixed(0)}</div>
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 {/* Star ratings */}

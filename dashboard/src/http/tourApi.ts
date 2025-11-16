@@ -125,6 +125,7 @@ export const getUserToursTitle = async (userId: string) => api.get(`/api/tours/u
 export const getLatestTours = async () => {
     try {
         const response = await api.get('/api/tours/latest');
+        console.log("this is a response of api tour latest", response)
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {

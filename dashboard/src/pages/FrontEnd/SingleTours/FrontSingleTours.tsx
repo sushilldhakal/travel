@@ -559,6 +559,22 @@ const FrontSingleTours = () => {
                             </div>
                         </div>
 
+                        {/* Categories */}
+                        {tourData.category && Array.isArray(tourData.category) && tourData.category.length > 0 && (
+                            <div className="mb-6">
+                                <div className="flex flex-wrap gap-2">
+                                    {tourData.category.map((cat: any, index: number) => (
+                                        <span
+                                            key={cat._id || index}
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20"
+                                        >
+                                            {cat.name || cat}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Tour Facts */}
                         <div className="bg-card border border-border rounded-lg p-6 mb-8">
                             <h2 className="text-2xl font-bold mb-4">Tour Facts</h2>

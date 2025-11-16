@@ -6,6 +6,7 @@ import TourByPricing from '@/userDefinedComponents/User/Slider/TourByPricing';
 import DestinationTour from '@/userDefinedComponents/User/Slider/DestinationTour';
 import ReviewSlider from '@/userDefinedComponents/User/Slider/ReviewSlider';
 import WhyUs from '@/userDefinedComponents/User/WhyUs/WhyUs';
+import ExploreCategories from '@/userDefinedComponents/User/Slider/ExploreCategories';
 
 import { useEffect, useState } from 'react';
 
@@ -63,6 +64,9 @@ const Home = () => {
 
             {/* Why Choose Us Section */}
             <WhyUs />
+
+            {/* Explore Categories Section */}
+            <ExploreCategories />
 
             {/* Popular Destinations Section */}
             <DestinationTour />

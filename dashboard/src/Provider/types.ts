@@ -401,6 +401,7 @@ export interface CategoryData {
   userId: string;
   isApproved: boolean;
   approvalStatus: 'pending' | 'approved' | 'rejected';
+  usageCount?: number;
 }
 
 export interface FactData {
