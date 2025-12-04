@@ -60,7 +60,7 @@ function SelectContent({
   container?: HTMLElement | null
 }) {
   return (
-    <SelectPrimitive.Portal container={props.container ?? document.body}>
+    <SelectPrimitive.Portal container={props.container ?? (typeof document !== 'undefined' ? document.body : undefined)}>
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
