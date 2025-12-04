@@ -176,7 +176,7 @@ const AddCategory = ({ onCategoryAdded }: { onCategoryAdded: () => void }) => {
 
             <form onSubmit={(e) => {
                 e.preventDefault();
-                form.handleSubmit(handleCreateCategory)();
+                form.handleSubmit(handleSubmit)();
             }}>
                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background via-background to-primary/5">
                     <CardHeader className="pb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">

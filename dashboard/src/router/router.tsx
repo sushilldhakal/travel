@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AuthLayout, { AdminRoute } from '@/util/AuthLayout';
 import routePaths from '@/lib/routePath';
 import PrivateRoutes from '@/util/PrivateRoutes';
@@ -239,6 +239,10 @@ const router = createBrowserRouter([
     element: <PrivateRoutes />,
     children: [
       {
+        index: true,
+        element: <Navigate to="/dashboard/home" replace />,
+      },
+      {
         path: routePaths.dashboard.base,
         element: <DashboardLayout />,
         children: [
@@ -451,6 +455,8 @@ const router = createBrowserRouter([
     ]
   },
 
-]);
+], {
+  basename: '/',
+});
 
 export { router, routePaths };

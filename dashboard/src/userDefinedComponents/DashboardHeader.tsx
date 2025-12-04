@@ -9,7 +9,6 @@ import {
 } from "lucide-react"
 import { ModeToggle } from "./ModeToggle"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Link } from "react-router-dom"
 import { SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./Avatar";
@@ -93,7 +92,9 @@ const DashboardHeader = ({ handleLogout, isCollapsed, setIsCollapsed }: Dashboar
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuSeparator />
-          <DropdownMenuItem><Link to="/"> Home Page </Link></DropdownMenuItem>
+          <DropdownMenuItem>
+            <a href="/" className="w-full">Home Page</a>
+          </DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />

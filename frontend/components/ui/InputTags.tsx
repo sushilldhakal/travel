@@ -3,13 +3,16 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { PencilIcon, XIcon } from "lucide-react";
-import { Input, InputProps } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import type { ComponentPropsWithoutRef } from "react";
+
+type InputProps = ComponentPropsWithoutRef<typeof Input>;
 import { cn } from "@/lib/utils";
 import { useImperativeHandle, useRef } from "react";
 
 type InputTagsProps = Omit<InputProps, "value" | "onChange"> & {
     value: string[];
-    onChange: React.Dispatch<React.SetStateAction<string[]>>;
+    onChange: (value: string[]) => void;
 };
 
 const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
@@ -68,14 +71,14 @@ const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
                 </div>
                 {value && value.length > 0 && (
                     <div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center w-full">
-                        {value.map((item, idx) => (
+                        {value.map((item: string, idx: number) => (
                             <Badge key={idx} variant="secondary">
                                 {item}
                                 <button
                                     type="button"
                                     className="w-3 ml-2"
                                     onClick={() => {
-                                        onChange(value.filter((i) => i !== item));
+                                        onChange(value.filter((i: string) => i !== item));
                                     }}
                                 >
                                     <XIcon className="w-3" />
@@ -85,7 +88,7 @@ const InputTags = React.forwardRef<HTMLInputElement, InputTagsProps>(
                                     className="w-3 ml-2"
                                     onClick={() => {
                                         setPendingDataPoint(item);
-                                        onChange(value.filter((i) => i !== item));
+                                        onChange(value.filter((i: string) => i !== item));
                                         if (inputRef.current) {
                                             inputRef.current.focus();
                                         }

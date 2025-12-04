@@ -30,8 +30,8 @@ export interface NodeSelectorProps {
 interface NodeTypeItem {
     name: string;
     icon: React.ReactNode;
-    command: (editor: ReturnType<typeof useEditor>["editor"]) => void;
-    isActive: (editor: ReturnType<typeof useEditor>["editor"]) => boolean;
+    command: (editor: NonNullable<ReturnType<typeof useEditor>["editor"]>) => void;
+    isActive: (editor: NonNullable<ReturnType<typeof useEditor>["editor"]>) => boolean;
 }
 
 /**

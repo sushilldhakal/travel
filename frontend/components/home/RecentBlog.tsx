@@ -26,9 +26,9 @@ export default function RecentBlog() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [api, setApi] = useState<CarouselApi | null>(null);
 
-    const { data: response, isLoading, error } = useQuery({
+    const { data: response, isLoading, error } = useQuery<{ posts: Post[] }>({
         queryKey: ['posts'],
-        queryFn: getPosts,
+        queryFn: getPosts as () => Promise<{ posts: Post[] }>,
     });
 
     useEffect(() => {

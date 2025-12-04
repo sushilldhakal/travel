@@ -4,13 +4,15 @@
  * Requirements: 19.4
  */
 
-import { Extension } from '@tiptap/core';
+import { Extension, Mark, Node } from '@tiptap/core';
+
+type AnyExtension = Extension | Mark | Node;
 
 /**
  * Lazy load AI extensions
  * Only loaded when AI features are enabled
  */
-export const loadAIExtensions = async () => {
+export const loadAIExtensions = async (): Promise<AnyExtension[]> => {
     const { AIHighlight } = await import('novel');
     return [AIHighlight];
 };
@@ -19,7 +21,7 @@ export const loadAIExtensions = async () => {
  * Lazy load Math extensions
  * Only loaded when math features are needed
  */
-export const loadMathExtensions = async () => {
+export const loadMathExtensions = async (): Promise<AnyExtension[]> => {
     const { Mathematics } = await import('novel');
 
     return [
@@ -38,7 +40,7 @@ export const loadMathExtensions = async () => {
  * Lazy load embedded media extensions
  * Only loaded when media features are needed
  */
-export const loadMediaExtensions = async () => {
+export const loadMediaExtensions = async (): Promise<AnyExtension[]> => {
     const { Youtube, Twitter } = await import('novel');
 
     return [
@@ -66,11 +68,11 @@ export const getLazyExtensions = async (options: {
     enableAI?: boolean;
     enableMath?: boolean;
     enableMedia?: boolean;
-}): Promise<Extension[]> => {
-    const extensions: Extension[] = [];
+}): Promise<AnyExtension[]> => {
+    const extensions: AnyExtension[] = [];
 
     // Load extensions based on feature flags
-    const promises: Promise<Extension[]>[] = [];
+    const promises: Promise<AnyExtension[]>[] = [];
 
     if (options.enableAI) {
         promises.push(loadAIExtensions());

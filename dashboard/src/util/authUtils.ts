@@ -1,4 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 
 // Types
 export type AccessTokenType = {
@@ -10,6 +11,13 @@ export type AccessTokenType = {
 
 // Token utilities
 export const getAccessToken = (): string | null => {
+  // First try to get from cookie (new method)
+  const cookieToken = Cookies.get('token');
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  // Fallback to localStorage for backward compatibility
   const raw = localStorage.getItem('token-store');
   try {
     const parsed = JSON.parse(raw || '{}');
@@ -46,7 +54,7 @@ export const getUserId = (): string | null => {
 export const getAuthUserRoles = (): string | null => {
   const accessToken = getAccessToken();
   if (!isValidToken(accessToken)) return null;
-  
+
   try {
     const decoded = jwtDecode<AccessTokenType>(accessToken!);
     return decoded.roles;

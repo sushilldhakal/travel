@@ -34,17 +34,32 @@ const TourFaqs = () => {
 
     const handleFaqSelect = (faqData: FaqData | undefined, index: number) => {
         if (faqData) {
-            form.setValue(`faqs.${index}.answer`, faqData.answer || '');
+            console.log(`✅ Linked FAQ "${faqData.question}" with faqId: ${faqData.id}`);
+            form.setValue(`faqs.${index}.faqId` as any, faqData.id || faqData._id);  // Preserve faqId!
+            form.setValue(`faqs.${index}.question` as any, faqData.question || '');
+            form.setValue(`faqs.${index}.answer` as any, faqData.answer || '');
+            console.log(`   Current form value:`, form.getValues(`faqs.${index}` as any));
         }
     };
 
     useEffect(() => {
         if (faqFields && faqFields.length > 0 && faq && faq.length > 0) {
-            faqFields.forEach((field, index) => {
-                if (field.question) {
+            faqFields.forEach((field: any, index) => {
+                // Match by faqId first, then fall back to question matching
+                if (field.faqId) {
+                    const matchedFaq = faq.find(f => f.id === field.faqId || f._id === field.faqId);
+                    if (matchedFaq) {
+                        console.log(`🔄 Syncing FAQ at index ${index} with master FAQ "${matchedFaq.question}"`);
+                        form.setValue(`faqs.${index}.question` as any, matchedFaq.question);
+                        form.setValue(`faqs.${index}.answer` as any, matchedFaq.answer);
+                    }
+                } else if (field.question) {
+                    // Legacy: match by question if no faqId
                     const matchedFaq = faq.find(f => f.question === field.question || f.question.trim() === field?.question?.trim());
                     if (matchedFaq) {
-                        form.setValue(`faqs.${index}.question`, matchedFaq.question);
+                        form.setValue(`faqs.${index}.faqId` as any, matchedFaq.id || matchedFaq._id);
+                        form.setValue(`faqs.${index}.question` as any, matchedFaq.question);
+                        form.setValue(`faqs.${index}.answer` as any, matchedFaq.answer);
                     }
                 }
             });
@@ -140,18 +155,17 @@ const TourFaqs = () => {
                                                                     <FormControl>
                                                                         <Select
                                                                             onValueChange={(value) => {
-                                                                                field.onChange(value);
-                                                                                const faqData = faq?.find(f => f.question === value);
+                                                                                const faqData = faq?.find(f => f.id === value || f._id === value);
                                                                                 handleFaqSelect(faqData, index);
                                                                             }}
-                                                                            defaultValue={field.value}
+                                                                            value={watchedFaq?.[index]?.faqId || watchedFaq?.[index]?.question}
                                                                         >
                                                                             <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Select a question" />
                                                                             </SelectTrigger>
                                                                             <SelectContent>
                                                                                 {faq?.map((faqItem, faqIndex) => (
-                                                                                    <SelectItem key={faqIndex} value={faqItem.question}>
+                                                                                    <SelectItem key={faqIndex} value={faqItem.id || faqItem._id}>
                                                                                         {faqItem.question}
                                                                                     </SelectItem>
                                                                                 ))}
@@ -208,20 +222,19 @@ const TourFaqs = () => {
                                                             <FormControl>
                                                                 <Select
                                                                     onValueChange={(value) => {
-                                                                        field.onChange(value);
                                                                         const faqData = faq && Array.isArray(faq) ?
-                                                                            faq.find(f => f.question === value) :
+                                                                            faq.find(f => f.id === value || f._id === value) :
                                                                             undefined;
                                                                         handleFaqSelect(faqData, index);
                                                                     }}
-                                                                    defaultValue={field.value}
+                                                                    value={watchedFaq?.[index]?.faqId || watchedFaq?.[index]?.question}
                                                                 >
                                                                     <SelectTrigger className="w-[220px]">
                                                                         <SelectValue placeholder="Select a question" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
                                                                         {Array.isArray(faq) && faq.length > 0 ? faq.map((faqItem, faqIndex) => (
-                                                                            <SelectItem key={faqIndex} value={faqItem.question}>
+                                                                            <SelectItem key={faqIndex} value={faqItem.id || faqItem._id}>
                                                                                 {faqItem.question}
                                                                             </SelectItem>
                                                                         )) : (

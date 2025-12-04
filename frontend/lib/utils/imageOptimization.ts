@@ -186,7 +186,7 @@ export function getResponsiveUrls(
  * @returns True if URL is from Cloudinary
  */
 export function isCloudinaryUrl(url: string): boolean {
-    return url && url.includes('cloudinary.com');
+    return Boolean(url && url.includes('cloudinary.com'));
 }
 
 /**

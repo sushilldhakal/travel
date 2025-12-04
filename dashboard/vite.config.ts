@@ -11,6 +11,12 @@ const pdfjsDistPath = path.dirname(require.resolve('pdfjs-dist/package.json'));
 const cMapsDir = normalizePath(path.join(pdfjsDistPath, 'cmaps'));
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',
+  server: {
+    port: 5173,
+    strictPort: true,
+    cors: true,
+  },
   plugins: [
     viteStaticCopy({
       targets: [
@@ -22,7 +28,7 @@ export default defineConfig({
     }),
     tailwindcss(),
     checker({ typescript: false }), react()],
-    assetsInclude: ['**/*.pdf'],
+  assetsInclude: ['**/*.pdf'],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

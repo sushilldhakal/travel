@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
@@ -23,89 +23,88 @@ const TourFacts = () => {
     const { form, factsAppend, factsRemove, factsFields } = useTourForm();
     const watchedFacts = form.watch('facts');
     const userId = getUserId();
-    const { data: facts } = useFacts(userId);
+    const { data: facts, refetch: refetchFacts } = useFacts(userId);
 
-
-    // Log facts by field type to inspect their data structure
-    if (Array.isArray(watchedFacts) && watchedFacts.length > 0) {
-        const plainTextFact = watchedFacts.find(f => f?.field_type === 'Plain Text');
-        const multiSelectFact = watchedFacts.find(f => f?.field_type === 'Multi Select');
-        const singleSelectFact = watchedFacts.find(f => f?.field_type === 'Single Select');
-
-    }
-
-    // Auto-populate selectedFact state when facts are loaded during edit mode
-    useMemo(() => {
-        if (Array.isArray(watchedFacts) && Array.isArray(facts) && facts.length > 0 && watchedFacts.length > 0) {
-            const newSelectedFacts: Record<number, FactData | undefined> = {};
-
-            watchedFacts.forEach((watchedFact, index) => {
-                if (watchedFact?.title) {
-                    // Try exact match first
-                    let foundFact = facts.find((f) => f.name === watchedFact.title);
-
-                    // If no exact match, try removing the suffix (e.g., "Tour Availability-10" -> "Tour Availability")
-                    if (!foundFact && watchedFact.title && watchedFact.title.includes('-')) {
-                        const baseName = watchedFact.title.split('-').slice(0, -1).join('-');
-                        foundFact = facts.find((f) => f.name === baseName);
-                    }
-
-                    // If still no match, try partial match
-                    if (!foundFact && watchedFact.title) {
-                        foundFact = facts.find((f) =>
-                            f.name.toLowerCase().includes(watchedFact.title!.toLowerCase()) ||
-                            watchedFact.title!.toLowerCase().includes(f.name.toLowerCase())
-                        );
-                    }
-
-                    if (foundFact) {
-                        newSelectedFacts[index] = foundFact;
-                    }
-                }
-            });
-
-            // Only update if we found some facts to link and selectedFact is empty
-            if (Object.keys(newSelectedFacts).length > 0 && Object.keys(selectedFact).length === 0) {
-                setSelectedFact(newSelectedFacts);
-            }
-        }
-        return null;
-    }, [watchedFacts, facts, selectedFact]);
-
-
-
-    // We're using the Icon component directly now, so this function is no longer needed
-    // and has been removed to fix the lint warning
-
-    // Initialize selectedFact from watchedFacts when component mounts or watchedFacts changes
+    // Refetch facts when component mounts or when facts might have been updated
     useEffect(() => {
-        if (Array.isArray(watchedFacts) && watchedFacts.length > 0) {
-            const initialSelectedFacts: Record<number, FactData | undefined> = {};
+        refetchFacts();
+    }, [refetchFacts]);
 
-            watchedFacts.forEach((fact, idx) => {
-                if (fact && fact.title) {
-                    // Find the matching fact from the facts array
-                    const matchingFact = facts && Array.isArray(facts) ? facts.find(f => f.name === fact.title) : undefined;
-                    if (matchingFact) {
-                        initialSelectedFacts[idx] = matchingFact;
-                    }
+
+    // Removed unused debug code
+
+    // Initialize selectedFact from watchedFacts using factId
+    useEffect(() => {
+        if (!Array.isArray(watchedFacts) || !Array.isArray(facts) || facts.length === 0) return;
+
+        const initialSelectedFacts: Record<number, FactData | undefined> = {};
+
+        watchedFacts.forEach((watchedFact, idx) => {
+            if (watchedFact?.factId) {
+                const masterFact = facts.find(f => (f._id || f.id) === watchedFact.factId);
+                if (masterFact) {
+                    initialSelectedFacts[idx] = masterFact;
                 }
-            });
+            }
+        });
 
+        if (Object.keys(initialSelectedFacts).length > 0) {
             setSelectedFact(initialSelectedFacts);
         }
     }, [watchedFacts, facts]);
 
     const handleFactSelect = (fact: FactData | undefined, index: number) => {
         if (fact) {
+            const factId = fact._id || fact.id;
+            if (!factId) {
+                console.error('❌ Fact must have an ID!', fact);
+                return;
+            }
+
             setSelectedFact({ ...selectedFact, [index]: fact });
-            // Set all the field values correctly
+
+            // Store fact reference and metadata
+            form.setValue(`facts.${index}.factId`, factId);
             form.setValue(`facts.${index}.title`, fact.name);
-            form.setValue(`facts.${index}.factId`, fact.id); // Store the fact ID for reference
             form.setValue(`facts.${index}.field_type`, fact.field_type as 'Plain Text' | 'Single Select' | 'Multi Select' || 'Plain Text');
             form.setValue(`facts.${index}.icon`, fact.icon || '');
+
+            console.log(`✅ Linked fact "${fact.name}" with factId:`, factId);
+            console.log(`   Current form value:`, form.getValues(`facts.${index}`));
         }
     };
+
+    // Sync form when master facts change (e.g., after updates in SingleFacts)
+    useEffect(() => {
+        if (!Array.isArray(watchedFacts) || !Array.isArray(facts) || facts.length === 0) return;
+
+        watchedFacts.forEach((watchedFact, index) => {
+            if (!watchedFact?.factId) return; // Skip facts without factId
+
+            // Find the master fact by factId
+            const masterFact = facts.find(f => (f._id || f.id) === watchedFact.factId);
+            if (!masterFact) return;
+
+            // Check if master fact has changed
+            const hasChanges =
+                masterFact.icon !== watchedFact.icon ||
+                masterFact.field_type !== watchedFact.field_type ||
+                masterFact.name !== watchedFact.title;
+
+            if (hasChanges) {
+                // Update form with current master fact data
+                form.setValue(`facts.${index}.title`, masterFact.name);
+                form.setValue(`facts.${index}.field_type`, masterFact.field_type as 'Plain Text' | 'Single Select' | 'Multi Select');
+                form.setValue(`facts.${index}.icon`, masterFact.icon || '');
+
+                // Update selectedFact state to trigger re-render
+                setSelectedFact(prev => ({
+                    ...prev,
+                    [index]: masterFact
+                }));
+            }
+        });
+    }, [facts, watchedFacts, form]);
 
     return (
         <Card className="shadow-xs">
@@ -142,7 +141,7 @@ const TourFacts = () => {
                 {((Array.isArray(watchedFacts) && watchedFacts.length > 0) || (Array.isArray(factsFields) && factsFields.length > 0)) ? (
                     <div className="space-y-4">
                         {/* Use watchedFacts in edit mode, factsFields in create mode */}
-                        {(Array.isArray(watchedFacts) && watchedFacts.length > 0 ? watchedFacts : (factsFields || []))?.map((field, index) => {
+                        {(Array.isArray(watchedFacts) && watchedFacts.length > 0 ? watchedFacts : (factsFields || []))?.map((_field, index) => {
                             // Check if the fact has actual content - check for title, field_type, or value
                             const currentFact = Array.isArray(watchedFacts) ? watchedFacts[index] : null;
                             const hasFact = currentFact && (
@@ -167,14 +166,20 @@ const TourFacts = () => {
                                                     <div className="flex items-center space-x-3 w-full">
                                                         <Badge variant="default"
                                                             className="rounded-md h-7 w-7 p-0 flex items-center justify-center font-medium">
-                                                            {/* {getFactIcon(currentFact)} */}
-
                                                             <div className="shrink-0 h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                                                <Icon name={currentFact.icon || ''} size={20} />
+                                                                <Icon name={(() => {
+                                                                    if (!currentFact?.factId) return currentFact.icon || '';
+                                                                    const masterFact = facts?.find(f => (f._id || f.id) === currentFact.factId);
+                                                                    return masterFact?.icon || currentFact.icon || '';
+                                                                })()} size={20} />
                                                             </div>
                                                         </Badge>
                                                         <div className="flex-1 font-medium text-base">
-                                                            {currentFact?.title || `Fact ${index + 1}`}
+                                                            {(() => {
+                                                                if (!currentFact?.factId) return `Fact ${index + 1}`;
+                                                                const masterFact = facts?.find(f => (f._id || f.id) === currentFact.factId);
+                                                                return masterFact?.name || currentFact.title || `Fact ${index + 1}`;
+                                                            })()}
                                                         </div>
                                                         <div
                                                             role="button"
@@ -218,19 +223,11 @@ const TourFacts = () => {
                                                                     <FormLabel>Fact Name</FormLabel>
                                                                     <FormControl>
                                                                         <Select
-                                                                            value={field.value ? facts?.find(f => f.name === field.value)?.id : undefined}
+                                                                            value={watchedFacts?.[index]?.factId || undefined}
                                                                             onValueChange={(value) => {
-                                                                                // Find the fact by ID
-                                                                                const foundFact = facts && Array.isArray(facts)
-                                                                                    ? facts.find((f) => f.id === value)
-                                                                                    : undefined;
-
+                                                                                const foundFact = facts?.find((f) => (f._id || f.id) === value);
                                                                                 if (foundFact) {
-                                                                                    // Use handleFactSelect to properly set all values
                                                                                     handleFactSelect(foundFact, index);
-                                                                                } else {
-                                                                                    // Fallback if fact not found
-                                                                                    field.onChange(value);
                                                                                 }
                                                                             }}
                                                                         >
@@ -240,8 +237,8 @@ const TourFacts = () => {
                                                                             <SelectContent>
                                                                                 {Array.isArray(facts) && facts.length > 0 ? facts.map((fact) => (
                                                                                     <SelectItem
-                                                                                        key={`fact-${fact.id || 'unknown'}`}
-                                                                                        value={fact.id || `fact-${fact.name}-${Date.now()}`}
+                                                                                        key={`fact-${fact._id || fact.id || 'unknown'}`}
+                                                                                        value={fact._id || fact.id || `fact-${fact.name}-${Date.now()}`}
                                                                                     >
                                                                                         {fact.name}
                                                                                     </SelectItem>
@@ -473,21 +470,13 @@ const TourFacts = () => {
                                                         <FormItem className="w-full">
                                                             <FormControl>
                                                                 <Select
+                                                                    value={watchedFacts?.[index]?.factId || undefined}
                                                                     onValueChange={(value) => {
-                                                                        // Find fact by ID
-                                                                        const foundFact = facts && Array.isArray(facts)
-                                                                            ? facts.find((f) => f.id === value)
-                                                                            : undefined;
-
+                                                                        const foundFact = facts?.find((f) => (f._id || f.id) === value);
                                                                         if (foundFact) {
-                                                                            // Use handleFactSelect to set all values correctly
                                                                             handleFactSelect(foundFact, index);
-                                                                        } else {
-                                                                            // Fallback if fact not found
-                                                                            field.onChange(value);
                                                                         }
                                                                     }}
-                                                                    value={field.value ? (facts?.find(f => f.name === field.value)?.id || field.value) : undefined}
                                                                 >
                                                                     <SelectTrigger className="w-[220px]">
                                                                         <SelectValue placeholder="Select a fact" />
@@ -495,8 +484,8 @@ const TourFacts = () => {
                                                                     <SelectContent>
                                                                         {Array.isArray(facts) && facts.length > 0 ? facts.map((fact) => (
                                                                             <SelectItem
-                                                                                key={`fact-${fact.id}`}
-                                                                                value={fact.id}
+                                                                                key={`fact-${fact._id || fact.id || fact.name}`}
+                                                                                value={fact._id || fact.id || `fact-${fact.name}`}
                                                                             >
                                                                                 {fact.name}
                                                                             </SelectItem>

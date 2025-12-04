@@ -194,7 +194,7 @@ const UserNav = ({ handleSearch }: { handleSearch: () => void }) => {
                                         </Menu>
                                     </>
                                     :
-                                    <Link to={'/auth/login'} className="text-white ml-3">Login</Link>
+                                    <Link to="/auth/login" className="text-white ml-3">Login</Link>
                             }
 
                             <div className="ml-3 cursor-pointer" onClick={handleSearch}>

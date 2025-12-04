@@ -1,6 +1,6 @@
 export interface Author {
-    _id: string;
-    name: string;
+  _id: string;
+  name: string;
 }
 
 export interface dateRange {
@@ -12,7 +12,7 @@ export interface Discount {
   discountEnabled: boolean;
   discountPrice: number;
   dateRange: {
-    from: Date; 
+    from: Date;
     to: Date;
   };
 }
@@ -68,22 +68,22 @@ export interface dates {
   scheduleType: TourDateMode;
   days?: number;
   nights?: number;
-  
+
   // For flexible or fixed with recurrence
   isRecurring?: boolean;
   recurrencePattern?: "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
   recurrenceInterval?: number; // e.g., every 2 weeks
   recurrenceEndDate?: Date;
-  
+
   // Pricing category (for flexible and fixed)
   selectedPricingOptions?: string[];
-  
+
   // For fixed
   singleDateRange?: {
     from: Date;
     to: Date;
   };
-  
+
   // For multiple
   departures?: departures[];
 }
@@ -408,6 +408,8 @@ export interface FactData {
   name: string
   title?: string
   id?: string
+  _id?: string
+  factId?: string
   field_type?: string
   label: string
   icon?: string
@@ -417,6 +419,7 @@ export interface FactData {
 export interface FaqData {
   _id: string;
   id: string;
+  faqId?: string;  // For linking tour FAQs to master FAQs
   question: string;
   answer: string;
   userId: string;

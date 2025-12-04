@@ -140,6 +140,7 @@ const SingleFact = memo(({
         staleTime: 0, // Don't cache the data, always refetch on mount
     });
 
+    console.log("factSingle factSingle", factSingle)
     // Update form values when fact data is loaded - combined with other effects for efficiency
     useEffect(() => {
         if (factSingle && isEditMode) {
@@ -190,6 +191,11 @@ const SingleFact = memo(({
                     queryKey: ['Facts', userId],
                 });
             }
+
+            // IMPORTANT: Invalidate tours cache so tour edit pages show updated fact data
+            queryClient.invalidateQueries({
+                queryKey: ['tours'], // This will invalidate all tour queries including individual tours
+            });
         },
         onError: (e) => {
             toast({
@@ -249,7 +255,7 @@ const SingleFact = memo(({
         // Open the confirmation dialog instead of deleting immediately
         setDeleteDialogOpen(true);
     }, []);  // No dependencies needed
-    
+
     // This function is called when the user confirms deletion in the dialog
     const confirmDeleteFact = useCallback(() => {
         if (DeleteFact && (fact?.id || fact?._id)) {

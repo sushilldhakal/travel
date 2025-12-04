@@ -11,9 +11,9 @@ const PrivateRoutes: React.FC = () => {
     // Use token expiration hook
     useTokenExpiration({
         checkInterval: 60000, // Check every minute
-        redirectTo: '/',
+        redirectTo: '/auth/login',
         onTokenExpired: () => {
-            console.log('Token expired in PrivateRoutes, redirecting to home page');
+            console.log('Token expired in PrivateRoutes, redirecting to login page');
             setIsAllowed(false);
         }
     });
@@ -21,7 +21,7 @@ const PrivateRoutes: React.FC = () => {
     useEffect(() => {
         const checkTokenAndRoles = () => {
             const token = getAccessToken();
-            
+
             // Check if token exists and is valid
             if (!token || !isValidToken(token)) {
                 console.log('Token expired or invalid, redirecting to home page');
@@ -55,7 +55,7 @@ const PrivateRoutes: React.FC = () => {
         );
     }
 
-    return isAllowed ? <Outlet /> : <Navigate to="/" state={{ path: location.pathname, reason: 'token_expired' }} replace />;
+    return isAllowed ? <Outlet /> : <Navigate to="/auth/login" state={{ path: location.pathname, reason: 'token_expired' }} replace />;
 };
 
 export default PrivateRoutes;

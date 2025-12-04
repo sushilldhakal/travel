@@ -174,8 +174,10 @@ const EditTour: React.FC = () => {
                 <Form {...form}>
                     <form onSubmit={(e) => {
                         e.preventDefault();
-                        console.log("Form for API", form.getValues());
-                        onSubmit(form.getValues(), tourMutation);
+                        const formData = form.getValues();
+                        console.log("Form for API", formData);
+                        console.log("Facts being submitted:", formData.facts);
+                        onSubmit(formData, tourMutation);
                     }}>
                         {/* Page Header Actions */}
                         <div className="mb-6">

@@ -32,7 +32,7 @@ const LoginPage = () => {
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const switchForm = (formType: string) => setShowForm(formType);
   const [forgotToken, setForgotToken] = useState('');
-  
+
   useEffect(() => {
     // Add the class if the path matches
     if (location.pathname === '/auth/login' || location.pathname === '/auth/login/verify' || location.pathname === '/auth/login/forgot') {
@@ -104,11 +104,11 @@ const LoginPage = () => {
     onSuccess: (response) => {
       console.log('Login successful, token received:', response.data.accessToken ? 'Yes' : 'No');
       setToken(response.data.accessToken);
-      
+
       // Decode the actual token we just received, not from localStorage
       const decoded = jwtDecode(response.data.accessToken) as { roles?: string };
       console.log('Decoded token roles:', decoded.roles);
-      
+
       if (decoded.roles === 'admin' || decoded.roles === 'seller') {
         navigate('/dashboard/home');
       } else {

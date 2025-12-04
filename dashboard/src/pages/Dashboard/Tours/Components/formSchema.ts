@@ -6,10 +6,10 @@ const optionalDate = z.date().optional();
 
 // Define the schema for a single itinerary item
 const itineraryItemSchema = z.object({
-    day: optionalString,
-    title: optionalString,
-    description: optionalString,
-    dateTime: optionalDate,
+  day: optionalString,
+  title: optionalString,
+  description: optionalString,
+  dateTime: optionalDate,
 });
 // Define the schema for the itinerary as an array of itinerary items
 const itinerarySchema = z.array(itineraryItemSchema);
@@ -19,13 +19,14 @@ const factSchema = z.object({
   title: optionalString,
   field_type: z.enum(['Plain Text', 'Single Select', 'Multi Select']).optional(),
   value: z.union([
-      z.array(z.string()),  // For Plain Text or Single Select, where value is an array of strings
-      z.array(z.object({
-          label: z.string(),  // For Multi Select, where value is an object with `label`, `value`, and optional `disable`
-          value: z.string(),
-      })),
+    z.array(z.string()),  // For Plain Text or Single Select, where value is an array of strings
+    z.array(z.object({
+      label: z.string(),  // For Multi Select, where value is an object with `label`, `value`, and optional `disable`
+      value: z.string(),
+    })),
   ]).optional(),
   icon: optionalString,
+  factId: optionalString, // Store the fact's _id for reliable matching
 });
 // Schema for FAQs
 const faqSchema = z.object({
@@ -34,26 +35,26 @@ const faqSchema = z.object({
 });
 
 const categorySchema = z.object({
-    label: z.string(),
-    value: z.string(),
-    disable: z.boolean().optional(),
-  });
+  label: z.string(),
+  value: z.string(),
+  disable: z.boolean().optional(),
+});
 
 // Schema for gallery
 const gallerySchema = z.object({
-    image: optionalString,
+  image: optionalString,
 });
 
 // Schema for location
 const locationSchema = z.object({
   map: optionalString,
   zip: optionalString,
-    street: optionalString,
-    city: optionalString,
-    state: optionalString,
-    country: optionalString,
-    lat: optionalString,
-    lng: optionalString,
+  street: optionalString,
+  city: optionalString,
+  state: optionalString,
+  country: optionalString,
+  lat: optionalString,
+  lng: optionalString,
 });
 
 // Define the date range schema
@@ -75,8 +76,8 @@ export const flexibleDateRangeSchema = z.union([
 ]);
 
 export const paxSchema = z.object({
-    minSize: z.number().default(1),
-    maxSize: z.number().default(10),
+  minSize: z.number().default(1),
+  maxSize: z.number().default(10),
 });
 
 
@@ -93,11 +94,11 @@ export const discountSchema = z.object({
 });
 
 const paxRangeSchema = z
-.tuple([z.number().min(1, "Minimum pax must be at least 1"), z.number().min(1, "Maximum pax must be at least 1")])
-.refine((data) => data[0] <= data[1], {
-  message: "Minimum pax must be less than or equal to maximum pax",
-  path: ["paxRange"],
-});
+  .tuple([z.number().min(1, "Minimum pax must be at least 1"), z.number().min(1, "Maximum pax must be at least 1")])
+  .refine((data) => data[0] <= data[1], {
+    message: "Minimum pax must be less than or equal to maximum pax",
+    path: ["paxRange"],
+  });
 
 
 // Define the pricing option schema
@@ -215,14 +216,14 @@ export const tourDatesSchema = z.object({
   // Base info for all tour types
   days: z.number().min(0, "Days must be a positive number").optional(),
   nights: z.number().min(0, "Nights must be a positive number").optional(),
-  
+
   // Config flags
   fixedDeparture: z.boolean().default(false),
   multipleDates: z.boolean().default(false),
-  
+
   // Single date range (for fixed departure without multiple dates)
   singleDateRange: dateRangeSchema.optional(),
-  
+
   // For multiple departures
   departures: z.array(z.object({
     id: z.string(),
@@ -235,7 +236,7 @@ export const tourDatesSchema = z.object({
     priceLockedUntil: optionalDate,
     capacity: z.number().min(0, "Capacity must be a positive number").optional()
   })).optional(),
-  
+
   // Scheduling type
   scheduleType: z.enum(["flexible", "fixed", "recurring"]).default("flexible")
 }).refine(
@@ -244,12 +245,12 @@ export const tourDatesSchema = z.object({
     if (!data.fixedDeparture) {
       return true;
     }
-    
+
     // If multipleDates is false, we need singleDateRange
     if (!data.multipleDates) {
       return !!data.singleDateRange;
     }
-    
+
     // If multipleDates is true, we need departures
     return !!data.departures && data.departures.length > 0;
   },
@@ -272,7 +273,7 @@ export const baseFormSchema = z.object({
   enquiry: z.boolean().default(true),
   featured: z.boolean().default(false),
   // Tour content
-  
+
 
   itinerary: z.object({
     outline: optionalString,
@@ -286,7 +287,7 @@ export const baseFormSchema = z.object({
   facts: z.array(factSchema).optional(),
   gallery: z.array(gallerySchema).optional(),
   faqs: z.array(faqSchema).optional(),
-  
+
   // Use the new unified schemas
   pricing: pricingSchema,
   dates: tourDatesSchema

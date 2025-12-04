@@ -1,5 +1,19 @@
 {
-  "dependencies": {
-    "react-icons": "^5.5.0"
-  }
+    "name": "tour-app-monorepo",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "npm-run-all --parallel dev:*",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:dashboard": "cd dashboard && npm run dev",
+        "dev:server": "cd server && npm run dev",
+        "install:all": "npm install && cd frontend && npm install && cd ../dashboard && npm install && cd ../server && npm install",
+        "build:all": "cd frontend && npm run build && cd ../dashboard && npm run build"
+    },
+    "devDependencies": {
+        "npm-run-all": "^4.1.5"
+    },
+    "dependencies": {
+        "@tiptap/pm": "^3.11.0"
+    }
 }

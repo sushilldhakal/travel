@@ -26,9 +26,9 @@ const ReviewSlider = () => {
     const [current, setCurrent] = React.useState(0);
     const [count, setCount] = React.useState(0);
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError } = useQuery<{ reviews: Review[] }>({
         queryKey: ['reviews'],
-        queryFn: () => getApprovedReviews(),
+        queryFn: () => getApprovedReviews() as Promise<{ reviews: Review[] }>,
         staleTime: 5 * 60 * 1000,
     });
 

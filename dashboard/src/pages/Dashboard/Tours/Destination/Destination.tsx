@@ -463,7 +463,7 @@ const Destination = () => {
                                 </>
                             ) : destinations?.data && destinations.data.length > 0 ? (
                                 // No search results
-                                <Card className="col-span-full shadow-xs border-primary/20 bg-primary/5">
+                                <Card className="col-span-full py-0 shadow-xs border-primary/20 bg-primary/5">
                                     <CardContent className="p-6">
                                         <div className="flex flex-col items-center justify-center text-center space-y-3">
                                             <Search className="h-8 w-8 text-muted-foreground" />
@@ -483,7 +483,7 @@ const Destination = () => {
                                 </Card>
                             ) : (
                                 // Empty state
-                                <Card className="col-span-full shadow-xs border-primary/20 bg-primary/5">
+                                <Card className="col-span-full py-0 shadow-xs border-primary/20 bg-primary/5">
                                     <CardContent className="p-6">
                                         <div className="flex flex-col items-center justify-center text-center space-y-3">
                                             <MapPin className="h-8 w-8 text-muted-foreground" />
@@ -509,7 +509,7 @@ const Destination = () => {
                         {isLoading ? (
                             // Loading skeletons
                             Array.from({ length: 6 }).map((_, index) => (
-                                <Card key={index} className="shadow-xs overflow-hidden">
+                                <Card key={index} className="shadow-xs py-0 overflow-hidden">
                                     <Skeleton className="h-[200px] w-full" />
                                     <CardContent className="p-5">
                                         <div className="flex items-center gap-2">
@@ -527,7 +527,7 @@ const Destination = () => {
                             ))
                         ) : isError ? (
                             // Error state
-                            <Card className="col-span-full shadow-xs border-destructive/50 bg-destructive/5">
+                            <Card className="col-span-full py-0 shadow-xs border-destructive/50 bg-destructive/5">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center justify-center text-center space-y-3">
                                         <X className="h-8 w-8 text-destructive" />
@@ -578,7 +578,7 @@ const Destination = () => {
                             </>
                         ) : (
                             // Empty state
-                            <Card className="col-span-full shadow-xs border-muted/50 bg-muted/5">
+                            <Card className="col-span-full shadow-xs py-0 border-muted/50 bg-muted/5">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center justify-center text-center space-y-3">
                                         <MapPin className="h-8 w-8 text-muted-foreground" />

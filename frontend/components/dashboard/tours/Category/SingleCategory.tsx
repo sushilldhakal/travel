@@ -68,13 +68,6 @@ const SingleCategory: React.FC<SingleCategoryProps> = ({
             imageUrl: '',
             isActive: true,
         },
-        resolver: async (values) => {
-            const errors: { [key: string]: { message: string } } = {};
-            if (!values.name) {
-                errors.name = { message: 'Name is required' };
-            }
-            return { values, errors };
-        },
     });
 
     // Remove category from seller's list mutation (user-specific)
@@ -125,14 +118,6 @@ const SingleCategory: React.FC<SingleCategoryProps> = ({
         },
         enabled: false, // Disable automatic fetching, we'll use existing category data
         retry: 1,
-        onError: (error) => {
-            console.error('❌ Query error:', error);
-            toast({
-                title: "Failed to load category data",
-                description: "Could not fetch the latest category information. Using existing data.",
-                variant: "destructive",
-            });
-        }
     });
 
     // Initialize form with category data when component mounts or category changes
@@ -306,8 +291,8 @@ const SingleCategory: React.FC<SingleCategoryProps> = ({
 
     // This function is called when the user confirms deletion in the dialog
     const confirmDeleteCategory = () => {
-        if (DeleteCategory && category?._id) {
-            DeleteCategory(category._id);
+        if (onDelete && category?._id) {
+            onDelete(category._id);
             setDeleteDialogOpen(false);
             toast({
                 title: "Category deleted",

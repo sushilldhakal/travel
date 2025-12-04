@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { createBooking, type BookingData } from '@/lib/api/bookingApi';
+import { createBooking } from '@/lib/api/bookingApi';
+import { CartBooking } from '@/lib/cartUtils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -160,7 +161,7 @@ export function FrontBooking({ tourData, prefilledDate }: FrontBookingProps) {
 
     // Booking mutation
     const bookingMutation = useMutation({
-        mutationFn: (bookingData: BookingData) => createBooking(bookingData),
+        mutationFn: (bookingData: Omit<CartBooking, 'bookingReference'>) => createBooking(bookingData),
         onSuccess: (response) => {
             const bookingData = response.data;
             toast({
@@ -244,25 +245,21 @@ export function FrontBooking({ tourData, prefilledDate }: FrontBookingProps) {
         }
 
         // Prepare booking data
-        const bookingData: BookingData = {
-            tourId: tourData._id,
+        const bookingData: Omit<CartBooking, 'bookingReference'> = {
+            _id: tourData._id,
             tourTitle: tourData.title,
             tourCode: tourData.code || `TOUR-${tourData._id.slice(-8).toUpperCase()}`,
+            tourImage: tourData.coverImage || '',
             departureDate: bookingForm.departureDate,
             participants: {
                 adults: bookingForm.adults,
                 children: bookingForm.children
             },
-            contactInfo: {
-                fullName: bookingForm.fullName,
-                email: bookingForm.email,
-                phone: bookingForm.phone
-            },
+            contactName: bookingForm.fullName,
+            contactEmail: bookingForm.email,
+            contactPhone: bookingForm.phone,
             specialRequests: bookingForm.specialRequests,
             pricing: {
-                basePrice: pricing.basePrice,
-                adultPrice: pricing.adultPrice,
-                childPrice: pricing.childPrice,
                 totalPrice: pricing.totalPrice,
                 currency: pricing.currency
             }
