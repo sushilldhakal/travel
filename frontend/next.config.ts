@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+
+  // ❌ Disable Turbopack completely
+  // This is the KEY part (env variable is ignored in Next.js 15/16)
+  turbo: false,
+
   images: {
     remotePatterns: [
       {
@@ -15,10 +20,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Turbopack configuration to handle canvas dependency
+
+  // Your existing alias for react-filerobot-image-editor
   turbopack: {
     resolveAlias: {
-      // Stub out canvas module (used by konva in react-filerobot-image-editor)
       canvas: './canvas-stub.js',
     },
   },
